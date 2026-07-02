@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi 配网 - Clawd Mochi</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>WiFi 配网</h1>
+            <p class="subtitle">选择网络并输入密码</p>
+        </header>
+        <section class="card">
+            <h2>可用网络</h2>
+            <ul class="wifi-list" id="wifi-list"><li class="wifi-item"><span>扫描中...</span></li></ul>
+            <button onclick="scanWifi()" style="margin-top:12px">刷新</button>
+        </section>
+        <section class="card" id="connect-form" style="display:none">
+            <h2>连接网络</h2>
+            <div class="info-item"><label>网络名称</label><input type="text" id="ssid-input" readonly></div>
+            <div class="info-item"><label>密码</label><input type="password" id="password-input" placeholder="输入 WiFi 密码"></div>
+            <div id="connect-msg"></div>
+            <button onclick="connectWifi()" style="margin-top:12px">连接</button>
+        </section>
+        <div style="text-align:center;margin-top:16px"><a href="/" style="color:#ff8c00;text-decoration:none">← 返回主页</a></div>
+    </div>
+    <script src="/app.js"></script>
+    <script src="/wifi.js"></script>
+</body>
+</html>

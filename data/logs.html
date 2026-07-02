@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日志 - Clawd Mochi</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>系统日志</h1>
+            <p class="subtitle">查看设备运行日志</p>
+        </header>
+        <section class="card">
+            <div class="log-toolbar">
+                <button onclick="refreshLogs()">刷新</button>
+                <button onclick="clearLogs()">清除日志</button>
+                <select id="log-lines" onchange="refreshLogs()" style="background:#1e2a40;color:#e0e0e0;border:1px solid #2a3a50;padding:8px;border-radius:8px">
+                    <option value="50">50 行</option>
+                    <option value="100" selected>100 行</option>
+                    <option value="200">200 行</option>
+                </select>
+            </div>
+            <div class="log-container" id="log-container">加载中...</div>
+        </section>
+        <div style="text-align:center;margin-top:16px"><a href="/" style="color:#ff8c00;text-decoration:none">← 返回主页</a></div>
+    </div>
+    <script>
+        async function refreshLogs() { const l = document.getElementById('log-lines').value; const t = await fetchText(`/logs/api?lines=${l}`); const c = document.getElementById('log-container'); c.textContent = t || '无日志'; c.scrollTop = c.scrollHeight; }
+        async function clearLogs() { await fetch('/logs/clear', {method:'POST'}); refreshLogs(); }
+        document.addEventListener('DOMContentLoaded', () => { refreshLogs(); setInterval(refreshLogs, 5000); });
+    </script>
+</body>
+</html>

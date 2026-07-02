@@ -1,0 +1,31 @@
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0e17;color:#e0e0e0;min-height:100vh}
+.container{max-width:480px;margin:0 auto;padding:16px}
+header{text-align:center;padding:24px 0}
+header h1{font-size:2rem;color:#ff8c00;margin-bottom:4px}
+header .subtitle{color:#888;font-size:.9rem}
+.card{background:#141a2a;border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid #1e2a40}
+.card h2{font-size:1rem;color:#ff8c00;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #1e2a40}
+.status-display{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.status-indicator{width:16px;height:16px;border-radius:50%;background:#555;transition:background .3s}
+.status-indicator.idle{background:#ff8c00}.status-indicator.thinking{background:#0066ff}.status-indicator.working{background:#00cc00}
+.status-indicator.error{background:#ff0000}.status-indicator.done{background:#00cc00}.status-indicator.permission{background:#ffcc00}
+.status-indicator.sweeping{background:#ff8c00}.status-indicator.sleeping{background:#555}
+#status-text{font-size:1.2rem;font-weight:600}
+.info-grid{display:grid;gap:8px}
+.info-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+.info-item label{color:#888;font-size:.85rem}
+.info-item span{font-family:'SF Mono','Consolas',monospace;font-size:.85rem}
+.controls{display:flex;flex-wrap:wrap;gap:8px}
+button{background:#1e2a40;color:#e0e0e0;border:1px solid #2a3a50;padding:10px 16px;border-radius:8px;cursor:pointer;font-size:.9rem;flex:1;min-width:100px;transition:background .2s}
+button:hover{background:#2a3a50}button:active{background:#3a4a60}
+.wifi-list{list-style:none}
+.wifi-item{display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid #1e2a40;cursor:pointer;transition:background .2s}
+.wifi-item:hover{background:#1a2235}
+.wifi-item .ssid{font-weight:500}.wifi-item .rssi{color:#888;font-size:.8rem}.wifi-item .encrypted{color:#ff8c00;font-size:.75rem}
+input[type="password"],input[type="text"]{width:100%;padding:10px;background:#0a0e17;border:1px solid #2a3a50;border-radius:8px;color:#e0e0e0;font-size:.9rem;margin:8px 0}
+input:focus{outline:none;border-color:#ff8c00}
+.status-msg{padding:12px;border-radius:8px;margin:8px 0;font-size:.9rem}
+.status-msg.success{background:#0a2a0a;color:#00cc00}.status-msg.error{background:#2a0a0a;color:#ff4444}.status-msg.info{background:#0a1a2a;color:#4488ff}
+.log-container{background:#0a0e17;border:1px solid #1e2a40;border-radius:8px;padding:12px;max-height:400px;overflow-y:auto;font-family:'SF Mono','Consolas',monospace;font-size:.8rem;line-height:1.6;white-space:pre-wrap;word-break:break-all}
+.log-toolbar{display:flex;gap:8px;margin-bottom:12px}

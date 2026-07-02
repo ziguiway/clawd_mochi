@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clawd Mochi</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Clawd Mochi</h1>
+            <p class="subtitle">Claude Code 伴侣</p>
+        </header>
+
+        <section class="card" id="status-card">
+            <h2>Claude Code 状态</h2>
+            <div class="status-display">
+                <div class="status-indicator" id="status-indicator"></div>
+                <span id="status-text">--</span>
+            </div>
+            <div class="info-grid">
+                <div class="info-item"><label>Hook</label><span id="hook-name">--</span></div>
+                <div class="info-item"><label>Tool</label><span id="tool-name">--</span></div>
+                <div class="info-item"><label>Detail</label><span id="detail">--</span></div>
+                <div class="info-item"><label>Model</label><span id="model">--</span></div>
+                <div class="info-item"><label>Time</label><span id="elapsed">--</span></div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>WiFi</h2>
+            <div class="info-grid">
+                <div class="info-item"><label>状态</label><span id="wifi-status">--</span></div>
+                <div class="info-item"><label>SSID</label><span id="wifi-ssid">--</span></div>
+                <div class="info-item"><label>IP</label><span id="wifi-ip">--</span></div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>控制</h2>
+            <div class="controls">
+                <button onclick="toggleBacklight()">背光开关</button>
+                <button onclick="location.href='/wifi_setup'">WiFi 配网</button>
+                <button onclick="location.href='/logs'">查看日志</button>
+            </div>
+        </section>
+    </div>
+    <script src="/app.js"></script>
+    <script src="/claude_code.js"></script>
+</body>
+</html>
