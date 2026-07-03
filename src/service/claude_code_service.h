@@ -17,6 +17,9 @@ public:
     void init();
     void update();
 
+    // 是否已经可以开始运行(SERIAL 立即可以,LAN 需 WiFi 连上)
+    bool canRun() const;
+
     Status getStatus() const;
     const char* getStatusText() const;
     const char* getHookName() const;
@@ -47,6 +50,7 @@ private:
     unsigned long _taskStartMs;
     bool _taskActive;
     unsigned long _sleepStartMs;
+    bool _initialized;
 
     void processPacket(const char* data, int len);
     void setStatus(Status status, const char* hookName = nullptr,

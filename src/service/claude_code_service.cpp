@@ -1,4 +1,6 @@
 #include "claude_code_service.h"
+#include "operation_mode_service.h"
+#include "wifi_config_service.h"
 #include "../utils/logger.h"
 
 ClaudeCodeService::ClaudeCodeService(StateMachine* sm)
@@ -8,6 +10,7 @@ ClaudeCodeService::ClaudeCodeService(StateMachine* sm)
     , _taskStartMs(0)
     , _taskActive(false)
     , _sleepStartMs(0)
+    , _initialized(false)
 {
     _hookName[0] = '\0';
     _toolName[0] = '\0';
@@ -15,19 +18,45 @@ ClaudeCodeService::ClaudeCodeService(StateMachine* sm)
     _model[0] = '\0';
 }
 
+bool ClaudeCodeService::canRun() const {
+    auto* opMode = OperationModeService::current();
+    if (!opMode) return false;
+    if (opMode->isSerial()) return true;
+    // LAN 模式需要 WiFi 连上
+    auto* wifi = WifiConfigService::current();
+    return wifi && wifi->isConnected();
+}
+
 void ClaudeCodeService::init() {
-    _udp.begin(CFG_CLAUDE_CODE_UDP_PORT);
-    LOG_INFO("ClaudeCode", "UDP 监听端口: %d", CFG_CLAUDE_CODE_UDP_PORT);
+    // 懒启动:在 update() 里根据 canRun() 决定何时真正初始化
 }
 
 void ClaudeCodeService::update() {
-    int packetSize = _udp.parsePacket();
-    if (packetSize > 0) {
-        char buf[CFG_CLAUDE_CODE_RX_BUF_SIZE];
-        int len = _udp.read(buf, sizeof(buf) - 1);
-        if (len > 0) {
-            buf[len] = '\0';
-            processPacket(buf, len);
+    // 懒启动:第一次 canRun() 时初始化 UDP
+    if (!_initialized && canRun()) {
+        auto* opMode = OperationModeService::current();
+        if (opMode && !opMode->isSerial()) {
+            _udp.begin(CFG_CLAUDE_CODE_UDP_PORT);
+            LOG_INFO("ClaudeCode", "UDP 监听端口: %d", CFG_CLAUDE_CODE_UDP_PORT);
+        } else {
+            LOG_INFO("ClaudeCode", "串口模式:跳过 UDP,等待 injectStatus");
+        }
+        _initialized = true;
+    }
+    if (!_initialized) return;
+
+    // 仅 LAN 模式监听 UDP
+    auto* opMode = OperationModeService::current();
+    bool isSerial = opMode && opMode->isSerial();
+    if (!isSerial) {
+        int packetSize = _udp.parsePacket();
+        if (packetSize > 0) {
+            char buf[CFG_CLAUDE_CODE_RX_BUF_SIZE];
+            int len = _udp.read(buf, sizeof(buf) - 1);
+            if (len > 0) {
+                buf[len] = '\0';
+                processPacket(buf, len);
+            }
         }
     }
 

@@ -75,6 +75,13 @@ public:
 
     uint16_t hexToRgb565(const String& hex);
 
+    // 配网流程绘制(供 ProvisioningState 调用)
+    void updateProvisioning();
+
+    // 表情/信息模式切换(供 Idle/Working 状态调用)
+    void switchToExpressionMode();
+    void switchToInfoMode();
+
 private:
     TftDisplay* _tft;
     ClaudeCodeService* _ccService;
@@ -97,11 +104,6 @@ private:
     String _termLines[TERM_ROWS];
     uint8_t _termRow;
     uint8_t _termCol;
-
-    void updateDisplayMode();
-    void updateProvisioning();
-    void switchToExpressionMode();
-    void switchToInfoMode();
 
     // Drawing helpers
     void drawNormalEyes(int16_t ox = 0, bool blink = false);

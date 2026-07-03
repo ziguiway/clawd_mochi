@@ -1,4 +1,5 @@
 #include "web_service.h"
+#include "operation_mode_service.h"
 #include "../config/cfg_display.h"
 
 // ── Original interactive HTML (PROGMEM) ────────────────────────
@@ -224,12 +225,20 @@ WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiServ
 }
 
 void WebService::init() {
+    // SERIAL 模式无 WiFi,不启动 Web 服务器
+    auto* opMode = OperationModeService::current();
+    if (opMode && opMode->isSerial()) {
+        LOG_INFO("Web", "串口模式:跳过 Web 服务器");
+        return;
+    }
     setupRoutes();
     _server.begin();
     LOG_INFO("Web", "HTTP 服务器启动 端口: %d", CFG_WIFI_WEB_PORT);
 }
 
 void WebService::update() {
+    auto* opMode = OperationModeService::current();
+    if (opMode && opMode->isSerial()) return;
     _server.handleClient();
 }
 

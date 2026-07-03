@@ -28,8 +28,8 @@ public:
     ProvisioningMode getProvisioningMode() const { return _provMode; }
     const char* getProvisioningMessage() const;
 
-    void skipProvisioning();      // 跳过配网,进串口模式
-    bool isSerialMode() const { return _serialMode; }
+    void skipProvisioning();      // 切换到串口模式
+    bool isSerialMode() const;
 
     void startAPMode();
     bool connectToWifi(const char* ssid, const char* password);
@@ -41,6 +41,10 @@ public:
     void handleConnectRequest(WebServer& server);
     void handleStatusRequest(WebServer& server);
 
+    // 全局单例绑定/访问(供各服务查询连接状态)
+    static void bind(WifiConfigService* inst) { _instance = inst; }
+    static WifiConfigService* current() { return _instance; }
+
 private:
     String _ssid;
     String _password;
@@ -51,7 +55,8 @@ private:
 
     ProvisioningMode _provMode;
     unsigned long _provModeStartMs;
-    bool _serialMode;
+
+    static WifiConfigService* _instance;
 
     void setProvisioningMode(ProvisioningMode mode);
     void loadCredentials();

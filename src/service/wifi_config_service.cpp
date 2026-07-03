@@ -1,14 +1,22 @@
 #include "wifi_config_service.h"
+#include "operation_mode_service.h"
 #include "../utils/logger.h"
+
+WifiConfigService* WifiConfigService::_instance = nullptr;
 
 WifiConfigService::WifiConfigService()
     : _configured(false), _connected(false), _connecting(false), _connectStartTime(0)
     , _provMode(ProvisioningMode::NONE), _provModeStartMs(0)
-    , _serialMode(false)
 {
 }
 
 void WifiConfigService::init() {
+    // SERIAL 模式不连 WiFi
+    auto* opMode = OperationModeService::current();
+    if (opMode && opMode->isSerial()) {
+        LOG_INFO("WiFi", "串口模式:跳过 WiFi 初始化");
+        return;
+    }
     loadCredentials();
     if (_configured) {
         LOG_INFO("WiFi", "已有凭据,连接: %s", _ssid.c_str());
@@ -97,17 +105,17 @@ void WifiConfigService::startAPMode() {
 }
 
 void WifiConfigService::skipProvisioning() {
-    // 串口模式:跳过 UDP 状态同步,但保留 WiFi+Web 遥控
-    _serialMode = true;
-    if (_configured && !_connected && !_connecting) {
-        LOG_INFO("WiFi", "串口模式,继续连接 WiFi: %s", _ssid.c_str());
-        connectToWifi(_ssid.c_str(), _password.c_str());
-    } else if (!_configured && WiFi.getMode() != WIFI_AP) {
-        startAPMode();
-        LOG_INFO("WiFi", "串口模式,无凭据,AP 模式 Web 可用");
+    // 切换到串口模式:断开 WiFi,后续 init() 也会跳过
+    auto* opMode = OperationModeService::current();
+    if (opMode) opMode->setMode(OperationModeService::Mode::SERIAL);
+    if (WiFi.getMode() != WIFI_OFF) {
+        WiFi.disconnect(true);
+        WiFi.mode(WIFI_OFF);
     }
+    _connected = false;
+    _connecting = false;
     setProvisioningMode(ProvisioningMode::NONE);
-    LOG_INFO("WiFi", "跳过 UDP,进入串口模式");
+    LOG_INFO("WiFi", "已切换到串口模式,WiFi 关闭");
 }
 
 bool WifiConfigService::connectToWifi(const char* ssid, const char* password) {
@@ -142,6 +150,10 @@ void WifiConfigService::reset() {
 
 bool WifiConfigService::isConfigured() { return _configured; }
 bool WifiConfigService::isConnected() { return _connected; }
+bool WifiConfigService::isSerialMode() const {
+    auto* opMode = OperationModeService::current();
+    return opMode && opMode->isSerial();
+}
 String WifiConfigService::getIP() {
     return _connected ? WiFi.localIP().toString() : WiFi.softAPIP().toString();
 }

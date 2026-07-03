@@ -376,6 +376,8 @@ void DisplayService::drawStroke(uint16_t penColor, const String& pointsData) {
 }
 
 // ── Main update loop ───────────────────────────────────────────
+// 状态机负责切换显示模式(switchToExpressionMode/switchToInfoMode/updateProvisioning),
+// 本方法只负责按当前 _currentMode 渲染。
 void DisplayService::update() {
     if (_currentMode == DisplayMode::INTERACTIVE) return;
 
@@ -383,19 +385,16 @@ void DisplayService::update() {
     if (now - _lastRefreshMs < DISPLAY_REFRESH_INTERVAL_MS) return;
     _lastRefreshMs = now;
 
-    updateDisplayMode();
-
     if (_currentMode == DisplayMode::SETUP) {
         return;
     } else if (_currentMode == DisplayMode::PROVISIONING) {
         updateProvisioning();
         return;
     } else if (_currentMode == DisplayMode::EXPRESSION) {
-        static ClaudeCodeService::Status lastStatus = ClaudeCodeService::Status::IDLE;
-        auto st = _ccService->getStatus();
-        if (st != lastStatus) { lastStatus = st; switchToExpressionMode(); }
+        // 状态变化时由调用方触发 switchToExpressionMode();这里保持当前画面
         return;
     } else {
+        // INFO 模式:渲染 Claude Code 信息视图
         auto status = _ccService->getStatus();
         _ccView.render(status,
                        _ccService->getHookName(),
@@ -490,43 +489,6 @@ void DisplayService::updateProvisioning() {
         int16_t ipX = (CFG_DISPLAY_WIDTH - (int)ip.length() * 6) / 2;
         _tft->getTft().setCursor(ipX, 150);
         _tft->getTft().print(ip);
-    }
-}
-
-void DisplayService::updateDisplayMode() {
-    // 串口模式:跳过配网,直接按 CC 状态显示
-    if (_wifiService->isSerialMode()) {
-        auto status = _ccService->getStatus();
-        if (status == ClaudeCodeService::Status::THINKING) {
-            if (_currentMode != DisplayMode::EXPRESSION) _currentMode = DisplayMode::EXPRESSION;
-        } else if (status == ClaudeCodeService::Status::WORKING) {
-            if (_currentMode != DisplayMode::EXPRESSION) _currentMode = DisplayMode::EXPRESSION;
-        } else if (status == ClaudeCodeService::Status::IDLE || status == ClaudeCodeService::Status::SLEEPING) {
-            if (_currentMode != DisplayMode::EXPRESSION) _currentMode = DisplayMode::EXPRESSION;
-        } else {
-            if (_currentMode != DisplayMode::INFO) _currentMode = DisplayMode::INFO;
-        }
-        return;
-    }
-
-    auto provMode = _wifiService->getProvisioningMode();
-    bool provisioning = (provMode == WifiConfigService::ProvisioningMode::AP_FALLBACK ||
-                         provMode == WifiConfigService::ProvisioningMode::CONNECTING ||
-                         provMode == WifiConfigService::ProvisioningMode::CONNECTED);
-    if (provisioning) {
-        if (_currentMode != DisplayMode::PROVISIONING) _currentMode = DisplayMode::PROVISIONING;
-        return;
-    }
-
-    if (!_wifiService->isConnected()) {
-        if (_currentMode != DisplayMode::SETUP) _currentMode = DisplayMode::SETUP;
-        return;
-    }
-    auto status = _ccService->getStatus();
-    if (status == ClaudeCodeService::Status::IDLE || status == ClaudeCodeService::Status::SLEEPING) {
-        if (_currentMode != DisplayMode::EXPRESSION) switchToExpressionMode();
-    } else {
-        if (_currentMode != DisplayMode::INFO) switchToInfoMode();
     }
 }
 
