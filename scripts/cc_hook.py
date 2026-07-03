@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
-"""
-Claude Code Hook — 通过 UDP 向 Cube-X 发送状态事件
-
-自动发现：首次运行扫描局域网找 ESP32，结果缓存到 ~/.cc_cube_x_ip
-缓存有效期 24h，过期自动重新扫描。
-
-用法：python3 cc_hook.py <HookEventName>
-"""
+"""Claude Code Hook — send status events to Clawd Mochi over USB serial or UDP."""
 
 import sys
 import json
@@ -15,6 +8,7 @@ import os
 import time
 import ipaddress
 import concurrent.futures
+import glob
 
 # ========== 配置 ==========
 ESP32_PORT = 4210
@@ -22,6 +16,8 @@ CACHE_FILE = os.path.expanduser("~/.cc_cube_x_ip")
 CACHE_TTL = 86400  # 24 小时
 SCAN_TIMEOUT = 0.3  # 每个 IP 的 UDP 探测超时(秒)
 SCAN_WORKERS = 64   # 并发扫描线程数
+SERIAL_BAUD = 115200
+SERIAL_TIMEOUT = 0.2
 # ==========================
 
 HOOK_MAP = {
@@ -56,6 +52,54 @@ HOOK_MAP = {
 
 # CC:ping 探测包，ESP32 收到后只刷新计时不改状态
 PROBE_MSG = b"CC:ping"
+
+
+def clean_field(value: object, limit: int = 48) -> str:
+    """Keep the firmware's comma-delimited packet parseable and compact."""
+    if value is None:
+        return ""
+    text = str(value).replace("\n", " ").replace("\r", " ").replace(",", " ")
+    return text[:limit]
+
+
+def summarize_tool_input(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, dict):
+        for key in ("command", "file_path", "path", "pattern", "url", "prompt"):
+            if key in value:
+                return clean_field(value[key], 64)
+        return clean_field(json.dumps(value, ensure_ascii=False), 64)
+    return clean_field(value, 64)
+
+
+def serial_candidates() -> list[str]:
+    env_port = os.environ.get("CLAWD_MOCHI_PORT") or os.environ.get("ESP32_PORT")
+    ports: list[str] = []
+    if env_port:
+        ports.append(env_port)
+    ports.extend(sorted(glob.glob("/dev/cu.usbmodem*")))
+    ports.extend(sorted(glob.glob("/dev/cu.usbserial*")))
+    seen: set[str] = set()
+    return [p for p in ports if not (p in seen or seen.add(p))]
+
+
+def send_serial(msg: str) -> bool:
+    try:
+        import serial
+    except Exception:
+        return False
+
+    payload = (msg + "\n").encode()
+    for port in serial_candidates():
+        try:
+            with serial.Serial(port, SERIAL_BAUD, timeout=SERIAL_TIMEOUT, write_timeout=SERIAL_TIMEOUT) as ser:
+                ser.write(payload)
+                ser.flush()
+            return True
+        except Exception:
+            continue
+    return False
 
 
 def get_local_subnet() -> str | None:
@@ -151,13 +195,19 @@ def main() -> None:
         except json.JSONDecodeError:
             pass
 
-    detail = data.get("tool_name", "")
+    tool = data.get("tool_name", "")
+    detail = summarize_tool_input(data.get("tool_input") or data.get("prompt") or data.get("message"))
     model = data.get("model", "") or os.environ.get("CLAUDE_MODEL", "") or os.environ.get("ANTHROPIC_MODEL", "")
-    msg = f"CC:{event}"
-    if detail or model:
-        msg += f",{detail}"
-    if model:
-        msg += f",{model}"
+    msg = ",".join([
+        f"CC:{event}",
+        clean_field(hook, 31),
+        clean_field(tool, 31),
+        clean_field(detail, 63),
+        clean_field(model, 31),
+    ])
+
+    if send_serial(msg):
+        return
 
     ip = find_esp32()
     if not ip:

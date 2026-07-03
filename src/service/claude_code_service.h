@@ -32,6 +32,8 @@ public:
 
     void sendDiscovery();
 
+    void processPacket(const char* data, int len);
+
     void injectStatus(Status status, const char* hookName = nullptr,
                       const char* toolName = nullptr, const char* detail = nullptr,
                       const char* model = nullptr);
@@ -52,7 +54,6 @@ private:
     unsigned long _sleepStartMs;
     bool _initialized;
 
-    void processPacket(const char* data, int len);
     void setStatus(Status status, const char* hookName = nullptr,
                    const char* toolName = nullptr, const char* detail = nullptr,
                    const char* model = nullptr);

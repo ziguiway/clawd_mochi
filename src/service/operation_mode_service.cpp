@@ -5,19 +5,25 @@ OperationModeService* OperationModeService::_instance = nullptr;
 
 OperationModeService::OperationModeService() : _mode(Mode::LAN) {}
 
+namespace {
+bool isSerialReady() {
+    return Serial || Serial.available() > 0;
+}
+}
+
 void OperationModeService::detectAtStartup(uint32_t detectMs) {
-    LOG_INFO("OpMode", "检测启动模式,等待串口输入 %lu ms...", (unsigned long)detectMs);
+    LOG_INFO("OpMode", "检测启动模式,等待串口连接 %lu ms...", (unsigned long)detectMs);
     const uint32_t start = millis();
-    bool gotInput = false;
+    bool serialReady = false;
     while (millis() - start < detectMs) {
-        if (Serial.available() > 0) {
+        if (isSerialReady()) {
             while (Serial.available()) Serial.read();
-            gotInput = true;
+            serialReady = true;
             break;
         }
         delay(10);
     }
-    _mode = gotInput ? Mode::SERIAL : Mode::LAN;
+    _mode = serialReady ? Mode::SERIAL : Mode::LAN;
     LOG_INFO("OpMode", "启动模式: %s", getModeName());
 }
 

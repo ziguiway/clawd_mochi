@@ -1,4 +1,5 @@
 #include "serial_command_service.h"
+#include "operation_mode_service.h"
 #include "../utils/logger.h"
 
 SerialCommandService::SerialCommandService(WifiConfigService* wifiService,
@@ -33,6 +34,13 @@ void SerialCommandService::update() {
 
 void SerialCommandService::processCommand(const String& cmd) {
     if (cmd == "CC:ping") { Serial.println("CC:pong"); return; }
+    if (cmd.startsWith("CC:")) {
+        auto* opMode = OperationModeService::current();
+        if (opMode) opMode->setMode(OperationModeService::Mode::SERIAL);
+        _ccService->processPacket(cmd.c_str(), cmd.length());
+        Serial.println("ok");
+        return;
+    }
     if (cmd == "help" || cmd == "?") printHelp();
     else if (cmd == "status") printStatus();
     else if (cmd == "ip") printIP();

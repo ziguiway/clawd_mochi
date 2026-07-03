@@ -409,6 +409,8 @@ void DisplayService::updateProvisioning() {
     static WifiConfigService::ProvisioningMode lastMode = WifiConfigService::ProvisioningMode::NONE;
     auto mode = _wifiService->getProvisioningMode();
     if (mode == lastMode && _currentMode == DisplayMode::PROVISIONING) return;
+
+    _currentMode = DisplayMode::PROVISIONING;
     lastMode = mode;
 
     const char* msg = _wifiService->getProvisioningMessage();

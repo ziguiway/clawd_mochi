@@ -3,6 +3,12 @@
 #include "../config/cfg_display.h"
 #include "../utils/logger.h"
 
+namespace {
+bool isSerialReady() {
+    return Serial || Serial.available() > 0;
+}
+}
+
 void ModeSelectState::onEnter() {
     _startMs = millis();
     TftDisplay* tft = _ctx->tft();
@@ -10,15 +16,15 @@ void ModeSelectState::onEnter() {
     tft->fillRect(0, 0, CFG_DISPLAY_WIDTH, 3, COLOR_ORANGE);
     tft->fillRect(0, CFG_DISPLAY_HEIGHT - 3, CFG_DISPLAY_WIDTH, 3, COLOR_ORANGE);
     tft->drawTextCentered(60, "Select Mode", COLOR_ORANGE, COLOR_DARKBG, FONT_MEDIUM);
-    tft->drawTextCentered(110, "Serial: send any key", COLOR_WHITE, COLOR_DARKBG, FONT_SMALL);
+    tft->drawTextCentered(110, "Serial: USB connected", COLOR_WHITE, COLOR_DARKBG, FONT_SMALL);
     tft->drawTextCentered(140, "LAN: wait 3s", COLOR_GRAY, COLOR_DARKBG, FONT_SMALL);
 }
 
 void ModeSelectState::onUpdate() {
-    if (Serial.available() > 0) {
+    if (isSerialReady()) {
         while (Serial.available()) Serial.read();
         _ctx->opMode()->setMode(OperationModeService::Mode::SERIAL);
-        LOG_INFO("ModeSelect", "检测到串口输入 → SERIAL");
+        LOG_INFO("ModeSelect", "检测到串口连接 → SERIAL");
         static_cast<AppStateMachine*>(_ctx)->transitionTo(AppStateMachine::SERIAL_IDLE);
         return;
     }
