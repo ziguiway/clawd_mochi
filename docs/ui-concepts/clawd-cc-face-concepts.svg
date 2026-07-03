@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="820" viewBox="0 0 1120 820">
+  <rect width="1120" height="820" fill="#181616"/>
+  <style>
+    .title{font:700 28px monospace;fill:#fff}
+    .sub{font:500 14px monospace;fill:#9f948b}
+    .label{font:700 15px monospace;fill:#f96016}
+    .note{font:500 12px monospace;fill:#b8afa6}
+    .screen-title{font:700 13px monospace;fill:#fff}
+    .tiny{font:700 10px monospace;fill:#b8afa6}
+    .code{font:700 12px monospace;fill:#2ecb73}
+    .orange{fill:#f96016}
+    .dark{fill:#082126}
+    .black{fill:#080808}
+    .white{fill:#fff7ec}
+    .green{fill:#2ecb73}
+    .cyan{fill:#24d6d6}
+    .yellow{fill:#ffd44c}
+    .red{fill:#ff4b3e}
+    .stroke-orange{stroke:#f96016;stroke-width:4;fill:none}
+    .stroke-soft{stroke:#4a3a31;stroke-width:2;fill:none}
+  </style>
+
+  <text x="40" y="45" class="title">Clawd Mochi Claude Code Face Concepts</text>
+  <text x="40" y="72" class="sub">240x240 TFT UI directions - face first, low text density, orange/black pixel language</text>
+
+  <!-- Card helper layout: each mock is 240x240 scaled 1:1 inside a 320 card -->
+
+  <g transform="translate(40 115)">
+    <text x="0" y="-18" class="label">A. Face First</text>
+    <rect x="0" y="0" width="240" height="240" rx="10" fill="#f96016"/>
+    <rect x="39" y="54" width="30" height="70" rx="2" class="black"/>
+    <rect x="171" y="54" width="30" height="70" rx="2" class="black"/>
+    <rect x="74" y="171" width="92" height="7" class="black"/>
+    <rect x="0" y="204" width="240" height="36" class="dark"/>
+    <text x="18" y="226" class="code">WORKING  Bash</text>
+    <rect x="180" y="216" width="8" height="8" class="green"/>
+    <rect x="194" y="216" width="8" height="8" class="green"/>
+    <rect x="208" y="216" width="8" height="8" class="green"/>
+    <text x="0" y="266" class="note">Best when the device should still read as a face.</text>
+  </g>
+
+  <g transform="translate(380 115)">
+    <text x="0" y="-18" class="label">B. Terminal Mask</text>
+    <rect x="0" y="0" width="240" height="240" rx="10" fill="#f96016"/>
+    <rect x="16" y="18" width="208" height="204" rx="8" class="dark"/>
+    <rect x="16" y="18" width="208" height="22" fill="#080808"/>
+    <text x="27" y="34" class="code">clawd:~$ cc</text>
+    <rect x="55" y="66" width="24" height="54" rx="2" class="orange"/>
+    <rect x="161" y="66" width="24" height="54" rx="2" class="orange"/>
+    <text x="36" y="153" class="screen-title">THINKING</text>
+    <text x="36" y="174" class="tiny">hook UserPrompt</text>
+    <text x="36" y="192" class="tiny">model sonnet</text>
+    <rect x="36" y="203" width="168" height="4" class="orange"/>
+    <text x="0" y="266" class="note">Most Claude Code / terminal-like, less cute.</text>
+  </g>
+
+  <g transform="translate(720 115)">
+    <text x="0" y="-18" class="label">C. Mood Badge</text>
+    <rect x="0" y="0" width="240" height="240" rx="10" fill="#f96016"/>
+    <path d="M54 67 L87 98 L54 129" stroke="#080808" stroke-width="15" fill="none" stroke-linecap="square" stroke-linejoin="miter"/>
+    <path d="M186 67 L153 98 L186 129" stroke="#080808" stroke-width="15" fill="none" stroke-linecap="square" stroke-linejoin="miter"/>
+    <rect x="31" y="158" width="178" height="42" rx="7" fill="#080808"/>
+    <text x="49" y="185" font-family="monospace" font-size="22" font-weight="700" fill="#f96016">DONE</text>
+    <text x="121" y="185" class="code">0:42</text>
+    <text x="0" y="266" class="note">Strongest emotional read, simplest to render.</text>
+  </g>
+
+  <g transform="translate(40 455)">
+    <text x="0" y="-18" class="label">D. Code Mascot</text>
+    <rect x="0" y="0" width="240" height="240" rx="10" class="dark"/>
+    <rect x="0" y="0" width="240" height="35" class="orange"/>
+    <text x="16" y="24" font-family="monospace" font-size="17" font-weight="700" fill="#fff7ec">CLAWD</text>
+    <rect x="50" y="63" width="24" height="56" class="orange"/>
+    <rect x="166" y="63" width="24" height="56" class="orange"/>
+    <rect x="22" y="142" width="196" height="70" rx="6" fill="#080808"/>
+    <text x="34" y="164" class="code">&gt; PreToolUse</text>
+    <text x="34" y="184" class="tiny">Bash git status</text>
+    <text x="34" y="204" class="tiny">sonnet  1:18</text>
+    <text x="0" y="266" class="note">Balanced: face plus useful detail.</text>
+  </g>
+
+  <g transform="translate(380 455)">
+    <text x="0" y="-18" class="label">E. Eye Status Strip</text>
+    <rect x="0" y="0" width="240" height="240" rx="10" fill="#f96016"/>
+    <rect x="34" y="44" width="34" height="78" rx="3" class="black"/>
+    <rect x="172" y="44" width="34" height="78" rx="3" class="black"/>
+    <rect x="41" y="54" width="7" height="7" class="white"/>
+    <rect x="179" y="54" width="7" height="7" class="white"/>
+    <rect x="0" y="154" width="240" height="86" fill="#080808"/>
+    <rect x="16" y="170" width="52" height="18" rx="4" class="green"/>
+    <text x="82" y="184" class="screen-title">WORKING</text>
+    <text x="18" y="211" class="tiny">tool Bash</text>
+    <text x="100" y="211" class="tiny">git status</text>
+    <text x="0" y="266" class="note">Looks like a face wearing a status visor.</text>
+  </g>
+
+  <g transform="translate(720 455)">
+    <text x="0" y="-18" class="label">F. Tiny HUD Face</text>
+    <rect x="0" y="0" width="240" height="240" rx="10" class="dark"/>
+    <rect x="14" y="14" width="212" height="212" rx="8" class="stroke-orange"/>
+    <rect x="43" y="49" width="28" height="62" rx="2" class="orange"/>
+    <rect x="169" y="49" width="28" height="62" rx="2" class="orange"/>
+    <rect x="31" y="138" width="178" height="32" rx="4" fill="#f96016"/>
+    <text x="48" y="160" font-family="monospace" font-size="18" font-weight="700" fill="#082126">PERMISSION?</text>
+    <text x="32" y="193" class="tiny">hook PreToolUse</text>
+    <text x="32" y="210" class="tiny">approve edit</text>
+    <text x="0" y="266" class="note">Most readable status, still face-shaped.</text>
+  </g>
+
+  <text x="40" y="785" class="sub">Implementation note: A/C/E are cheapest on ESP32 redraw; D/F give more info; B is closest to Claude Code terminal mode.</text>
+</svg>

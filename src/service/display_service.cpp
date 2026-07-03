@@ -504,5 +504,6 @@ void DisplayService::switchToExpressionMode() {
 
 void DisplayService::switchToInfoMode() {
     _currentMode = DisplayMode::INFO;
+    _ccView.reset();
     _tft->clear(COLOR_DARKBG);
 }
