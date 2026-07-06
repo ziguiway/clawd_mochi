@@ -8,16 +8,17 @@ import os
 import time
 import ipaddress
 import concurrent.futures
-import glob
 
 # ========== 配置 ==========
 ESP32_PORT = 4210
-CACHE_FILE = os.path.expanduser("~/.cc_cube_x_ip")
+IP_CACHE_FILE = os.path.expanduser("~/.cc_cube_x_ip")
+SERIAL_CACHE_FILE = os.path.expanduser("~/.cc_cube_x_port")
 CACHE_TTL = 86400  # 24 小时
 SCAN_TIMEOUT = 0.3  # 每个 IP 的 UDP 探测超时(秒)
 SCAN_WORKERS = 64   # 并发扫描线程数
 SERIAL_BAUD = 115200
 SERIAL_TIMEOUT = 0.2
+SERIAL_PROBE_TIMEOUT = 0.4  # 串口握手 CC:ping→CC:pong 超时
 # ==========================
 
 HOOK_MAP = {
@@ -75,31 +76,88 @@ def summarize_tool_input(value: object) -> str:
 
 def serial_candidates() -> list[str]:
     env_port = os.environ.get("CLAWD_MOCHI_PORT") or os.environ.get("ESP32_PORT")
-    ports: list[str] = []
-    if env_port:
-        ports.append(env_port)
-    ports.extend(sorted(glob.glob("/dev/cu.usbmodem*")))
-    ports.extend(sorted(glob.glob("/dev/cu.usbserial*")))
+    try:
+        from serial.tools import list_ports
+        found = [p.device for p in list_ports.comports()]
+    except Exception:
+        found = []
+    ports = ([env_port] if env_port else []) + found
     seen: set[str] = set()
     return [p for p in ports if not (p in seen or seen.add(p))]
 
 
-def send_serial(msg: str) -> bool:
+def probe_serial_port(ser) -> bool:
+    """串口握手：发 CC:ping，期望 CC:pong 确认是 Clawd Mochi 设备"""
     try:
-        import serial
+        ser.reset_input_buffer()
+        ser.write(b"CC:ping\n")
+        ser.flush()
+        line = ser.readline()
+        return line.strip() == b"CC:pong"
     except Exception:
         return False
 
-    payload = (msg + "\n").encode()
+
+def read_serial_cache() -> str | None:
+    try:
+        with open(SERIAL_CACHE_FILE, "r") as f:
+            ts_str, port = f.read().strip().split(",", 1)
+            if time.time() - float(ts_str) < CACHE_TTL:
+                return port
+    except (FileNotFoundError, ValueError):
+        pass
+    return None
+
+
+def write_serial_cache(port: str) -> None:
+    try:
+        with open(SERIAL_CACHE_FILE, "w") as f:
+            f.write(f"{time.time()},{port}\n")
+    except OSError:
+        pass
+
+
+def find_serial_port() -> str | None:
+    """查找 Clawd Mochi 串口：缓存 → 探测所有候选端口"""
+    try:
+        import serial
+    except Exception:
+        return None
+
+    cached = read_serial_cache()
+    if cached:
+        try:
+            with serial.Serial(cached, SERIAL_BAUD, timeout=SERIAL_PROBE_TIMEOUT, write_timeout=SERIAL_PROBE_TIMEOUT) as ser:
+                if probe_serial_port(ser):
+                    return cached
+        except Exception:
+            pass
+        write_serial_cache("")  # 缓存失效，清空
+
     for port in serial_candidates():
         try:
-            with serial.Serial(port, SERIAL_BAUD, timeout=SERIAL_TIMEOUT, write_timeout=SERIAL_TIMEOUT) as ser:
-                ser.write(payload)
-                ser.flush()
-            return True
+            with serial.Serial(port, SERIAL_BAUD, timeout=SERIAL_PROBE_TIMEOUT, write_timeout=SERIAL_PROBE_TIMEOUT) as ser:
+                if probe_serial_port(ser):
+                    write_serial_cache(port)
+                    return port
         except Exception:
             continue
-    return False
+    return None
+
+
+def send_serial(msg: str) -> bool:
+    port = find_serial_port()
+    if not port:
+        return False
+    try:
+        import serial
+        with serial.Serial(port, SERIAL_BAUD, timeout=SERIAL_TIMEOUT, write_timeout=SERIAL_TIMEOUT) as ser:
+            ser.write((msg + "\n").encode())
+            ser.flush()
+        return True
+    except Exception:
+        write_serial_cache("")  # 端口失效，下次重新探测
+        return False
 
 
 def get_local_subnet() -> str | None:
@@ -149,10 +207,10 @@ def scan_for_esp32() -> str | None:
     return None
 
 
-def read_cache() -> str | None:
+def read_ip_cache() -> str | None:
     """读取缓存 IP，过期返回 None"""
     try:
-        with open(CACHE_FILE, "r") as f:
+        with open(IP_CACHE_FILE, "r") as f:
             ts_str, ip = f.read().strip().split(",", 1)
             if time.time() - float(ts_str) < CACHE_TTL:
                 return ip
@@ -161,10 +219,10 @@ def read_cache() -> str | None:
     return None
 
 
-def write_cache(ip: str) -> None:
+def write_ip_cache(ip: str) -> None:
     """写入缓存"""
     try:
-        with open(CACHE_FILE, "w") as f:
+        with open(IP_CACHE_FILE, "w") as f:
             f.write(f"{time.time()},{ip}\n")
     except OSError:
         pass
@@ -172,13 +230,13 @@ def write_cache(ip: str) -> None:
 
 def find_esp32() -> str | None:
     """查找 ESP32 IP：缓存 → 扫描"""
-    ip = read_cache()
+    ip = read_ip_cache()
     if ip:
         return ip
 
     ip = scan_for_esp32()
     if ip:
-        write_cache(ip)
+        write_ip_cache(ip)
     return ip
 
 

@@ -8,6 +8,7 @@ ClaudeCodeService::ClaudeCodeService(StateMachine* sm)
     , _status(Status::IDLE)
     , _lastActivityMs(0)
     , _taskStartMs(0)
+    , _taskElapsedMs(0)
     , _taskActive(false)
     , _sleepStartMs(0)
     , _initialized(false)
@@ -60,8 +61,8 @@ void ClaudeCodeService::update() {
         }
     }
 
+    unsigned long now = millis();
     if (_taskActive) {
-        unsigned long now = millis();
         if (now - _lastActivityMs > CFG_CLAUDE_CODE_TIMEOUT_MS) {
             if (_status != Status::SLEEPING) {
                 LOG_WARN("ClaudeCode", "无活动超时，进入休眠");
@@ -69,12 +70,11 @@ void ClaudeCodeService::update() {
                 _sleepStartMs = now;
             }
         }
-        if (_status == Status::SLEEPING) {
-            if (now - _sleepStartMs > CFG_CLAUDE_CODE_SLEEP_DURATION_MS) {
-                LOG_INFO("ClaudeCode", "休眠结束，回到空闲");
-                setStatus(Status::IDLE);
-                _taskActive = false;
-            }
+    }
+    if (_status == Status::SLEEPING) {
+        if (now - _sleepStartMs > CFG_CLAUDE_CODE_SLEEP_DURATION_MS) {
+            LOG_INFO("ClaudeCode", "休眠结束，回到空闲");
+            setStatus(Status::IDLE);
         }
     }
 
@@ -149,11 +149,11 @@ void ClaudeCodeService::processPacket(const char* data, int len) {
 
     setStatus(mapEventToStatus(event), hook, tool, detail, model);
     _lastActivityMs = millis();
-    _taskActive = true;
-    if (!_taskStartMs) _taskStartMs = millis();
 }
 
 ClaudeCodeService::Status ClaudeCodeService::mapEventToStatus(const char* event) {
+    if (strcmp(event, "session_start") == 0) return Status::IDLE;
+    if (strcmp(event, "session_end") == 0)   return Status::SLEEPING;
     if (strcmp(event, "working") == 0)    return Status::WORKING;
     if (strcmp(event, "thinking") == 0)   return Status::THINKING;
     if (strcmp(event, "permission") == 0) return Status::PERMISSION;
@@ -168,12 +168,48 @@ ClaudeCodeService::Status ClaudeCodeService::mapEventToStatus(const char* event)
 void ClaudeCodeService::setStatus(Status status, const char* hookName,
                                    const char* toolName, const char* detail,
                                    const char* model) {
+    updateTaskClock(status);
     _status = status;
     if (hookName) strncpy(_hookName, hookName, CFG_CLAUDE_CODE_HOOK_MAX_LEN - 1);
     if (toolName) strncpy(_toolName, toolName, CFG_CLAUDE_CODE_TOOL_MAX_LEN - 1);
     if (detail)   strncpy(_detail, detail, CFG_CLAUDE_CODE_DETAIL_MAX_LEN - 1);
     if (model)    strncpy(_model, model, CFG_CLAUDE_CODE_MODEL_MAX_LEN - 1);
     LOG_INFO("ClaudeCode", "状态: %s hook=%s tool=%s", statusToText(status), _hookName, _toolName);
+}
+
+void ClaudeCodeService::updateTaskClock(Status status) {
+    unsigned long now = millis();
+    switch (status) {
+        case Status::THINKING:
+            // Claude Code starts a new turn when the user prompt is submitted.
+            _taskStartMs = now;
+            _taskElapsedMs = 0;
+            _taskActive = true;
+            break;
+        case Status::WORKING:
+        case Status::PERMISSION:
+        case Status::SWEEPING:
+            if (!_taskActive) {
+                _taskStartMs = now;
+                _taskElapsedMs = 0;
+                _taskActive = true;
+            }
+            break;
+        case Status::DONE:
+        case Status::ERROR:
+            if (_taskStartMs) _taskElapsedMs = now - _taskStartMs;
+            _taskActive = false;
+            break;
+        case Status::IDLE:
+            _taskStartMs = 0;
+            _taskElapsedMs = 0;
+            _taskActive = false;
+            break;
+        case Status::SLEEPING:
+            if (_taskActive && _taskStartMs) _taskElapsedMs = now - _taskStartMs;
+            _taskActive = false;
+            break;
+    }
 }
 
 const char* ClaudeCodeService::statusToText(Status status) const {
@@ -198,12 +234,12 @@ const char* ClaudeCodeService::getDetail() const { return _detail; }
 const char* ClaudeCodeService::getModel() const { return _model; }
 
 unsigned long ClaudeCodeService::getElapsedMs() const {
-    if (!_taskStartMs) return 0;
-    return millis() - _taskStartMs;
+    if (_taskActive && _taskStartMs) return millis() - _taskStartMs;
+    return _taskElapsedMs;
 }
 
 bool ClaudeCodeService::isActive() const {
-    return _status != Status::IDLE && _status != Status::SLEEPING;
+    return _taskActive;
 }
 
 String ClaudeCodeService::getStatusJson() const {
@@ -234,7 +270,5 @@ void ClaudeCodeService::injectStatus(Status status, const char* hookName,
                                      const char* model) {
     setStatus(status, hookName, toolName, detail, model);
     _lastActivityMs = millis();
-    _taskActive = true;
-    if (!_taskStartMs) _taskStartMs = millis();
     LOG_INFO("ClaudeCode", "串口注入: %s", statusToText(status));
 }

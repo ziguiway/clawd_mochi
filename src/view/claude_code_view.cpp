@@ -1,11 +1,21 @@
 #include "claude_code_view.h"
 
-static constexpr uint16_t COLOR_MOCHI_BG = 0x18E4;
-static constexpr uint16_t COLOR_CARD = 0x2125;
-static constexpr uint16_t COLOR_CARD_DARK = 0x0841;
-static constexpr uint16_t COLOR_CARD_LINE = 0x39E7;
+static constexpr uint16_t COLOR_MOCHI_BG = COLOR_ORANGE;
+static constexpr uint16_t COLOR_CAPTION = COLOR_DARKBG;
+static constexpr uint16_t COLOR_CAPTION_LINE = COLOR_ORANGE;
+static constexpr uint16_t COLOR_CAPTION_TEXT = COLOR_WHITE;
 static constexpr uint16_t COLOR_TEXT_SOFT = 0xBDF7;
 static constexpr uint16_t COLOR_CYAN = 0x05FF;
+
+static constexpr int16_t FACE_EYE_W = 30;
+static constexpr int16_t FACE_EYE_H = 60;
+static constexpr int16_t FACE_EYE_GAP = 120;
+static constexpr int16_t FACE_EYE_X = (CFG_DISPLAY_WIDTH - (FACE_EYE_W * 2 + FACE_EYE_GAP)) / 2;
+static constexpr int16_t FACE_EYE_Y = (CFG_DISPLAY_HEIGHT - FACE_EYE_H) / 2 - 40;
+static constexpr int16_t CAPTION_X = 0;
+static constexpr int16_t CAPTION_Y = 202;
+static constexpr int16_t CAPTION_W = CFG_DISPLAY_WIDTH;
+static constexpr int16_t CAPTION_H = 38;
 
 static const char* statusToText(ClaudeCodeService::Status status) {
     switch (status) {
@@ -59,7 +69,7 @@ void ClaudeCodeView::render(ClaudeCodeService::Status status, const char* hookNa
         drawHeader(status);
         drawStatusPanel(status);
         drawHookInfo(hookName, toolName);
-        drawDetail(detail);
+        drawDetail(model);
         drawFooter(model, elapsedSec);
         rememberText(_lastHook, sizeof(_lastHook), hookName);
         rememberText(_lastTool, sizeof(_lastTool), toolName);
@@ -73,6 +83,8 @@ void ClaudeCodeView::render(ClaudeCodeService::Status status, const char* hookNa
         _lastStatus = status;
         drawHeader(status);
         drawStatusPanel(status);
+        drawHookInfo(hookName, toolName);
+        drawDetail(model);
     }
 
     if (textChanged(_lastHook, hookName) || textChanged(_lastTool, toolName)) {
@@ -81,122 +93,100 @@ void ClaudeCodeView::render(ClaudeCodeService::Status status, const char* hookNa
         rememberText(_lastTool, sizeof(_lastTool), toolName);
     }
 
-    if (textChanged(_lastDetail, detail)) {
-        drawDetail(detail);
+    if (textChanged(_lastDetail, detail) || textChanged(_lastModel, model)) {
+        drawDetail(model);
         rememberText(_lastDetail, sizeof(_lastDetail), detail);
+        rememberText(_lastModel, sizeof(_lastModel), model);
     }
 
     if (textChanged(_lastModel, model) || elapsedSec != _lastElapsedSec) {
         drawFooter(model, elapsedSec);
-        rememberText(_lastModel, sizeof(_lastModel), model);
         _lastElapsedSec = elapsedSec;
     }
 }
 
 void ClaudeCodeView::drawShell() {
     _tft->fillScreen(COLOR_MOCHI_BG);
-
-    _tft->fillRect(0, 0, 240, 38, COLOR_ORANGE);
-    _tft->fillRect(0, 38, 240, 3, COLOR_BLACK);
-    _tft->drawText(14, 10, "CLAWD", COLOR_WHITE, COLOR_ORANGE, FONT_MEDIUM);
-    _tft->drawText(86, 16, "MOCHI", COLOR_DARKBG, COLOR_ORANGE, FONT_SMALL);
-
-    _tft->fillRect(170, 12, 12, 12, COLOR_DARKBG);
-    _tft->fillRect(196, 12, 12, 12, COLOR_DARKBG);
-    _tft->drawLine(168, 30, 184, 24, COLOR_WHITE);
-    _tft->drawLine(210, 30, 194, 24, COLOR_WHITE);
-
-    _tft->drawRoundRect(8, 46, 224, 66, 8, COLOR_CARD_LINE);
-    _tft->fillRoundRect(10, 48, 220, 62, 7, COLOR_CARD);
-
-    _tft->drawRoundRect(8, 120, 224, 72, 8, COLOR_CARD_LINE);
-    _tft->fillRoundRect(10, 122, 220, 68, 7, COLOR_CARD_DARK);
-    _tft->fillRect(10, 122, 220, 17, COLOR_BLACK);
-    _tft->drawText(18, 127, "clawd:~$", COLOR_TERM_GREEN, COLOR_BLACK, FONT_SMALL);
-
-    _tft->drawRoundRect(8, 202, 224, 30, 8, COLOR_CARD_LINE);
-    _tft->fillRoundRect(10, 204, 220, 26, 7, COLOR_CARD);
+    _tft->fillRect(0, CAPTION_Y - 4, CFG_DISPLAY_WIDTH, 4, COLOR_BLACK);
+    _tft->fillRect(CAPTION_X, CAPTION_Y, CAPTION_W, CAPTION_H, COLOR_CAPTION);
+    _tft->fillRect(0, CAPTION_Y, CFG_DISPLAY_WIDTH, 2, COLOR_CAPTION_LINE);
 }
 
 void ClaudeCodeView::drawHeader(ClaudeCodeService::Status status) {
-    uint16_t color = getStatusColor(status);
-    _tft->fillRect(12, 41, 216, 3, color);
-    _tft->fillRoundRect(178, 8, 48, 22, 8, COLOR_DARKBG);
-    _tft->drawText(190, 15, "CC", color, COLOR_DARKBG, FONT_SMALL);
+    (void)status;
 }
 
 void ClaudeCodeView::drawStatusPanel(ClaudeCodeService::Status status) {
-    uint16_t color = getStatusColor(status);
-    _tft->fillRoundRect(10, 48, 220, 62, 7, COLOR_CARD);
-    drawStatusIcon(status, 21, 62);
+    _tft->fillRect(0, 24, CFG_DISPLAY_WIDTH, 172, COLOR_MOCHI_BG);
+    drawStatusIcon(status, 0, 0);
 
-    const char* label = statusToText(status);
-    uint8_t labelSize = strlen(label) > 8 ? FONT_SMALL : FONT_MEDIUM;
-    _tft->drawText(62, 59, label, color, COLOR_CARD, labelSize);
-    drawClippedText(62, 87, 156, getStatusVerb(status), COLOR_TEXT_SOFT, COLOR_CARD, FONT_SMALL);
-
-    _tft->fillRect(16, 104, 208, 3, color);
+    if (status == ClaudeCodeService::Status::WORKING) {
+        _tft->fillRect(FACE_EYE_X - 10, FACE_EYE_Y + FACE_EYE_H + 12,
+                       FACE_EYE_GAP + FACE_EYE_W * 2 + 20, 3, COLOR_BLACK);
+    }
 }
 
 void ClaudeCodeView::drawHookInfo(const char* hookName, const char* toolName) {
-    _tft->fillRect(18, 145, 204, 15, COLOR_CARD_DARK);
+    (void)hookName;
+    _tft->fillRect(8, CAPTION_Y + 6, 224, 11, COLOR_CAPTION);
 
-    _tft->drawText(18, 148, "hook", COLOR_GRAY, COLOR_CARD_DARK, FONT_SMALL);
-    drawClippedText(50, 148, 70, hookName, COLOR_WHITE, COLOR_CARD_DARK, FONT_SMALL);
-    _tft->drawText(126, 148, "tool", COLOR_GRAY, COLOR_CARD_DARK, FONT_SMALL);
-    drawClippedText(158, 148, 62, toolName, COLOR_ORANGE, COLOR_CARD_DARK, FONT_SMALL);
+    _tft->drawText(10, CAPTION_Y + 8, "STATUS", COLOR_ORANGE, COLOR_CAPTION, FONT_SMALL);
+    drawClippedText(58, CAPTION_Y + 8, 96, statusToText(_lastStatus),
+                    COLOR_CAPTION_TEXT, COLOR_CAPTION, FONT_SMALL);
+    _tft->drawText(164, CAPTION_Y + 8, "TOOL", COLOR_ORANGE, COLOR_CAPTION, FONT_SMALL);
+    drawClippedText(194, CAPTION_Y + 8, 38, toolName, COLOR_CAPTION_TEXT, COLOR_CAPTION, FONT_SMALL);
 }
 
-void ClaudeCodeView::drawDetail(const char* detail) {
-    _tft->fillRect(18, 164, 204, 18, COLOR_CARD_DARK);
-    _tft->drawText(18, 166, ">", COLOR_TERM_GREEN, COLOR_CARD_DARK, FONT_SMALL);
-    drawClippedText(30, 166, 190, detail, COLOR_WHITE, COLOR_CARD_DARK, FONT_SMALL);
+void ClaudeCodeView::drawDetail(const char* model) {
+    _tft->fillRect(8, CAPTION_Y + 22, 152, 10, COLOR_CAPTION);
+    _tft->drawText(10, CAPTION_Y + 23, "MODEL", COLOR_ORANGE, COLOR_CAPTION, FONT_SMALL);
+    drawClippedText(58, CAPTION_Y + 23, 102, model, COLOR_TEXT_SOFT, COLOR_CAPTION, FONT_SMALL);
 }
 
 void ClaudeCodeView::drawFooter(const char* model, unsigned long elapsedSec) {
-    _tft->fillRect(18, 212, 204, 12, COLOR_CARD);
-    _tft->drawText(20, 214, "model", COLOR_GRAY, COLOR_CARD, FONT_SMALL);
-    drawClippedText(56, 214, 104, model, COLOR_CYAN, COLOR_CARD, FONT_SMALL);
+    (void)model;
+    _tft->fillRect(164, CAPTION_Y + 22, 68, 11, COLOR_CAPTION);
 
     char elapsedStr[16];
     formatElapsed(elapsedSec, elapsedStr, sizeof(elapsedStr));
-    _tft->drawText(172, 214, elapsedStr, COLOR_GREEN, COLOR_CARD, FONT_SMALL);
+    _tft->drawText(164, CAPTION_Y + 23, "TIME", COLOR_ORANGE, COLOR_CAPTION, FONT_SMALL);
+    _tft->drawText(194, CAPTION_Y + 23, elapsedStr, COLOR_CAPTION_TEXT, COLOR_CAPTION, FONT_SMALL);
 }
 
 void ClaudeCodeView::drawStatusIcon(ClaudeCodeService::Status status, int x, int y) {
-    uint16_t color = getStatusColor(status);
-    _tft->fillRoundRect(x, y, 30, 30, 5, COLOR_MOCHI_BG);
-    _tft->drawRoundRect(x, y, 30, 30, 5, color);
+    (void)x;
+    (void)y;
     switch (status) {
         case ClaudeCodeService::Status::IDLE:
         case ClaudeCodeService::Status::SLEEPING:
-            _tft->fillRect(x + 8, y + 12, 6, 6, color);
-            _tft->fillRect(x + 17, y + 12, 6, 6, color);
-            break;
         case ClaudeCodeService::Status::THINKING:
-            _tft->fillCircle(x + 9, y + 15, 3, color);
-            _tft->fillCircle(x + 15, y + 15, 3, color);
-            _tft->fillCircle(x + 21, y + 15, 3, color);
-            break;
         case ClaudeCodeService::Status::WORKING:
-            _tft->drawLine(x + 8, y + 8, x + 14, y + 15, color);
-            _tft->drawLine(x + 14, y + 15, x + 8, y + 22, color);
-            _tft->drawLine(x + 22, y + 8, x + 16, y + 15, color);
-            _tft->drawLine(x + 16, y + 15, x + 22, y + 22, color);
-            break;
         case ClaudeCodeService::Status::ERROR:
-            _tft->drawLine(x + 8, y + 8, x + 22, y + 22, color);
-            _tft->drawLine(x + 22, y + 8, x + 8, y + 22, color);
+        case ClaudeCodeService::Status::PERMISSION:
+            _tft->fillRect(FACE_EYE_X, FACE_EYE_Y, FACE_EYE_W, FACE_EYE_H, COLOR_BLACK);
+            _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP, FACE_EYE_Y,
+                           FACE_EYE_W, FACE_EYE_H, COLOR_BLACK);
             break;
         case ClaudeCodeService::Status::DONE:
-            _tft->drawLine(x + 7, y + 16, x + 13, y + 22, color);
-            _tft->drawLine(x + 13, y + 22, x + 23, y + 8, color);
-            break;
-        case ClaudeCodeService::Status::PERMISSION:
-            _tft->drawText(x + 12, y + 10, "?", color, COLOR_MOCHI_BG, FONT_MEDIUM);
+            for (int8_t t = -5; t <= 5; t++) {
+                int16_t cy = FACE_EYE_Y + FACE_EYE_H / 2;
+                int16_t lcx = FACE_EYE_X + FACE_EYE_W / 2;
+                int16_t rcx = FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP + FACE_EYE_W / 2;
+                _tft->drawLine(lcx - FACE_EYE_W / 2, cy - FACE_EYE_H / 2 + t,
+                               lcx + FACE_EYE_W / 2, cy + t, COLOR_BLACK);
+                _tft->drawLine(lcx + FACE_EYE_W / 2, cy + t,
+                               lcx - FACE_EYE_W / 2, cy + FACE_EYE_H / 2 + t, COLOR_BLACK);
+                _tft->drawLine(rcx + FACE_EYE_W / 2, cy - FACE_EYE_H / 2 + t,
+                               rcx - FACE_EYE_W / 2, cy + t, COLOR_BLACK);
+                _tft->drawLine(rcx - FACE_EYE_W / 2, cy + t,
+                               rcx + FACE_EYE_W / 2, cy + FACE_EYE_H / 2 + t, COLOR_BLACK);
+            }
             break;
         case ClaudeCodeService::Status::SWEEPING:
-            for (int i = 0; i < 3; i++) _tft->drawLine(x + 7, y + 9 + i * 5, x + 23, y + 9 + i * 5, color);
+            _tft->fillRect(FACE_EYE_X, FACE_EYE_Y + FACE_EYE_H / 2 - 3,
+                           FACE_EYE_W, 6, COLOR_BLACK);
+            _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP,
+                           FACE_EYE_Y + FACE_EYE_H / 2 - 3, FACE_EYE_W, 6, COLOR_BLACK);
             break;
     }
 }

@@ -50,6 +50,7 @@ private:
 
     unsigned long _lastActivityMs;
     unsigned long _taskStartMs;
+    unsigned long _taskElapsedMs;
     bool _taskActive;
     unsigned long _sleepStartMs;
     bool _initialized;
@@ -57,6 +58,7 @@ private:
     void setStatus(Status status, const char* hookName = nullptr,
                    const char* toolName = nullptr, const char* detail = nullptr,
                    const char* model = nullptr);
+    void updateTaskClock(Status status);
     Status mapEventToStatus(const char* event);
     const char* statusToText(Status status) const;
 };
