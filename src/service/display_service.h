@@ -6,6 +6,7 @@
 #include "../view/claude_code_view.h"
 #include "../view/eyes_view.h"
 #include "wifi_config_service.h"
+#include "time_service.h"
 #include "../config/cfg_display.h"
 
 enum class DisplayMode {
@@ -22,12 +23,20 @@ enum class InteractiveView {
     CODE_VIEW,
     DRAW,
     THINKING,
-    WORKING
+    WORKING,
+    CLOCK,
+    POMODORO
+};
+
+enum class PomodoroPhase {
+    FOCUS,
+    BREAK
 };
 
 class DisplayService {
 public:
-    DisplayService(TftDisplay* tft, ClaudeCodeService* ccService, WifiConfigService* wifiService);
+    DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
+                   WifiConfigService* wifiService, TimeService* timeService);
     void init();
     void update();
 
@@ -75,6 +84,24 @@ public:
 
     uint16_t hexToRgb565(const String& hex);
 
+    // Clock / Pomodoro
+    void showClock();
+    void startPomodoro(PomodoroPhase phase);
+    void pausePomodoro();
+    void resetPomodoro();
+    void setPomodoroDurations(uint16_t focusMinutes, uint16_t breakMinutes);
+    bool isPomodoroRunning() const { return _pomodoroRunning; }
+    bool isPomodoroPaused() const { return _pomodoroPaused; }
+    PomodoroPhase getPomodoroPhase() const { return _pomodoroPhase; }
+    uint16_t getFocusMinutes() const { return _focusMinutes; }
+    uint16_t getBreakMinutes() const { return _breakMinutes; }
+    uint32_t getPomodoroRemainingSec() const;
+    uint32_t getPomodoroDurationSec() const;
+
+    // Backlight brightness
+    void setBrightnessPercent(uint8_t percent);
+    uint8_t getBrightnessPercent() const { return _brightnessPercent; }
+
     // 配网流程绘制(供 ProvisioningState 调用)
     void updateProvisioning();
 
@@ -86,6 +113,7 @@ private:
     TftDisplay* _tft;
     ClaudeCodeService* _ccService;
     WifiConfigService* _wifiService;
+    TimeService* _timeService;
     ClaudeCodeView _ccView;
     EyesView _eyesView;
     DisplayMode _currentMode;
@@ -98,6 +126,27 @@ private:
     uint8_t _animSpeed;
     uint16_t _animBgColor;
     uint16_t _drawBgColor;
+    uint8_t _brightnessPercent;
+
+    // Clock / Pomodoro state
+    uint16_t _focusMinutes;
+    uint16_t _breakMinutes;
+    PomodoroPhase _pomodoroPhase;
+    bool _pomodoroRunning;
+    bool _pomodoroPaused;
+    uint32_t _pomodoroDurationSec;
+    uint32_t _pomodoroRemainingAtPauseSec;
+    unsigned long _pomodoroStartedMs;
+    unsigned long _lastClockRenderSec;
+
+    // Time view rendering cache (anti-flicker)
+    bool _timeViewDirty;
+    bool _timeViewLayoutDrawn;
+    char _lastTimeText[12];
+    char _lastSubText[20];
+    char _lastHintText[12];
+    uint16_t _lastProgressPermille;
+    bool _lastLightProgress;
 
     // Terminal state
     bool _termMode;
@@ -109,6 +158,16 @@ private:
     void drawNormalEyes(int16_t ox = 0, bool blink = false);
     void drawSquishEyes(bool closed = false);
     void drawCodeView();
+    void drawClockView();
+    void drawPomodoroView();
+    void renderTimeScreen(const char* mark, const char* timeText, const char* subText,
+                          const char* modeText, const char* hintText,
+                          uint16_t progressPermille, bool lightProgress);
+    void renderTimeScreenLayout(const char* mark, const char* modeText);
+    void renderTimeScreenDynamic(const char* timeText, const char* subText,
+                                 const char* hintText,
+                                 uint16_t progressPermille, bool lightProgress);
+    void invalidateTimeView();
     void drawChevron(int16_t cx, int16_t cy, int16_t arm, int16_t reach, uint8_t thk, bool rightFacing, uint16_t col);
 
     // Eye geometry

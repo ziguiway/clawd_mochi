@@ -28,6 +28,11 @@ body{background:#1c1c20;font-family:'Courier New',monospace;color:#e8e4dc;
   animation:sl 1s linear infinite}
 @keyframes sl{0%{margin-left:-30%}100%{margin-left:100%}}
 .ctrl{display:flex;gap:8px;width:100%;max-width:390px}
+.bright{width:100%;max-width:390px;background:#101014;border:1.5px solid #38343a;
+  border-radius:14px;padding:12px;display:flex;align-items:center;gap:10px}
+.bicon{font-size:18px;color:#c96a3e;line-height:1;width:20px;text-align:center}
+.bright input[type=range]{height:30px;accent-color:#f0a060}
+.bval{font-size:12px;color:#c96a3e;font-weight:bold;min-width:40px;text-align:right}
 .cbtn{flex:1;background:#252428;border:1.5px solid #38343a;border-radius:10px;
   color:#b8b4ac;font-family:'Courier New',monospace;font-size:11px;font-weight:bold;
   padding:12px 4px;cursor:pointer;text-align:center;transition:all .12s}
@@ -48,6 +53,7 @@ body{background:#1c1c20;font-family:'Courier New',monospace;color:#e8e4dc;
 .vbtn.active{border-color:#c96a3e;background:#201408}
 .vbtn[data-v="2"].active{border-color:#4a8acd;background:#0c1628}
 .vbtn[data-v="3"].active{border-color:#38343a;background:#201c18}
+.vbtn[data-v="6"].active,.vbtn[data-v="7"].active{border-color:#f0a060;background:#22140a}
 .speed-row{width:100%;max-width:390px;display:flex;align-items:center;gap:10px}
 .sl{font-size:10px;color:#6a6058;white-space:nowrap;min-width:36px}
 input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
@@ -69,6 +75,21 @@ input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
   font-family:'Courier New',monospace;font-size:22px;font-weight:bold;
   padding:11px 16px;cursor:pointer;min-width:52px}
 .tgo:active{background:#0f6040}
+.pwrap{width:100%;max-width:390px;background:#201c18;border:1.5px solid #3a3028;
+  border-radius:12px;padding:12px;display:none;flex-direction:column;gap:10px}
+.pwrap.open{display:flex}
+.prow{display:flex;gap:8px}
+.pstat{display:flex;justify-content:space-between;align-items:center;
+  background:#141210;border:1px solid #332a23;border-radius:8px;padding:10px 12px;
+  color:#d8d0c6;font-size:12px;font-weight:bold}
+.pstat strong{color:#c96a3e;font-size:18px}
+.pnum{width:100%;background:#101014;border:1.5px solid #38343a;border-radius:8px;
+  color:#e8e4dc;font-family:'Courier New',monospace;font-size:15px;font-weight:bold;
+  padding:10px;text-align:center}
+.pbtn{flex:1;background:#1c1820;border:1.5px solid #4a3a2c;border-radius:9px;
+  color:#e8e0d6;font-family:'Courier New',monospace;font-size:11px;font-weight:bold;
+  padding:11px 4px;cursor:pointer}
+.pbtn.hi{background:#c96a3e;border-color:#f0a060;color:#140c08}
 .cwrap{width:100%;max-width:390px;background:#222028;border:1.5px solid #38343a;
   border-radius:12px;padding:12px;flex-direction:column;gap:10px;display:none}
 .cwrap.open{display:flex}
@@ -100,6 +121,11 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
 <div class="sec">// controls</div>
 <div class="ctrl">
   <button class="cbtn on" id="blBtn" onclick="toggleBL()">&#9728; display on</button>
+</div>
+<div class="bright">
+  <span class="bicon">&#9728;</span>
+  <input type="range" id="bright" min="0" max="100" value="100" step="1" oninput="setBrightness(this.value)">
+  <span class="bval" id="brightV">100%</span>
 </div>
 <div class="sec">// wifi setup</div>
 <div id="wwrap" style="width:100%;max-width:390px;display:flex;flex-direction:column;gap:10px">
@@ -141,6 +167,37 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <span class="nm">Canvas</span>
     <span class="ht">draw on display</span>
   </button>
+  <button class="vbtn" data-v="6" onclick="setView(6)">
+    <span class="ic">14:28</span>
+    <span class="nm">Clock</span>
+    <span class="ht">orange time</span>
+  </button>
+  <button class="vbtn" data-v="7" onclick="setView(7)">
+    <span class="ic">25</span>
+    <span class="nm">Pomodoro</span>
+    <span class="ht">focus timer</span>
+  </button>
+</div>
+<div class="pwrap" id="pwrap">
+  <div class="pstat"><span id="pPhase">FOCUS</span><strong id="pTime">25:00</strong></div>
+  <div class="prow">
+    <button class="pbtn hi" onclick="startTimer('focus')">start focus</button>
+    <button class="pbtn" onclick="startTimer('break')">start break</button>
+  </div>
+  <div class="prow">
+    <button class="pbtn" onclick="pauseTimer()">pause / resume</button>
+    <button class="pbtn" onclick="resetTimer()">reset</button>
+  </div>
+  <div class="prow">
+    <div class="ci" style="align-items:stretch">
+      <span class="cl" style="text-align:center">FOCUS MIN</span>
+      <input class="pnum" id="focusMin" type="number" min="1" max="180" value="25" onchange="configTimer()">
+    </div>
+    <div class="ci" style="align-items:stretch">
+      <span class="cl" style="text-align:center">BREAK MIN</span>
+      <input class="pnum" id="breakMin" type="number" min="1" max="60" value="5" onchange="configTimer()">
+    </div>
+  </div>
 </div>
 <div class="sec">// speed</div>
 <div class="speed-row">
@@ -188,8 +245,16 @@ async function req(path){try{const r=await fetch(path);return r.ok;}catch(e){toa
 async function waitNotBusy(){for(let i=0;i<100;i++){try{const r=await fetch('/state');const j=await r.json();if(!j.busy)return;}catch(e){}await new Promise(r=>setTimeout(r,150));}}
 async function onBgChange(hex){if(canvasOpen){await req('/draw/clear?bg='+encodeURIComponent(hex));}else{await req('/redraw?bg='+encodeURIComponent(hex));}redrawCanvas(hex);}
 async function setSpeed(v){document.getElementById('spdV').textContent=spdLabels[v];await req('/speed?v='+v);}
-async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(v===3){toggleCanvas();return;}const keys=['w','s','d'];if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}setBusy(true);await waitNotBusy();setBusy(false);}
-async function toggleBL(){blOn=!blOn;await req('/backlight?on='+(blOn?1:0));const b=document.getElementById('blBtn');b.textContent=blOn?'☀ display on':'○ display off';b.classList.toggle('on',blOn);b.classList.toggle('dim',!blOn);}
+async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7){toast(v===6?'clock open':'pomodoro open');return;}setBusy(true);await waitNotBusy();setBusy(false);}
+function updateBlButton(){const b=document.getElementById('blBtn');b.textContent=blOn?'☀ display on':'○ display off';b.classList.toggle('on',blOn);b.classList.toggle('dim',!blOn);}
+async function toggleBL(){blOn=!blOn;const v=blOn?100:0;document.getElementById('bright').value=v;document.getElementById('brightV').textContent=v+'%';await req('/backlight?on='+(blOn?1:0));updateBlButton();}
+async function setBrightness(v){v=parseInt(v||0);document.getElementById('brightV').textContent=v+'%';blOn=v>0;updateBlButton();await req('/brightness?v='+v);}
+function fmtSec(s){s=Math.max(0,parseInt(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+async function pollTimer(){try{const r=await fetch('/timer/status');const j=await r.json();document.getElementById('pPhase').textContent=(j.phase==='break'?'BREAK':'FOCUS')+(j.paused?' / PAUSED':'');document.getElementById('pTime').textContent=fmtSec(j.remaining);document.getElementById('focusMin').value=j.focus;document.getElementById('breakMin').value=j.break;}catch(e){}}
+async function startTimer(phase){await fetch('/timer/start?phase='+phase);document.getElementById('pwrap').classList.add('open');await pollTimer();toast(phase==='break'?'break started':'focus started');}
+async function pauseTimer(){await fetch('/timer/pause');await pollTimer();toast('timer toggled');}
+async function resetTimer(){await fetch('/timer/reset');await pollTimer();toast('timer reset');}
+async function configTimer(){const f=document.getElementById('focusMin').value||25,b=document.getElementById('breakMin').value||5;await fetch('/timer/config?focus='+encodeURIComponent(f)+'&break='+encodeURIComponent(b));await pollTimer();}
 async function useSerialMode(){if(!confirm('Switch Claude status input to USB serial? Local Web control stays available.'))return;await req('/serial_mode');toast('serial mode active');}
 async function loadWifiList(){const btn=document.getElementById('wscanBtn');btn.disabled=true;btn.textContent='scanning...';document.getElementById('wstatus').textContent='scanning...';document.getElementById('wlist').style.display='none';document.getElementById('wform').style.display='none';try{const r=await fetch('/wifi/scan');const nets=await r.json();const list=document.getElementById('wlist');list.innerHTML='';if(nets.length===0){document.getElementById('wstatus').textContent='no networks found';}else{nets.sort((a,b)=>b.rssi-a.rssi);nets.forEach(n=>{const btn=document.createElement('button');btn.className='cbtn';btn.style.textAlign='left';btn.style.padding='10px 12px';const sig=n.rssi>-50?'&#128267;':(n.rssi>-70?'&#128266;':'&#128268;');btn.innerHTML='<span style="color:#c96a3e">'+sig+'</span> '+n.ssid+(n.encrypted?' <span style="color:#5a5048">&#128274;</span>':'')+' <span style="color:#5a5048;font-size:9px">'+n.rssi+'dBm</span>';btn.onclick=()=>{document.getElementById('wssid').value=n.ssid;document.getElementById('wpass').focus();};list.appendChild(btn);});document.getElementById('wstatus').textContent='select network or type SSID:';document.getElementById('wlist').style.display='flex';document.getElementById('wform').style.display='flex';}}catch(e){document.getElementById('wstatus').textContent='scan failed';}btn.disabled=false;btn.textContent='🔍 scan networks';}
 async function connectWifi(){const ssid=document.getElementById('wssid').value.trim();const pass=document.getElementById('wpass').value;if(!ssid){toast('enter SSID',false);return;}const fd=new FormData();fd.append('ssid',ssid);fd.append('password',pass);document.getElementById('wstatus').textContent='connecting...';try{await fetch('/wifi/connect',{method:'POST',body:fd});}catch(e){}let ok=false;for(let i=0;i<30;i++){await new Promise(r=>setTimeout(r,1000));try{const r=await fetch('/wifi/status');const j=await r.json();if(j.connected){ok=true;break;}document.getElementById('wstatus').textContent='connecting... ('+(i+1)+'s)';}catch(e){}}if(ok){document.getElementById('wstatus').innerHTML='<span style="color:#28b878">✓ connected: '+ssid+'</span>';document.getElementById('wlist').style.display='none';document.getElementById('wform').style.display='none';toast('wifi connected');}else{document.getElementById('wstatus').innerHTML='<span style="color:#c96a3e">connection failed, retry</span>';toast('wifi failed',false);}}
@@ -209,7 +274,7 @@ async function endDraw(e){if(!drawing)return;drawing=false;if(!canvasOpen||strok
 cvs.addEventListener('mousedown',startDraw);cvs.addEventListener('mousemove',moveDraw);cvs.addEventListener('mouseup',endDraw);cvs.addEventListener('mouseleave',endDraw);
 cvs.addEventListener('touchstart',startDraw,{passive:false});cvs.addEventListener('touchmove',moveDraw,{passive:false});cvs.addEventListener('touchend',endDraw);
 async function clearAll(){const bg=document.getElementById('bgCol').value;redrawCanvas(bg);await req('/draw/clear?bg='+encodeURIComponent(bg));toast('cleared');}
-(async()=>{try{const r=await fetch('/state');const j=await r.json();const spd=j.speed||1;document.getElementById('spd').value=spd;document.getElementById('spdV').textContent=spdLabels[spd];if(j.bl===false){blOn=false;const b=document.getElementById('blBtn');b.textContent='○ display off';b.classList.remove('on');b.classList.add('dim');}}catch(e){}document.getElementById('bgCol').value='#aa4818';redrawCanvas('#aa4818');pollWifiStatus();})();
+(async()=>{try{const r=await fetch('/state');const j=await r.json();const spd=j.speed||1;document.getElementById('spd').value=spd;document.getElementById('spdV').textContent=spdLabels[spd];const bv=typeof j.brightness==='number'?j.brightness:(j.bl===false?0:100);document.getElementById('bright').value=bv;document.getElementById('brightV').textContent=bv+'%';blOn=bv>0;updateBlButton();}catch(e){}document.getElementById('bgCol').value='#aa4818';redrawCanvas('#aa4818');pollWifiStatus();pollTimer();setInterval(pollTimer,1000);})();
 </script>
 </body>
 </html>
@@ -250,6 +315,12 @@ void WebService::setupRoutes() {
     _server.on("/draw/clear",  HTTP_GET, [this]() { handleDrawClear(); });
     _server.on("/draw/stroke", HTTP_GET, [this]() { handleDrawStroke(); });
     _server.on("/backlight",   HTTP_GET, [this]() { handleBacklight(); });
+    _server.on("/brightness",  HTTP_GET, [this]() { handleBrightness(); });
+    _server.on("/timer/status", HTTP_GET, [this]() { handleTimerStatus(); });
+    _server.on("/timer/start",  HTTP_GET, [this]() { handleTimerStart(); });
+    _server.on("/timer/pause",  HTTP_GET, [this]() { handleTimerPause(); });
+    _server.on("/timer/reset",  HTTP_GET, [this]() { handleTimerReset(); });
+    _server.on("/timer/config", HTTP_GET, [this]() { handleTimerConfig(); });
     _server.on("/state",       HTTP_GET, [this]() { handleState(); });
     _server.on("/serial_mode", HTTP_GET, [this]() { handleSerialMode(); });
 
@@ -310,6 +381,8 @@ void WebService::handleCmd() {
         case 'w': _displayService->setInteractiveView(VIEW_EYES_NORMAL); break;
         case 's': _displayService->setInteractiveView(VIEW_EYES_SQUISH); break;
         case 'd': _displayService->setInteractiveView(VIEW_CODE); break;
+        case 'c': _displayService->setInteractiveView(VIEW_CLOCK); break;
+        case 'p': _displayService->setInteractiveView(VIEW_POMODORO); break;
         case 'a': _displayService->animLogoReveal(); break;
     }
 }
@@ -364,18 +437,72 @@ void WebService::handleDrawStroke() {
 
 void WebService::handleBacklight() {
     if (_server.hasArg("on")) {
-        digitalWrite(CFG_DISPLAY_PIN_BL, _server.arg("on") == "1" ? HIGH : LOW);
+        _displayService->setBrightnessPercent(_server.arg("on") == "1" ? 100 : 0);
         _server.send(200, "application/json", "{\"ok\":true}");
     } else {
         _server.send(400, "application/json", "{\"error\":\"missing on parameter\"}");
     }
 }
 
+void WebService::handleBrightness() {
+    if (_server.hasArg("v")) {
+        _displayService->setBrightnessPercent(constrain(_server.arg("v").toInt(), 0, 100));
+    }
+    String json = "{\"ok\":true,\"brightness\":";
+    json += _displayService->getBrightnessPercent();
+    json += "}";
+    _server.send(200, "application/json", json);
+}
+
+void WebService::handleTimerStatus() {
+    const bool isBreak = _displayService->getPomodoroPhase() == PomodoroPhase::BREAK;
+    String json = "{\"phase\":\"";
+    json += isBreak ? "break" : "focus";
+    json += "\",\"running\":";
+    json += _displayService->isPomodoroRunning() ? "true" : "false";
+    json += ",\"paused\":";
+    json += _displayService->isPomodoroPaused() ? "true" : "false";
+    json += ",\"remaining\":";
+    json += _displayService->getPomodoroRemainingSec();
+    json += ",\"duration\":";
+    json += _displayService->getPomodoroDurationSec();
+    json += ",\"focus\":";
+    json += _displayService->getFocusMinutes();
+    json += ",\"break\":";
+    json += _displayService->getBreakMinutes();
+    json += "}";
+    _server.send(200, "application/json", json);
+}
+
+void WebService::handleTimerStart() {
+    const String phase = _server.hasArg("phase") ? _server.arg("phase") : "focus";
+    _displayService->startPomodoro(phase == "break" ? PomodoroPhase::BREAK : PomodoroPhase::FOCUS);
+    handleTimerStatus();
+}
+
+void WebService::handleTimerPause() {
+    _displayService->pausePomodoro();
+    handleTimerStatus();
+}
+
+void WebService::handleTimerReset() {
+    _displayService->resetPomodoro();
+    handleTimerStatus();
+}
+
+void WebService::handleTimerConfig() {
+    const uint16_t focus = _server.hasArg("focus") ? _server.arg("focus").toInt() : _displayService->getFocusMinutes();
+    const uint16_t breakMinutes = _server.hasArg("break") ? _server.arg("break").toInt() : _displayService->getBreakMinutes();
+    _displayService->setPomodoroDurations(focus, breakMinutes);
+    handleTimerStatus();
+}
+
 void WebService::handleState() {
     String j = "{\"view\":"; j += _displayService->getInteractiveView();
     j += ",\"busy\":";   j += _displayService->isBusy()       ? "true" : "false";
     j += ",\"term\":";   j += _displayService->isTermMode()   ? "true" : "false";
-    j += ",\"bl\":";     j += digitalRead(CFG_DISPLAY_PIN_BL) ? "true" : "false";
+    j += ",\"bl\":";     j += _displayService->getBrightnessPercent() > 0 ? "true" : "false";
+    j += ",\"brightness\":"; j += _displayService->getBrightnessPercent();
     j += ",\"speed\":";  j += _displayService->getAnimSpeed();
     j += ",\"serial\":"; j += _wifiService->isSerialMode() ? "true" : "false";
     j += "}";

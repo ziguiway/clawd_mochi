@@ -38,6 +38,12 @@ private:
     void handleDrawClear();
     void handleDrawStroke();
     void handleBacklight();
+    void handleBrightness();
+    void handleTimerStatus();
+    void handleTimerStart();
+    void handleTimerPause();
+    void handleTimerReset();
+    void handleTimerConfig();
     void handleState();
     void handleSerialMode();
 

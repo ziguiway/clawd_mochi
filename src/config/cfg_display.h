@@ -39,6 +39,8 @@
 #define VIEW_DRAW         3
 #define VIEW_THINKING   4
 #define VIEW_WORKING    5
+#define VIEW_CLOCK      6
+#define VIEW_POMODORO   7
 
 // 终端配置
 #define TERM_COLS      15

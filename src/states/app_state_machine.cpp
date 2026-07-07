@@ -4,7 +4,7 @@
 
 AppStateMachine::AppStateMachine()
     : _cc(&_sm)
-    , _display(&_tft, &_cc, &_wifi)
+    , _display(&_tft, &_cc, &_wifi, &_time)
     , _web(&_cc, &_wifi, &_time, &_display)
     , _serial(&_wifi, &_cc, &_time)
     , _bootButton(&_tft, &_wifi)

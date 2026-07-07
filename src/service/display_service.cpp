@@ -10,13 +10,22 @@
 #define EYE_OX  0
 #define EYE_OY  40
 
-DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService, WifiConfigService* wifiService)
-    : _tft(tft), _ccService(ccService), _wifiService(wifiService)
+DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
+                               WifiConfigService* wifiService, TimeService* timeService)
+    : _tft(tft), _ccService(ccService), _wifiService(wifiService), _timeService(timeService)
     , _ccView(tft), _eyesView(tft)
     , _currentMode(DisplayMode::SETUP), _lastRefreshMs(0)
     , _interactiveView(InteractiveView::EYES_NORMAL), _interactiveActive(false)
     , _busy(false), _animSpeed(1)
     , _animBgColor(COLOR_ORANGE), _drawBgColor(COLOR_ORANGE)
+    , _brightnessPercent(100)
+    , _focusMinutes(25), _breakMinutes(5), _pomodoroPhase(PomodoroPhase::FOCUS)
+    , _pomodoroRunning(false), _pomodoroPaused(false)
+    , _pomodoroDurationSec(25UL * 60UL), _pomodoroRemainingAtPauseSec(25UL * 60UL)
+    , _pomodoroStartedMs(0), _lastClockRenderSec(0)
+    , _timeViewDirty(true), _timeViewLayoutDrawn(false)
+    , _lastTimeText{0}, _lastSubText{0}, _lastHintText{0}
+    , _lastProgressPermille(0xFFFF), _lastLightProgress(false)
     , _termMode(false), _termRow(0), _termCol(0)
 {
 }
@@ -25,6 +34,7 @@ void DisplayService::init() {
     _currentMode = DisplayMode::SETUP;
     _animBgColor = COLOR_ORANGE;
     _drawBgColor = COLOR_ORANGE;
+    setBrightnessPercent(_brightnessPercent);
 }
 
 // ── Eye geometry ───────────────────────────────────────────────
@@ -104,6 +114,166 @@ void DisplayService::drawCodeView() {
     _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - 96) / 2, CFG_DISPLAY_HEIGHT / 2 + 8);
     _tft->getTft().print("Code");
     _tft->fillRect((CFG_DISPLAY_WIDTH - 96) / 2, CFG_DISPLAY_HEIGHT / 2 + 52, 96, 3, COLOR_ORANGE);
+}
+
+void DisplayService::invalidateTimeView() {
+    _timeViewDirty = true;
+    _lastTimeText[0] = '\0';
+    _lastSubText[0] = '\0';
+    _lastHintText[0] = '\0';
+    _lastProgressPermille = 0xFFFF;
+    _timeViewLayoutDrawn = false;
+}
+
+void DisplayService::renderTimeScreenLayout(const char* mark, const char* modeText) {
+    const int16_t captionY = 214;
+    const int16_t barX = 20;
+    const int16_t barY = 184;
+    const int16_t barW = 200;
+    const int16_t barH = 12;
+
+    _tft->fillScreen(COLOR_ORANGE);
+
+    // 顶部 mark + 下划线
+    _tft->getTft().setTextColor(COLOR_BLACK);
+    _tft->getTft().setTextSize(1);
+    _tft->getTft().setCursor(14, 14);
+    _tft->getTft().print(mark);
+    _tft->fillRect(14, 31, 42, 4, COLOR_BLACK);
+
+    // 进度条外框(静态)
+    _tft->drawRect(barX, barY, barW, barH, COLOR_BLACK);
+
+    // 底部黑色信息条 + 静态 mode 文字
+    _tft->fillRect(0, captionY, CFG_DISPLAY_WIDTH, CFG_DISPLAY_HEIGHT - captionY, COLOR_BLACK);
+    _tft->getTft().setTextSize(1);
+    _tft->getTft().setTextColor(COLOR_WHITE);
+    _tft->getTft().setCursor(10, captionY + 8);
+    _tft->getTft().print(modeText);
+
+    _timeViewLayoutDrawn = true;
+}
+
+void DisplayService::renderTimeScreenDynamic(const char* timeText, const char* subText,
+                                             const char* hintText,
+                                             uint16_t progressPermille, bool lightProgress) {
+    progressPermille = constrain(progressPermille, 0, 1000);
+    const int16_t captionY = 214;
+    const int16_t barX = 20;
+    const int16_t barY = 184;
+    const int16_t barW = 200;
+    const int16_t barH = 12;
+
+    // 动态区域 Y 范围:大约 60 ~ 180(覆盖时间文字、子文字、进度条)
+    // 局部擦除只针对动态区域,避免全屏闪烁
+    const int16_t dynTop = 60;
+    const int16_t dynBottom = 180;
+    const uint16_t bgFill = lightProgress ? COLOR_BLACK : COLOR_ORANGE;
+
+    const bool timeChanged = strcmp(timeText, _lastTimeText) != 0;
+    const bool subChanged = strcmp(subText, _lastSubText) != 0;
+    const bool hintChanged = strcmp(hintText, _lastHintText) != 0;
+    const bool progChanged = (progressPermille != _lastProgressPermille) ||
+                             (lightProgress != _lastLightProgress);
+
+    // 只要有任一动态项变化,才擦除动态背景区域一次(而非整屏)
+    const bool anyChanged = timeChanged || subChanged || hintChanged || progChanged;
+    if (anyChanged) {
+        _tft->fillRect(0, dynTop, CFG_DISPLAY_WIDTH, dynBottom - dynTop, bgFill);
+    }
+
+    int16_t x1, y1;
+    uint16_t w, h;
+
+    // 时间文字(size 6)
+    _tft->getTft().setTextSize(6);
+    _tft->getTft().setTextColor(COLOR_BLACK);
+    _tft->getTft().getTextBounds(timeText, 0, 0, &x1, &y1, &w, &h);
+    _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - w) / 2, 72);
+    _tft->getTft().print(timeText);
+
+    // 子文字(size 2)
+    _tft->getTft().setTextSize(2);
+    _tft->getTft().setTextColor(COLOR_BLACK);
+    _tft->getTft().getTextBounds(subText, 0, 0, &x1, &y1, &w, &h);
+    _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - w) / 2, 132);
+    _tft->getTft().print(subText);
+
+    // 进度条填充
+    const uint16_t fillColor = lightProgress ? COLOR_WHITE : COLOR_BLACK;
+    const int16_t fillW = (barW - 4) * progressPermille / 1000;
+    // 先清空进度条内部再用填充色覆盖,避免残留
+    _tft->fillRect(barX + 2, barY + 2, barW - 4, barH - 4, bgFill);
+    if (fillW > 0) _tft->fillRect(barX + 2, barY + 2, fillW, barH - 4, fillColor);
+
+    // 底部 hint(右对齐,橙色,需擦旧字)
+    if (hintChanged) {
+        // 擦除 hint 区域(右半边底部黑条)
+        _tft->fillRect(CFG_DISPLAY_WIDTH / 2, captionY + 6, CFG_DISPLAY_WIDTH / 2 - 4, 16, COLOR_BLACK);
+        _tft->getTft().setTextSize(1);
+        _tft->getTft().setTextColor(COLOR_ORANGE);
+        _tft->getTft().getTextBounds(hintText, 0, 0, &x1, &y1, &w, &h);
+        _tft->getTft().setCursor(CFG_DISPLAY_WIDTH - w - 10, captionY + 8);
+        _tft->getTft().print(hintText);
+    }
+
+    // 缓存最新值
+    strncpy(_lastTimeText, timeText, sizeof(_lastTimeText) - 1);
+    _lastTimeText[sizeof(_lastTimeText) - 1] = '\0';
+    strncpy(_lastSubText, subText, sizeof(_lastSubText) - 1);
+    _lastSubText[sizeof(_lastSubText) - 1] = '\0';
+    strncpy(_lastHintText, hintText, sizeof(_lastHintText) - 1);
+    _lastHintText[sizeof(_lastHintText) - 1] = '\0';
+    _lastProgressPermille = progressPermille;
+    _lastLightProgress = lightProgress;
+}
+
+void DisplayService::renderTimeScreen(const char* mark, const char* timeText, const char* subText,
+                                      const char* modeText, const char* hintText,
+                                      uint16_t progressPermille, bool lightProgress) {
+    if (_timeViewDirty || !_timeViewLayoutDrawn) {
+        renderTimeScreenLayout(mark, modeText);
+        _timeViewDirty = false;
+        // 完整重绘后,重置缓存以强制 dynamic 重画所有动态项
+        _lastTimeText[0] = '\0';
+        _lastSubText[0] = '\0';
+        _lastHintText[0] = '\0';
+        _lastProgressPermille = 0xFFFF;
+    }
+    renderTimeScreenDynamic(timeText, subText, hintText, progressPermille, lightProgress);
+}
+
+void DisplayService::drawClockView() {
+    char timeText[8] = "--:--";
+    char dateText[16] = "TIME WAIT";
+    uint16_t progress = 0;
+
+    if (_timeService && _timeService->getEpoch() > 1000000000UL) {
+        snprintf(timeText, sizeof(timeText), "%02d:%02d",
+                 _timeService->getHour(), _timeService->getMinute());
+        snprintf(dateText, sizeof(dateText), "%04d-%02d-%02d",
+                 _timeService->getYear(), _timeService->getMonth(), _timeService->getDay());
+        progress = (_timeService->getSecond() * 1000UL) / 59UL;
+    }
+
+    renderTimeScreen("MOCHI", timeText, dateText, "CLOCK", "IDLE", progress, false);
+}
+
+void DisplayService::drawPomodoroView() {
+    uint32_t remaining = getPomodoroRemainingSec();
+    uint32_t duration = getPomodoroDurationSec();
+    uint32_t elapsed = duration > remaining ? duration - remaining : 0;
+
+    char timeText[8];
+    snprintf(timeText, sizeof(timeText), "%02lu:%02lu",
+             (unsigned long)(remaining / 60), (unsigned long)(remaining % 60));
+
+    const bool isBreak = _pomodoroPhase == PomodoroPhase::BREAK;
+    const char* mark = isBreak ? "BREAK" : "FOCUS";
+    const char* sub = isBreak ? "BREAK LEFT" : "FOCUS LEFT";
+    const char* hint = _pomodoroPaused ? "PAUSED" : (isBreak ? "REST" : "FOCUS");
+    uint16_t progress = (elapsed * 1000UL) / duration;
+    renderTimeScreen(mark, timeText, sub, "POMODORO", hint, progress, isBreak);
 }
 
 // ── Terminal ───────────────────────────────────────────────────
@@ -327,6 +497,12 @@ void DisplayService::setInteractiveView(uint8_t view) {
         case InteractiveView::WORKING:
             animWorking();
             break;
+        case InteractiveView::CLOCK:
+            showClock();
+            break;
+        case InteractiveView::POMODORO:
+            startPomodoro(PomodoroPhase::FOCUS);
+            break;
     }
 }
 
@@ -338,6 +514,8 @@ void DisplayService::redrawCurrentView() {
         case InteractiveView::DRAW:        _tft->fillScreen(_drawBgColor); break;
         case InteractiveView::THINKING:    drawThinking(); break;
         case InteractiveView::WORKING:     drawWorking();  break;
+        case InteractiveView::CLOCK:       drawClockView(); break;
+        case InteractiveView::POMODORO:    drawPomodoroView(); break;
     }
 }
 
@@ -375,13 +553,113 @@ void DisplayService::drawStroke(uint16_t penColor, const String& pointsData) {
     }
 }
 
+void DisplayService::showClock() {
+    if (!_interactiveActive) enterInteractive();
+    _interactiveView = InteractiveView::CLOCK;
+    _termMode = false;
+    _lastClockRenderSec = 0;
+    invalidateTimeView();
+    drawClockView();
+}
+
+void DisplayService::startPomodoro(PomodoroPhase phase) {
+    if (!_interactiveActive) enterInteractive();
+    _interactiveView = InteractiveView::POMODORO;
+    _termMode = false;
+    _pomodoroPhase = phase;
+    const uint16_t minutes = phase == PomodoroPhase::BREAK ? _breakMinutes : _focusMinutes;
+    _pomodoroDurationSec = (uint32_t)minutes * 60UL;
+    if (_pomodoroDurationSec == 0) _pomodoroDurationSec = 1;
+    _pomodoroRemainingAtPauseSec = _pomodoroDurationSec;
+    _pomodoroStartedMs = millis();
+    _pomodoroRunning = true;
+    _pomodoroPaused = false;
+    _lastClockRenderSec = 0;
+    invalidateTimeView();
+    drawPomodoroView();
+}
+
+void DisplayService::pausePomodoro() {
+    if (!_pomodoroRunning) return;
+    if (_pomodoroPaused) {
+        _pomodoroStartedMs = millis();
+        _pomodoroPaused = false;
+    } else {
+        _pomodoroRemainingAtPauseSec = getPomodoroRemainingSec();
+        _pomodoroPaused = true;
+    }
+    // 只刷新 hint 区域,不需要全屏重绘布局
+    drawPomodoroView();
+}
+
+void DisplayService::resetPomodoro() {
+    _pomodoroRunning = false;
+    _pomodoroPaused = false;
+    _pomodoroDurationSec = (uint32_t)_focusMinutes * 60UL;
+    _pomodoroRemainingAtPauseSec = _pomodoroDurationSec;
+    _pomodoroPhase = PomodoroPhase::FOCUS;
+    if (_interactiveView == InteractiveView::POMODORO) {
+        invalidateTimeView();
+        drawPomodoroView();
+    }
+}
+
+void DisplayService::setPomodoroDurations(uint16_t focusMinutes, uint16_t breakMinutes) {
+    _focusMinutes = constrain(focusMinutes, 1, 180);
+    _breakMinutes = constrain(breakMinutes, 1, 60);
+    if (!_pomodoroRunning) {
+        _pomodoroDurationSec = (uint32_t)_focusMinutes * 60UL;
+        _pomodoroRemainingAtPauseSec = _pomodoroDurationSec;
+        if (_interactiveView == InteractiveView::POMODORO) {
+            invalidateTimeView();
+            drawPomodoroView();
+        }
+    }
+}
+
+uint32_t DisplayService::getPomodoroRemainingSec() const {
+    if (!_pomodoroRunning) return _pomodoroRemainingAtPauseSec;
+    if (_pomodoroPaused) return _pomodoroRemainingAtPauseSec;
+    const uint32_t elapsed = (millis() - _pomodoroStartedMs) / 1000UL;
+    return elapsed >= _pomodoroRemainingAtPauseSec ? 0 : _pomodoroRemainingAtPauseSec - elapsed;
+}
+
+uint32_t DisplayService::getPomodoroDurationSec() const {
+    return _pomodoroDurationSec == 0 ? 1 : _pomodoroDurationSec;
+}
+
+void DisplayService::setBrightnessPercent(uint8_t percent) {
+    _brightnessPercent = constrain(percent, 0, 100);
+    const uint8_t pwm = map(_brightnessPercent, 0, 100, 0, 255);
+    _tft->setBrightness(pwm);
+}
+
 // ── Main update loop ───────────────────────────────────────────
 // 状态机负责切换显示模式(switchToExpressionMode/switchToInfoMode/updateProvisioning),
 // 本方法只负责按当前 _currentMode 渲染。
 void DisplayService::update() {
-    if (_currentMode == DisplayMode::INTERACTIVE) return;
-
     unsigned long now = millis();
+    if (_currentMode == DisplayMode::INTERACTIVE) {
+        if (_interactiveView != InteractiveView::CLOCK &&
+            _interactiveView != InteractiveView::POMODORO) {
+            return;
+        }
+        const unsigned long sec = now / 1000UL;
+        if (sec == _lastClockRenderSec) return;
+        _lastClockRenderSec = sec;
+        if (_interactiveView == InteractiveView::CLOCK) {
+            drawClockView();
+        } else {
+            if (_pomodoroRunning && !_pomodoroPaused && getPomodoroRemainingSec() == 0) {
+                _pomodoroRemainingAtPauseSec = 0;
+                _pomodoroRunning = false;
+                _pomodoroPaused = false;
+            }
+            drawPomodoroView();
+        }
+        return;
+    }
+
     if (now - _lastRefreshMs < DISPLAY_REFRESH_INTERVAL_MS) return;
     _lastRefreshMs = now;
 
