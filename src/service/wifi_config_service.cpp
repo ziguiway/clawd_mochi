@@ -11,12 +11,6 @@ WifiConfigService::WifiConfigService()
 }
 
 void WifiConfigService::init() {
-    // SERIAL 模式不连 WiFi
-    auto* opMode = OperationModeService::current();
-    if (opMode && opMode->isSerial()) {
-        LOG_INFO("WiFi", "串口模式:跳过 WiFi 初始化");
-        return;
-    }
     loadCredentials();
     if (_configured) {
         LOG_INFO("WiFi", "已有凭据,连接: %s", _ssid.c_str());
@@ -36,8 +30,8 @@ void WifiConfigService::setProvisioningMode(ProvisioningMode mode) {
 const char* WifiConfigService::getProvisioningMessage() const {
     switch (_provMode) {
         case ProvisioningMode::AP_FALLBACK: return "AP: 192.168.4.1";
-        case ProvisioningMode::CONNECTING:  return "连接中...";
-        case ProvisioningMode::CONNECTED:   return "已连接";
+        case ProvisioningMode::CONNECTING:  return "Connecting...";
+        case ProvisioningMode::CONNECTED:   return "Connected";
         default:                            return "";
     }
 }
@@ -105,17 +99,12 @@ void WifiConfigService::startAPMode() {
 }
 
 void WifiConfigService::skipProvisioning() {
-    // 切换到串口模式:断开 WiFi,后续 init() 也会跳过
+    // 切换到串口模式:Claude 状态走 USB,但保留 WiFi/Web 本地遥控
     auto* opMode = OperationModeService::current();
     if (opMode) opMode->setMode(OperationModeService::Mode::SERIAL);
-    if (WiFi.getMode() != WIFI_OFF) {
-        WiFi.disconnect(true);
-        WiFi.mode(WIFI_OFF);
-    }
-    _connected = false;
     _connecting = false;
     setProvisioningMode(ProvisioningMode::NONE);
-    LOG_INFO("WiFi", "已切换到串口模式,WiFi 关闭");
+    LOG_INFO("WiFi", "已切换到串口模式,保留 WiFi/Web 遥控");
 }
 
 bool WifiConfigService::connectToWifi(const char* ssid, const char* password) {

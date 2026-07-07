@@ -35,8 +35,6 @@ void SerialCommandService::update() {
 void SerialCommandService::processCommand(const String& cmd) {
     if (cmd == "CC:ping") { Serial.println("CC:pong"); return; }
     if (cmd.startsWith("CC:")) {
-        auto* opMode = OperationModeService::current();
-        if (opMode) opMode->setMode(OperationModeService::Mode::SERIAL);
         _ccService->processPacket(cmd.c_str(), cmd.length());
         Serial.println("ok");
         return;

@@ -1,30 +1,49 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WiFi 配网 - Clawd Mochi</title>
+    <title>WiFi Setup - Clawd Mochi</title>
     <link rel="stylesheet" href="/style.css">
 </head>
-<body>
-    <div class="container">
-        <header>
-            <h1>WiFi 配网</h1>
-            <p class="subtitle">选择网络并输入密码</p>
+<body class="provision-page">
+    <div class="container provision-shell">
+        <header class="provision-hero">
+            <p class="kicker">Clawd Mochi</p>
+            <h1>WiFi Setup</h1>
+            <p class="subtitle">Choose a local network, enter the password, then keep this page open while the device joins.</p>
         </header>
-        <section class="card">
-            <h2>可用网络</h2>
-            <ul class="wifi-list" id="wifi-list"><li class="wifi-item"><span>扫描中...</span></li></ul>
-            <button onclick="scanWifi()" style="margin-top:12px">刷新</button>
+
+        <section class="setup-steps" aria-label="Setup steps">
+            <div><span>1</span><strong>Scan</strong></div>
+            <div><span>2</span><strong>Select</strong></div>
+            <div><span>3</span><strong>Connect</strong></div>
         </section>
-        <section class="card" id="connect-form" style="display:none">
-            <h2>连接网络</h2>
-            <div class="info-item"><label>网络名称</label><input type="text" id="ssid-input" readonly></div>
-            <div class="info-item"><label>密码</label><input type="password" id="password-input" placeholder="输入 WiFi 密码"></div>
+
+        <section class="card provision-card">
+            <div class="section-head">
+                <div>
+                    <h2>Nearby Networks</h2>
+                    <p>Tap a network to prepare the connection.</p>
+                </div>
+                <button class="ghost-btn" onclick="scanWifi()">Rescan</button>
+            </div>
+            <ul class="wifi-list provision-list" id="wifi-list">
+                <li class="wifi-item loading"><span>Scanning...</span></li>
+            </ul>
+        </section>
+
+        <section class="card provision-card connect-panel" id="connect-form" style="display:none">
+            <h2>Connect</h2>
+            <label class="field-label" for="ssid-input">Network</label>
+            <input type="text" id="ssid-input" readonly>
+            <label class="field-label" for="password-input">Password</label>
+            <input type="password" id="password-input" placeholder="WiFi password">
             <div id="connect-msg"></div>
-            <button onclick="connectWifi()" style="margin-top:12px">连接</button>
+            <button class="primary-btn" onclick="connectWifi()">Connect Device</button>
         </section>
-        <div style="text-align:center;margin-top:16px"><a href="/" style="color:#ff8c00;text-decoration:none">← 返回主页</a></div>
+
+        <a class="back-link" href="/">Back to controller</a>
     </div>
     <script src="/app.js"></script>
     <script src="/wifi.js"></script>

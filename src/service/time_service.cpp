@@ -10,17 +10,10 @@ TimeService::TimeService()
 }
 
 void TimeService::init() {
-    // SERIAL 模式无 WiFi,跳过 NTP
-    auto* opMode = OperationModeService::current();
-    if (opMode && opMode->isSerial()) {
-        return;
-    }
     configTime();
 }
 
 void TimeService::update() {
-    auto* opMode = OperationModeService::current();
-    if (opMode && opMode->isSerial()) return;
     if (!_synced) return;
     unsigned long now = millis();
     if (now - _lastSyncTime > _syncInterval) {

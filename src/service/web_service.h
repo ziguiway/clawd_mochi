@@ -20,6 +20,7 @@ public:
 
 private:
     WebServer _server;
+    bool _started;
     ClaudeCodeService* _ccService;
     WifiConfigService* _wifiService;
     TimeService* _timeService;

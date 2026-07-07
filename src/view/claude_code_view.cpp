@@ -119,11 +119,6 @@ void ClaudeCodeView::drawHeader(ClaudeCodeService::Status status) {
 void ClaudeCodeView::drawStatusPanel(ClaudeCodeService::Status status) {
     _tft->fillRect(0, 24, CFG_DISPLAY_WIDTH, 172, COLOR_MOCHI_BG);
     drawStatusIcon(status, 0, 0);
-
-    if (status == ClaudeCodeService::Status::WORKING) {
-        _tft->fillRect(FACE_EYE_X - 10, FACE_EYE_Y + FACE_EYE_H + 12,
-                       FACE_EYE_GAP + FACE_EYE_W * 2 + 20, 3, COLOR_BLACK);
-    }
 }
 
 void ClaudeCodeView::drawHookInfo(const char* hookName, const char* toolName) {

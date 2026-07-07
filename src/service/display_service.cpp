@@ -416,38 +416,36 @@ void DisplayService::updateProvisioning() {
     const char* msg = _wifiService->getProvisioningMessage();
     _tft->fillScreen(COLOR_DARKBG);
 
-    // 顶部 + 底部装饰条
-    _tft->fillRect(0, 0, CFG_DISPLAY_WIDTH, 3, COLOR_ORANGE);
-    _tft->fillRect(0, CFG_DISPLAY_HEIGHT - 3, CFG_DISPLAY_WIDTH, 3, COLOR_ORANGE);
+    _tft->fillRect(0, 0, CFG_DISPLAY_WIDTH, 4, COLOR_ORANGE);
+    _tft->fillRect(0, CFG_DISPLAY_HEIGHT - 4, CFG_DISPLAY_WIDTH, 4, COLOR_ORANGE);
+    _tft->drawRoundRect(10, 12, CFG_DISPLAY_WIDTH - 20, CFG_DISPLAY_HEIGHT - 24, 8, COLOR_MUTED);
 
-    // 标题 "Clawd Mochi" — 居中,size 2
     _tft->getTft().setTextColor(COLOR_ORANGE);
     _tft->getTft().setTextSize(2);
-    const char* title = "Clawd Mochi";
+    const char* title = "WiFi Setup";
     int16_t titleX = (CFG_DISPLAY_WIDTH - (int)strlen(title) * 12) / 2;
-    _tft->getTft().setCursor(titleX, 10);
+    _tft->getTft().setCursor(titleX, 22);
     _tft->getTft().print(title);
 
-    // 副标题 — 居中,size 1
-    _tft->getTft().setTextColor(COLOR_WHITE);
+    _tft->getTft().setTextColor(COLOR_GRAY);
     _tft->getTft().setTextSize(1);
-    const char* subtitle = "WiFi provisioning";
+    const char* subtitle = "Keep this page open";
     int16_t subX = (CFG_DISPLAY_WIDTH - (int)strlen(subtitle) * 6) / 2;
-    _tft->getTft().setCursor(subX, 32);
+    _tft->getTft().setCursor(subX, 46);
     _tft->getTft().print(subtitle);
 
     if (mode == WifiConfigService::ProvisioningMode::AP_FALLBACK) {
-        // 二维码 — 版本 3, 3px 缩放 = 87×87, 白底 95×95 居中
         QRCode qrcode;
         uint8_t qrcodeData[qrcode_getBufferSize(3)];
         qrcode_initText(&qrcode, qrcodeData, 3, ECC_LOW, "http://192.168.4.1");
         const int16_t scale = 3;
-        const int16_t qrSize = qrcode.size * scale;        // 87
+        const int16_t qrSize = qrcode.size * scale;
         const int16_t pad = 4;
-        const int16_t boxSize = qrSize + pad * 2;           // 95
+        const int16_t boxSize = qrSize + pad * 2;
         const int16_t qrX = (CFG_DISPLAY_WIDTH - qrSize) / 2;
-        const int16_t boxY = 50;
+        const int16_t boxY = 66;
         const int16_t qrY = boxY + pad;
+        _tft->drawRoundRect(qrX - pad - 3, boxY - 3, boxSize + 6, boxSize + 6, 6, COLOR_ORANGE);
         _tft->fillRect(qrX - pad, boxY, boxSize, boxSize, COLOR_WHITE);
         for (uint8_t y = 0; y < qrcode.size; y++) {
             for (uint8_t x2 = 0; x2 < qrcode.size; x2++) {
@@ -457,39 +455,46 @@ void DisplayService::updateProvisioning() {
             }
         }
 
-        // 底部简约信息 — 两行
-        _tft->getTft().setTextColor(COLOR_GRAY);
+        _tft->getTft().setTextColor(COLOR_WHITE);
         _tft->getTft().setTextSize(1);
-        _tft->getTft().setCursor(20, 158);
-        _tft->getTft().print("Scan QR to setup WiFi");
+        _tft->getTft().setCursor(34, 174);
+        _tft->getTft().print("Scan QR or open:");
 
         _tft->getTft().setTextColor(COLOR_MUTED);
-        _tft->getTft().setCursor(20, 178);
-        _tft->getTft().print("or join ClaWD-Mochi");
+        _tft->getTft().setCursor(39, 190);
+        _tft->getTft().print("http://192.168.4.1");
 
-        // 状态行 — 底部,绿色
         _tft->getTft().setTextColor(COLOR_GREEN);
-        _tft->getTft().setCursor(20, 210);
+        _tft->getTft().setCursor(63, 210);
         _tft->getTft().print(msg);
     } else if (mode == WifiConfigService::ProvisioningMode::CONNECTING) {
+        _tft->drawRoundRect(46, 88, 148, 74, 8, COLOR_YELLOW);
         _tft->getTft().setTextColor(COLOR_YELLOW);
         _tft->getTft().setTextSize(2);
         int16_t x = (CFG_DISPLAY_WIDTH - (int)strlen(msg) * 12) / 2;
-        _tft->getTft().setCursor(x, 120);
+        _tft->getTft().setCursor(x, 108);
         _tft->getTft().print(msg);
+
+        _tft->getTft().setTextColor(COLOR_GRAY);
+        _tft->getTft().setTextSize(1);
+        const char* hint = "Joining network";
+        int16_t hintX = (CFG_DISPLAY_WIDTH - (int)strlen(hint) * 6) / 2;
+        _tft->getTft().setCursor(hintX, 140);
+        _tft->getTft().print(hint);
     } else if (mode == WifiConfigService::ProvisioningMode::CONNECTED) {
+        _tft->drawRoundRect(38, 82, 164, 92, 8, COLOR_GREEN);
         _tft->getTft().setTextColor(COLOR_GREEN);
         _tft->getTft().setTextSize(2);
         const char* ok = "Connected";
         int16_t x = (CFG_DISPLAY_WIDTH - (int)strlen(ok) * 12) / 2;
-        _tft->getTft().setCursor(x, 110);
+        _tft->getTft().setCursor(x, 102);
         _tft->getTft().print(ok);
 
         _tft->getTft().setTextColor(COLOR_WHITE);
         _tft->getTft().setTextSize(1);
         String ip = "IP: " + _wifiService->getIP();
         int16_t ipX = (CFG_DISPLAY_WIDTH - (int)ip.length() * 6) / 2;
-        _tft->getTft().setCursor(ipX, 150);
+        _tft->getTft().setCursor(ipX, 138);
         _tft->getTft().print(ip);
     }
 }

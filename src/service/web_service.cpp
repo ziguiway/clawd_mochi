@@ -190,7 +190,7 @@ async function onBgChange(hex){if(canvasOpen){await req('/draw/clear?bg='+encode
 async function setSpeed(v){document.getElementById('spdV').textContent=spdLabels[v];await req('/speed?v='+v);}
 async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(v===3){toggleCanvas();return;}const keys=['w','s','d'];if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}setBusy(true);await waitNotBusy();setBusy(false);}
 async function toggleBL(){blOn=!blOn;await req('/backlight?on='+(blOn?1:0));const b=document.getElementById('blBtn');b.textContent=blOn?'☀ display on':'○ display off';b.classList.toggle('on',blOn);b.classList.toggle('dim',!blOn);}
-async function useSerialMode(){if(!confirm('Switch to serial mode? WiFi provisioning will be skipped and Claude status synced via USB.'))return;await req('/serial_mode');toast('serial mode active');}
+async function useSerialMode(){if(!confirm('Switch Claude status input to USB serial? Local Web control stays available.'))return;await req('/serial_mode');toast('serial mode active');}
 async function loadWifiList(){const btn=document.getElementById('wscanBtn');btn.disabled=true;btn.textContent='scanning...';document.getElementById('wstatus').textContent='scanning...';document.getElementById('wlist').style.display='none';document.getElementById('wform').style.display='none';try{const r=await fetch('/wifi/scan');const nets=await r.json();const list=document.getElementById('wlist');list.innerHTML='';if(nets.length===0){document.getElementById('wstatus').textContent='no networks found';}else{nets.sort((a,b)=>b.rssi-a.rssi);nets.forEach(n=>{const btn=document.createElement('button');btn.className='cbtn';btn.style.textAlign='left';btn.style.padding='10px 12px';const sig=n.rssi>-50?'&#128267;':(n.rssi>-70?'&#128266;':'&#128268;');btn.innerHTML='<span style="color:#c96a3e">'+sig+'</span> '+n.ssid+(n.encrypted?' <span style="color:#5a5048">&#128274;</span>':'')+' <span style="color:#5a5048;font-size:9px">'+n.rssi+'dBm</span>';btn.onclick=()=>{document.getElementById('wssid').value=n.ssid;document.getElementById('wpass').focus();};list.appendChild(btn);});document.getElementById('wstatus').textContent='select network or type SSID:';document.getElementById('wlist').style.display='flex';document.getElementById('wform').style.display='flex';}}catch(e){document.getElementById('wstatus').textContent='scan failed';}btn.disabled=false;btn.textContent='🔍 scan networks';}
 async function connectWifi(){const ssid=document.getElementById('wssid').value.trim();const pass=document.getElementById('wpass').value;if(!ssid){toast('enter SSID',false);return;}const fd=new FormData();fd.append('ssid',ssid);fd.append('password',pass);document.getElementById('wstatus').textContent='connecting...';try{await fetch('/wifi/connect',{method:'POST',body:fd});}catch(e){}let ok=false;for(let i=0;i<30;i++){await new Promise(r=>setTimeout(r,1000));try{const r=await fetch('/wifi/status');const j=await r.json();if(j.connected){ok=true;break;}document.getElementById('wstatus').textContent='connecting... ('+(i+1)+'s)';}catch(e){}}if(ok){document.getElementById('wstatus').innerHTML='<span style="color:#28b878">✓ connected: '+ssid+'</span>';document.getElementById('wlist').style.display='none';document.getElementById('wform').style.display='none';toast('wifi connected');}else{document.getElementById('wstatus').innerHTML='<span style="color:#c96a3e">connection failed, retry</span>';toast('wifi failed',false);}}
 async function pollWifiStatus(){try{const r=await fetch('/wifi/status');const j=await r.json();const el=document.getElementById('wstatus');if(j.connected){el.innerHTML='<span style="color:#28b878">✓ connected: '+j.ssid+' ('+j.ip+')</span>';document.getElementById('wlist').style.display='none';document.getElementById('wform').style.display='none';document.getElementById('wscanBtn').style.display='none';}else{el.textContent='not connected — scan to setup';}}catch(e){document.getElementById('wstatus').textContent='status unavailable';}}
@@ -219,26 +219,22 @@ async function clearAll(){const bg=document.getElementById('bgCol').value;redraw
 WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiService,
                        TimeService* timeService, DisplayService* displayService)
     : _server(CFG_WIFI_WEB_PORT)
+    , _started(false)
     , _ccService(ccService), _wifiService(wifiService)
     , _timeService(timeService), _displayService(displayService)
 {
 }
 
 void WebService::init() {
-    // SERIAL 模式无 WiFi,不启动 Web 服务器
-    auto* opMode = OperationModeService::current();
-    if (opMode && opMode->isSerial()) {
-        LOG_INFO("Web", "串口模式:跳过 Web 服务器");
-        return;
-    }
+    if (_started) return;
     setupRoutes();
     _server.begin();
+    _started = true;
     LOG_INFO("Web", "HTTP 服务器启动 端口: %d", CFG_WIFI_WEB_PORT);
 }
 
 void WebService::update() {
-    auto* opMode = OperationModeService::current();
-    if (opMode && opMode->isSerial()) return;
+    if (!_started) return;
     _server.handleClient();
 }
 
