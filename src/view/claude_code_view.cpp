@@ -25,7 +25,7 @@ static const char* statusToText(ClaudeCodeService::Status status) {
         case ClaudeCodeService::Status::ERROR:      return "ERROR";
         case ClaudeCodeService::Status::DONE:       return "DONE";
         case ClaudeCodeService::Status::PERMISSION: return "PERMISSION";
-        case ClaudeCodeService::Status::SWEEPING:   return "SWEEPING";
+        case ClaudeCodeService::Status::SWEEPING:   return "COMPACTING";
         case ClaudeCodeService::Status::SLEEPING:   return "SLEEPING";
         default:                                    return "UNKNOWN";
     }

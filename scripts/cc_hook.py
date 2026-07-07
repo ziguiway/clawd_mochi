@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 """Claude Code Hook — send status events to Clawd Mochi over USB serial or UDP."""
 
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#   "pyserial>=3.5",
+# ]
+# ///
+
 import sys
 import json
 import socket
@@ -8,17 +15,17 @@ import os
 import time
 import ipaddress
 import concurrent.futures
+from pathlib import Path
 
 # ========== 配置 ==========
 ESP32_PORT = 4210
-IP_CACHE_FILE = os.path.expanduser("~/.cc_cube_x_ip")
-SERIAL_CACHE_FILE = os.path.expanduser("~/.cc_cube_x_port")
 CACHE_TTL = 86400  # 24 小时
 SCAN_TIMEOUT = 0.3  # 每个 IP 的 UDP 探测超时(秒)
 SCAN_WORKERS = 64   # 并发扫描线程数
 SERIAL_BAUD = 115200
 SERIAL_TIMEOUT = 0.2
 SERIAL_PROBE_TIMEOUT = 0.4  # 串口握手 CC:ping→CC:pong 超时
+CACHE_FILE_NAME = "cc_hook_cache.json"
 # ==========================
 
 HOOK_MAP = {
@@ -41,8 +48,8 @@ HOOK_MAP = {
     "TaskCreated":       "working",
     "TaskCompleted":     "working",
     # 上下文压缩
-    "PreCompact":        "sweeping",
-    "PostCompact":       "working",
+    "PreCompact":        "COMPACTING",
+    "PostCompact":       "COMPACTING",
     # 工作树
     "WorktreeCreate":    "working",
     "WorktreeRemove":    "working",
@@ -53,6 +60,77 @@ HOOK_MAP = {
 
 # CC:ping 探测包，ESP32 收到后只刷新计时不改状态
 PROBE_MSG = b"CC:ping"
+
+
+def app_cache_dir() -> Path:
+    override = os.environ.get("CLAWD_MOCHI_CACHE_DIR")
+    if override:
+        return Path(override).expanduser()
+
+    if os.name == "nt":
+        base = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA")
+        if base:
+            return Path(base) / "ClawdMochi"
+        return Path.home() / "AppData" / "Local" / "ClawdMochi"
+
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Caches" / "ClawdMochi"
+
+    base = os.environ.get("XDG_CACHE_HOME")
+    if base:
+        return Path(base) / "clawd-mochi"
+    return Path.home() / ".cache" / "clawd-mochi"
+
+
+def cache_file() -> Path:
+    return app_cache_dir() / CACHE_FILE_NAME
+
+
+def load_cache() -> dict:
+    path = cache_file()
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return {}
+
+
+def save_cache(data: dict) -> None:
+    path = cache_file()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        with tmp.open("w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2, sort_keys=True)
+            f.write("\n")
+        os.replace(tmp, path)
+    except OSError:
+        pass
+
+
+def read_cache_value(key: str) -> str | None:
+    entry = load_cache().get(key)
+    if not isinstance(entry, dict):
+        return None
+
+    value = entry.get("value")
+    updated_at = entry.get("updated_at", 0)
+    try:
+        if isinstance(value, str) and value and time.time() - float(updated_at) < CACHE_TTL:
+            return value
+    except (TypeError, ValueError):
+        return None
+    return None
+
+
+def write_cache_value(key: str, value: str | None) -> None:
+    data = load_cache()
+    if value:
+        data[key] = {"value": value, "updated_at": time.time()}
+    else:
+        data.pop(key, None)
+    save_cache(data)
 
 
 def clean_field(value: object, limit: int = 48) -> str:
@@ -99,26 +177,18 @@ def probe_serial_port(ser) -> bool:
 
 
 def read_serial_cache() -> str | None:
-    try:
-        with open(SERIAL_CACHE_FILE, "r") as f:
-            ts_str, port = f.read().strip().split(",", 1)
-            if time.time() - float(ts_str) < CACHE_TTL:
-                return port
-    except (FileNotFoundError, ValueError):
-        pass
-    return None
+    return read_cache_value("serial_port")
 
 
 def write_serial_cache(port: str) -> None:
-    try:
-        with open(SERIAL_CACHE_FILE, "w") as f:
-            f.write(f"{time.time()},{port}\n")
-    except OSError:
-        pass
+    write_cache_value("serial_port", port)
 
 
 def find_serial_port() -> str | None:
     """查找 Clawd Mochi 串口：缓存 → 探测所有候选端口"""
+    if os.environ.get("CLAWD_MOCHI_NO_SERIAL"):
+        return None
+
     try:
         import serial
     except Exception:
@@ -194,42 +264,37 @@ def scan_for_esp32() -> str | None:
 
     hosts = [str(h) for h in ipaddress.ip_network(subnet).hosts()]
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=SCAN_WORKERS) as pool:
-        futures = {pool.submit(probe_host, ip): ip for ip in hosts}
-        for future in concurrent.futures.as_completed(futures, timeout=5):
-            ip = futures[future]
-            try:
-                if future.result():
-                    # 找到一个就返回（UDP 无连接确认，但局域网内够用）
-                    return ip
-            except Exception:
-                continue
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=SCAN_WORKERS) as pool:
+            futures = {pool.submit(probe_host, ip): ip for ip in hosts}
+            for future in concurrent.futures.as_completed(futures, timeout=5):
+                ip = futures[future]
+                try:
+                    if future.result():
+                        # 找到一个就返回（UDP 无连接确认，但局域网内够用）
+                        return ip
+                except Exception:
+                    continue
+    except concurrent.futures.TimeoutError:
+        return None
     return None
 
 
 def read_ip_cache() -> str | None:
     """读取缓存 IP，过期返回 None"""
-    try:
-        with open(IP_CACHE_FILE, "r") as f:
-            ts_str, ip = f.read().strip().split(",", 1)
-            if time.time() - float(ts_str) < CACHE_TTL:
-                return ip
-    except (FileNotFoundError, ValueError):
-        pass
-    return None
+    return read_cache_value("ip")
 
 
 def write_ip_cache(ip: str) -> None:
     """写入缓存"""
-    try:
-        with open(IP_CACHE_FILE, "w") as f:
-            f.write(f"{time.time()},{ip}\n")
-    except OSError:
-        pass
+    write_cache_value("ip", ip)
 
 
 def find_esp32() -> str | None:
     """查找 ESP32 IP：缓存 → 扫描"""
+    if os.environ.get("CLAWD_MOCHI_NO_NETWORK"):
+        return None
+
     ip = read_ip_cache()
     if ip:
         return ip
@@ -241,17 +306,17 @@ def find_esp32() -> str | None:
 
 
 def main() -> None:
-    hook = sys.argv[1] if len(sys.argv) > 1 else ""
-    event = HOOK_MAP.get(hook)
-    if not event:
-        sys.exit(0)
-
     data: dict = {}
     if not sys.stdin.isatty():
         try:
             data = json.load(sys.stdin)
         except json.JSONDecodeError:
             pass
+
+    hook = sys.argv[1] if len(sys.argv) > 1 else clean_field(data.get("hook_event_name"), 48)
+    event = HOOK_MAP.get(hook)
+    if not event:
+        sys.exit(0)
 
     tool = data.get("tool_name", "")
     detail = summarize_tool_input(data.get("tool_input") or data.get("prompt") or data.get("message"))

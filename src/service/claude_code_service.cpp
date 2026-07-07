@@ -160,6 +160,9 @@ ClaudeCodeService::Status ClaudeCodeService::mapEventToStatus(const char* event)
     if (strcmp(event, "done") == 0)       return Status::DONE;
     if (strcmp(event, "error") == 0)      return Status::ERROR;
     if (strcmp(event, "sweeping") == 0)   return Status::SWEEPING;
+    if (strcmp(event, "compacting") == 0) return Status::SWEEPING;
+    if (strcmp(event, "Compacting") == 0) return Status::SWEEPING;
+    if (strcmp(event, "COMPACTING") == 0) return Status::SWEEPING;
     if (strcmp(event, "sleeping") == 0)   return Status::SLEEPING;
     if (strcmp(event, "idle") == 0)       return Status::IDLE;
     return Status::WORKING;
@@ -220,7 +223,7 @@ const char* ClaudeCodeService::statusToText(Status status) const {
         case Status::ERROR:      return "ERROR";
         case Status::DONE:       return "DONE";
         case Status::PERMISSION: return "PERMISSION";
-        case Status::SWEEPING:   return "SWEEPING";
+        case Status::SWEEPING:   return "COMPACTING";
         case Status::SLEEPING:   return "SLEEPING";
         default:                 return "UNKNOWN";
     }

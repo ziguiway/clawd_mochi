@@ -143,6 +143,40 @@ You should see the web controller:
 
 ---
 
+## Claude Code status hook
+
+The Claude Code hook streams session, prompt, tool, and completion events to Clawd Mochi over USB serial first, then UDP as a fallback.
+
+Install it from this repo:
+
+```bash
+scripts/install_claude_hook.sh
+```
+
+On Windows, run the same command from PowerShell:
+
+```powershell
+scripts\install_claude_hook.bat
+```
+
+The installer writes a user-wide Claude Code config at `~/.claude/settings.json`, copies `cc_hook.py` into the OS user data directory, and uses Claude Code's exec-form hook config so paths with spaces work on macOS and Windows. To remove it:
+
+```bash
+scripts/install_claude_hook.sh uninstall
+```
+
+If `uv` is installed, the installer uses it automatically and writes hook entries like `uv run --script cc_hook.py`. This lets `cc_hook.py` declare its own Python dependency on `pyserial`. You can force a runner with `--runner uv` or `--runner python`.
+
+Hook discovery cache is stored in one JSON file:
+
+- macOS: `~/Library/Caches/ClawdMochi/cc_hook_cache.json`
+- Windows: `%LOCALAPPDATA%\ClawdMochi\cc_hook_cache.json`
+- Linux: `${XDG_CACHE_HOME:-~/.cache}/clawd-mochi/cc_hook_cache.json`
+
+Set `CLAWD_MOCHI_PORT` to force a serial port, or `CLAWD_MOCHI_CACHE_DIR` to override the cache location.
+
+---
+
 ## 3D case
 
 The electronics case (body + back) is in the `clawd_mochi` model folder:

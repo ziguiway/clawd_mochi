@@ -10,7 +10,7 @@ header .subtitle{color:#888;font-size:.9rem}
 .status-indicator{width:16px;height:16px;border-radius:50%;background:#555;transition:background .3s}
 .status-indicator.idle{background:#ff8c00}.status-indicator.thinking{background:#0066ff}.status-indicator.working{background:#00cc00}
 .status-indicator.error{background:#ff0000}.status-indicator.done{background:#00cc00}.status-indicator.permission{background:#ffcc00}
-.status-indicator.sweeping{background:#ff8c00}.status-indicator.sleeping{background:#555}
+.status-indicator.sweeping,.status-indicator.compacting{background:#ff8c00}.status-indicator.sleeping{background:#555}
 #status-text{font-size:1.2rem;font-weight:600}
 .info-grid{display:grid;gap:8px}
 .info-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
