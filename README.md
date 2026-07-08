@@ -167,6 +167,14 @@ scripts/install_claude_hook.sh uninstall
 
 If `uv` is installed, the installer uses it automatically and writes hook entries like `uv run --script cc_hook.py`. This lets `cc_hook.py` declare its own Python dependency on `pyserial`. You can force a runner with `--runner uv` or `--runner python`.
 
+Claude Code tool hook matchers are exact tool filters. For example, `Bash` only matches the Bash tool, and `Edit|Write` matches either the Edit or Write tool by exact name. If you prefer explicit tool-only hooks, install with:
+
+```bash
+scripts/install_claude_hook.sh --tool-matchers "Bash;Edit,Write"
+```
+
+The installer writes `Edit,Write` as `Edit|Write` in Claude Code settings. Clawd Mochi still displays the actual tool from each hook event, so the screen shows `Bash`, `Edit`, or `Write`, not the matcher pattern.
+
 Hook discovery cache is stored in one JSON file:
 
 - macOS: `~/Library/Caches/ClawdMochi/cc_hook_cache.json`

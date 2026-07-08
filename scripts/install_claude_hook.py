@@ -41,6 +41,12 @@ HOOK_EVENTS = [
 
 HOOK_STATUS_MESSAGE = "Clawd Mochi status hook"
 HOOK_TIMEOUT_SECONDS = 10
+TOOL_MATCHER_EVENTS = {
+    "PermissionRequest",
+    "PreToolUse",
+    "PostToolUse",
+    "PostToolUseFailure",
+}
 
 
 def user_data_dir() -> Path:
@@ -173,6 +179,14 @@ def hook_handler(command: str, runner_args: list[str], hook_script: Path, event:
     }
 
 
+def hook_group(command: str, runner_args: list[str], hook_script: Path,
+               event: str, matcher: str | None = None) -> dict:
+    group: dict = {"hooks": [hook_handler(command, runner_args, hook_script, event)]}
+    if matcher:
+        group["matcher"] = matcher
+    return group
+
+
 def is_clawd_handler(handler: object, hook_script: Path | None = None) -> bool:
     if not isinstance(handler, dict):
         return False
@@ -241,7 +255,8 @@ def prune_clawd_hooks(settings: dict, hook_script: Path | None = None) -> int:
 
 
 def install_settings(settings: dict, command: str, runner_args: list[str],
-                     hook_script: Path, events: list[str]) -> int:
+                     hook_script: Path, events: list[str],
+                     tool_matchers: list[str] | None = None) -> int:
     prune_clawd_hooks(settings, hook_script)
 
     hooks_root = settings.setdefault("hooks", {})
@@ -253,8 +268,10 @@ def install_settings(settings: dict, command: str, runner_args: list[str],
         hooks_root.setdefault(event, [])
         if not isinstance(hooks_root[event], list):
             raise SystemExit(f'settings["hooks"]["{event}"] must be a JSON array')
-        hooks_root[event].append({"hooks": [hook_handler(command, runner_args, hook_script, event)]})
-        installed += 1
+        matchers = tool_matchers if event in TOOL_MATCHER_EVENTS else [None]
+        for matcher in matchers:
+            hooks_root[event].append(hook_group(command, runner_args, hook_script, event, matcher))
+            installed += 1
     return installed
 
 
@@ -267,6 +284,31 @@ def parse_events(raw: str | None) -> list[str]:
     if unknown:
         raise SystemExit(f"Unknown hook event(s): {', '.join(unknown)}")
     return events
+
+
+def normalize_tool_matcher(raw: str) -> str:
+    # Claude Code treats "Edit|Write" as an exact-name list. Accept commas as
+    # installer input sugar, but always write the explicit pipe form.
+    parts = [part.strip() for part in raw.replace("|", ",").split(",") if part.strip()]
+    if not parts:
+        raise SystemExit("Tool matcher cannot be empty")
+
+    invalid = [
+        part for part in parts
+        if any(not (char.isalnum() or char in "_- ") for char in part)
+    ]
+    if invalid:
+        raise SystemExit(
+            "Tool matchers must be exact tool names here, e.g. Bash or Edit|Write. "
+            f"Unsupported matcher(s): {', '.join(invalid)}"
+        )
+    return "|".join(dict.fromkeys(parts))
+
+
+def parse_tool_matchers(raw: str | None) -> list[str] | None:
+    if not raw:
+        return None
+    return [normalize_tool_matcher(part) for part in raw.split(";") if part.strip()]
 
 
 def parse_args() -> argparse.Namespace:
@@ -292,6 +334,9 @@ def parse_args() -> argparse.Namespace:
                         help="On uninstall, delete the copied hook script if it is in the Clawd Mochi data dir.")
     parser.add_argument("--events",
                         help="Comma-separated subset of events to install. Defaults to all supported events.")
+    parser.add_argument("--tool-matchers",
+                        help=("Semicolon-separated exact tool matcher groups for tool hooks. "
+                              "Examples: Bash or Bash;Edit,Write. Commas are written as Edit|Write."))
     parser.add_argument("--no-backup", action="store_true",
                         help="Do not create a timestamped backup of an existing settings file.")
     parser.add_argument("--dry-run", action="store_true",
@@ -317,10 +362,13 @@ def main() -> None:
 
     if args.action == "install":
         events = parse_events(args.events)
+        tool_matchers = parse_tool_matchers(args.tool_matchers)
         command, runner_args = resolve_runner(args.runner, args.python, args.uv)
-        installed = install_settings(settings, command, runner_args, hook_script, events)
+        installed = install_settings(settings, command, runner_args, hook_script, events, tool_matchers)
         save_settings(settings_path, settings, args.dry_run, not args.no_backup)
         print(f"Installed {installed} Clawd Mochi hook entries")
+        if tool_matchers:
+            print(f"Tool matchers: {'; '.join(tool_matchers)}")
         print(f"Runner: {command} {' '.join(runner_args)}".rstrip())
     else:
         removed = prune_clawd_hooks(settings, hook_script)

@@ -152,6 +152,20 @@ def summarize_tool_input(value: object) -> str:
     return clean_field(value, 64)
 
 
+def extract_tool_name(data: dict) -> str:
+    """Return Claude Code's actual tool for this hook, not the matcher pattern."""
+    for key in ("tool_name", "toolName", "tool"):
+        value = data.get(key)
+        if isinstance(value, str) and value:
+            return value
+    tool_input = data.get("tool_input")
+    if isinstance(tool_input, dict):
+        value = tool_input.get("tool_name") or tool_input.get("toolName")
+        if isinstance(value, str) and value:
+            return value
+    return ""
+
+
 def serial_candidates() -> list[str]:
     env_port = os.environ.get("CLAWD_MOCHI_PORT") or os.environ.get("ESP32_PORT")
     try:
@@ -318,7 +332,7 @@ def main() -> None:
     if not event:
         sys.exit(0)
 
-    tool = data.get("tool_name", "")
+    tool = extract_tool_name(data)
     detail = summarize_tool_input(data.get("tool_input") or data.get("prompt") or data.get("message"))
     model = data.get("model", "") or os.environ.get("CLAUDE_MODEL", "") or os.environ.get("ANTHROPIC_MODEL", "")
     msg = ",".join([

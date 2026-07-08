@@ -12,6 +12,6 @@
             const e = document.getElementById('elapsed'); if (e) e.textContent = data.elapsed ? formatElapsed(data.elapsed) : '--';
         });
     }
-    setInterval(updateStatus, 1000);
+    setInterval(updateStatus, 250);
     document.addEventListener('DOMContentLoaded', updateStatus);
 })();
