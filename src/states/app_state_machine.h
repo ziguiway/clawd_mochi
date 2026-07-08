@@ -15,6 +15,7 @@
 #include "../service/time_service.h"
 #include "../service/claude_code_service.h"
 #include "../service/wifi_config_service.h"
+#include "../service/preference_service.h"
 #include "../service/web_service.h"
 #include "../service/display_service.h"
 #include "../service/serial_command_service.h"
@@ -60,6 +61,7 @@ private:
     StateMachine         _sm;
     ClaudeCodeService    _cc;
     WifiConfigService    _wifi;
+    PreferenceService    _prefs;
     DisplayService       _display;
     WebService           _web;
     SerialCommandService _serial;

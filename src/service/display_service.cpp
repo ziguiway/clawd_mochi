@@ -11,8 +11,10 @@
 #define EYE_OY  40
 
 DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
-                               WifiConfigService* wifiService, TimeService* timeService)
+                               WifiConfigService* wifiService, TimeService* timeService,
+                               PreferenceService* preferenceService)
     : _tft(tft), _ccService(ccService), _wifiService(wifiService), _timeService(timeService)
+    , _preferenceService(preferenceService)
     , _ccView(tft), _eyesView(tft)
     , _currentMode(DisplayMode::SETUP), _lastRefreshMs(0)
     , _interactiveView(InteractiveView::EYES_NORMAL), _interactiveActive(false)
@@ -23,6 +25,7 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _pomodoroRunning(false), _pomodoroPaused(false)
     , _pomodoroDurationSec(25UL * 60UL), _pomodoroRemainingAtPauseSec(25UL * 60UL)
     , _pomodoroStartedMs(0), _lastClockRenderSec(0)
+    , _lastNightDimCheckMs(0), _lastAppliedBrightnessPercent(255)
     , _timeViewDirty(true), _timeViewLayoutDrawn(false)
     , _lastTimeText{0}, _lastSubText{0}, _lastHintText{0}
     , _lastProgressPermille(0xFFFF), _lastLightProgress(false)
@@ -32,9 +35,16 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
 
 void DisplayService::init() {
     _currentMode = DisplayMode::SETUP;
-    _animBgColor = COLOR_ORANGE;
-    _drawBgColor = COLOR_ORANGE;
-    setBrightnessPercent(_brightnessPercent);
+    if (_preferenceService) {
+        _animSpeed = _preferenceService->getAnimSpeed();
+        _animBgColor = hexToRgb565(_preferenceService->getDefaultBgHex());
+        _drawBgColor = _animBgColor;
+        _brightnessPercent = _preferenceService->getBrightnessPercent();
+    } else {
+        _animBgColor = COLOR_ORANGE;
+        _drawBgColor = COLOR_ORANGE;
+    }
+    applyNightDimming();
 }
 
 // ── Eye geometry ───────────────────────────────────────────────
@@ -122,6 +132,7 @@ void DisplayService::invalidateTimeView() {
     _lastSubText[0] = '\0';
     _lastHintText[0] = '\0';
     _lastProgressPermille = 0xFFFF;
+    _lastLightProgress = false;
     _timeViewLayoutDrawn = false;
 }
 
@@ -164,47 +175,43 @@ void DisplayService::renderTimeScreenDynamic(const char* timeText, const char* s
     const int16_t barW = 200;
     const int16_t barH = 12;
 
-    // 动态区域 Y 范围:大约 60 ~ 180(覆盖时间文字、子文字、进度条)
-    // 局部擦除只针对动态区域,避免全屏闪烁
-    const int16_t dynTop = 60;
-    const int16_t dynBottom = 180;
-    const uint16_t bgFill = lightProgress ? COLOR_BLACK : COLOR_ORANGE;
-
     const bool timeChanged = strcmp(timeText, _lastTimeText) != 0;
     const bool subChanged = strcmp(subText, _lastSubText) != 0;
     const bool hintChanged = strcmp(hintText, _lastHintText) != 0;
     const bool progChanged = (progressPermille != _lastProgressPermille) ||
                              (lightProgress != _lastLightProgress);
 
-    // 只要有任一动态项变化,才擦除动态背景区域一次(而非整屏)
-    const bool anyChanged = timeChanged || subChanged || hintChanged || progChanged;
-    if (anyChanged) {
-        _tft->fillRect(0, dynTop, CFG_DISPLAY_WIDTH, dynBottom - dynTop, bgFill);
-    }
-
     int16_t x1, y1;
     uint16_t w, h;
 
     // 时间文字(size 6)
-    _tft->getTft().setTextSize(6);
-    _tft->getTft().setTextColor(COLOR_BLACK);
-    _tft->getTft().getTextBounds(timeText, 0, 0, &x1, &y1, &w, &h);
-    _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - w) / 2, 72);
-    _tft->getTft().print(timeText);
+    if (timeChanged) {
+        _tft->fillRect(0, 60, CFG_DISPLAY_WIDTH, 58, COLOR_ORANGE);
+        _tft->getTft().setTextSize(6);
+        _tft->getTft().setTextColor(COLOR_BLACK);
+        _tft->getTft().getTextBounds(timeText, 0, 0, &x1, &y1, &w, &h);
+        _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - w) / 2, 72);
+        _tft->getTft().print(timeText);
+    }
 
     // 子文字(size 2)
-    _tft->getTft().setTextSize(2);
-    _tft->getTft().setTextColor(COLOR_BLACK);
-    _tft->getTft().getTextBounds(subText, 0, 0, &x1, &y1, &w, &h);
-    _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - w) / 2, 132);
-    _tft->getTft().print(subText);
+    if (subChanged) {
+        _tft->fillRect(0, 124, CFG_DISPLAY_WIDTH, 28, COLOR_ORANGE);
+        _tft->getTft().setTextSize(2);
+        _tft->getTft().setTextColor(COLOR_BLACK);
+        _tft->getTft().getTextBounds(subText, 0, 0, &x1, &y1, &w, &h);
+        _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - w) / 2, 132);
+        _tft->getTft().print(subText);
+    }
 
     // 进度条填充
-    const uint16_t fillColor = lightProgress ? COLOR_WHITE : COLOR_BLACK;
-    const int16_t fillW = (barW - 4) * progressPermille / 1000;
-    // 先清空进度条内部再用填充色覆盖,避免残留
-    _tft->fillRect(barX + 2, barY + 2, barW - 4, barH - 4, bgFill);
-    if (fillW > 0) _tft->fillRect(barX + 2, barY + 2, fillW, barH - 4, fillColor);
+    if (progChanged) {
+        const uint16_t fillColor = lightProgress ? COLOR_WHITE : COLOR_BLACK;
+        const int16_t fillW = (barW - 4) * progressPermille / 1000;
+        _tft->fillRect(barX + 2, barY + 2, barW - 4, barH - 4, COLOR_ORANGE);
+        if (fillW > 0) _tft->fillRect(barX + 2, barY + 2, fillW, barH - 4, fillColor);
+        _tft->drawRect(barX, barY, barW, barH, COLOR_BLACK);
+    }
 
     // 底部 hint(右对齐,橙色,需擦旧字)
     if (hintChanged) {
@@ -472,7 +479,10 @@ void DisplayService::exitInteractive() {
 }
 
 void DisplayService::setInteractiveView(uint8_t view) {
-    if (!_interactiveActive) enterInteractive();
+    if (!_interactiveActive) {
+        _interactiveActive = true;
+        _currentMode = DisplayMode::INTERACTIVE;
+    }
     _interactiveView = static_cast<InteractiveView>(view);
     _termMode = false;
     switch (_interactiveView) {
@@ -554,7 +564,10 @@ void DisplayService::drawStroke(uint16_t penColor, const String& pointsData) {
 }
 
 void DisplayService::showClock() {
-    if (!_interactiveActive) enterInteractive();
+    if (!_interactiveActive) {
+        _interactiveActive = true;
+        _currentMode = DisplayMode::INTERACTIVE;
+    }
     _interactiveView = InteractiveView::CLOCK;
     _termMode = false;
     _lastClockRenderSec = 0;
@@ -562,8 +575,29 @@ void DisplayService::showClock() {
     drawClockView();
 }
 
+void DisplayService::showPomodoroReady() {
+    if (!_interactiveActive) {
+        _interactiveActive = true;
+        _currentMode = DisplayMode::INTERACTIVE;
+    }
+    _interactiveView = InteractiveView::POMODORO;
+    _termMode = false;
+    _pomodoroRunning = false;
+    _pomodoroPaused = false;
+    _pomodoroPhase = PomodoroPhase::FOCUS;
+    _pomodoroDurationSec = (uint32_t)_focusMinutes * 60UL;
+    if (_pomodoroDurationSec == 0) _pomodoroDurationSec = 1;
+    _pomodoroRemainingAtPauseSec = _pomodoroDurationSec;
+    _lastClockRenderSec = 0;
+    invalidateTimeView();
+    drawPomodoroView();
+}
+
 void DisplayService::startPomodoro(PomodoroPhase phase) {
-    if (!_interactiveActive) enterInteractive();
+    if (!_interactiveActive) {
+        _interactiveActive = true;
+        _currentMode = DisplayMode::INTERACTIVE;
+    }
     _interactiveView = InteractiveView::POMODORO;
     _termMode = false;
     _pomodoroPhase = phase;
@@ -630,8 +664,46 @@ uint32_t DisplayService::getPomodoroDurationSec() const {
 
 void DisplayService::setBrightnessPercent(uint8_t percent) {
     _brightnessPercent = constrain(percent, 0, 100);
-    const uint8_t pwm = map(_brightnessPercent, 0, 100, 0, 255);
+    applyNightDimming();
+}
+
+void DisplayService::applyNightDimming() {
+    const bool nightActive = _preferenceService &&
+                             _preferenceService->isNightDimActive(_timeService);
+    const uint8_t effectivePercent = nightActive
+        ? _preferenceService->getNightBrightnessPercent()
+        : _brightnessPercent;
+    if (effectivePercent == _lastAppliedBrightnessPercent) return;
+    _lastAppliedBrightnessPercent = effectivePercent;
+    const uint8_t pwm = map(effectivePercent, 0, 100, 0, 255);
     _tft->setBrightness(pwm);
+}
+
+void DisplayService::applyIdleDefaultView() {
+    const uint8_t view = _preferenceService
+        ? _preferenceService->getStartupView()
+        : VIEW_EYES_NORMAL;
+    switch (view) {
+        case VIEW_EYES_SQUISH:
+            _currentMode = DisplayMode::EXPRESSION;
+            _interactiveActive = false;
+            _interactiveView = InteractiveView::EYES_SQUISH;
+            drawSquishEyes(false);
+            break;
+        case VIEW_CLOCK:
+            showClock();
+            break;
+        case VIEW_POMODORO:
+            showPomodoroReady();
+            break;
+        case VIEW_EYES_NORMAL:
+        default:
+            _currentMode = DisplayMode::EXPRESSION;
+            _interactiveActive = false;
+            _interactiveView = InteractiveView::EYES_NORMAL;
+            drawNormalEyes();
+            break;
+    }
 }
 
 // ── Main update loop ───────────────────────────────────────────
@@ -639,6 +711,10 @@ void DisplayService::setBrightnessPercent(uint8_t percent) {
 // 本方法只负责按当前 _currentMode 渲染。
 void DisplayService::update() {
     unsigned long now = millis();
+    if (now - _lastNightDimCheckMs > 30000UL) {
+        _lastNightDimCheckMs = now;
+        applyNightDimming();
+    }
     if (_currentMode == DisplayMode::INTERACTIVE) {
         if (_interactiveView != InteractiveView::CLOCK &&
             _interactiveView != InteractiveView::POMODORO) {
@@ -782,7 +858,7 @@ void DisplayService::switchToExpressionMode() {
     auto status = _ccService->getStatus();
     if (status == ClaudeCodeService::Status::THINKING) drawThinking(3);
     else if (status == ClaudeCodeService::Status::WORKING) drawWorking();
-    else drawNormalEyes();
+    else applyIdleDefaultView();
 }
 
 void DisplayService::switchToInfoMode() {

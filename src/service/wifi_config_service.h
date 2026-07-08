@@ -24,6 +24,7 @@ public:
     bool isConnected();
     String getIP();
     String getSSID();
+    String getSavedSSID() const { return _ssid; }
 
     ProvisioningMode getProvisioningMode() const { return _provMode; }
     const char* getProvisioningMessage() const;

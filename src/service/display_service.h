@@ -7,6 +7,7 @@
 #include "../view/eyes_view.h"
 #include "wifi_config_service.h"
 #include "time_service.h"
+#include "preference_service.h"
 #include "../config/cfg_display.h"
 
 enum class DisplayMode {
@@ -36,7 +37,8 @@ enum class PomodoroPhase {
 class DisplayService {
 public:
     DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
-                   WifiConfigService* wifiService, TimeService* timeService);
+                   WifiConfigService* wifiService, TimeService* timeService,
+                   PreferenceService* preferenceService);
     void init();
     void update();
 
@@ -86,6 +88,7 @@ public:
 
     // Clock / Pomodoro
     void showClock();
+    void showPomodoroReady();
     void startPomodoro(PomodoroPhase phase);
     void pausePomodoro();
     void resetPomodoro();
@@ -114,6 +117,7 @@ private:
     ClaudeCodeService* _ccService;
     WifiConfigService* _wifiService;
     TimeService* _timeService;
+    PreferenceService* _preferenceService;
     ClaudeCodeView _ccView;
     EyesView _eyesView;
     DisplayMode _currentMode;
@@ -138,6 +142,8 @@ private:
     uint32_t _pomodoroRemainingAtPauseSec;
     unsigned long _pomodoroStartedMs;
     unsigned long _lastClockRenderSec;
+    unsigned long _lastNightDimCheckMs;
+    uint8_t _lastAppliedBrightnessPercent;
 
     // Time view rendering cache (anti-flicker)
     bool _timeViewDirty;
@@ -168,6 +174,8 @@ private:
                                  const char* hintText,
                                  uint16_t progressPermille, bool lightProgress);
     void invalidateTimeView();
+    void applyIdleDefaultView();
+    void applyNightDimming();
     void drawChevron(int16_t cx, int16_t cy, int16_t arm, int16_t reach, uint8_t thk, bool rightFacing, uint16_t col);
 
     // Eye geometry

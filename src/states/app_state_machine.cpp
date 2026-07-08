@@ -4,8 +4,8 @@
 
 AppStateMachine::AppStateMachine()
     : _cc(&_sm)
-    , _display(&_tft, &_cc, &_wifi, &_time)
-    , _web(&_cc, &_wifi, &_time, &_display)
+    , _display(&_tft, &_cc, &_wifi, &_time, &_prefs)
+    , _web(&_cc, &_wifi, &_time, &_display, &_prefs)
     , _serial(&_wifi, &_cc, &_time)
     , _bootButton(&_tft, &_wifi)
     , _currentId(BOOT)
@@ -25,6 +25,7 @@ void AppStateMachine::init() {
     Logger::getInstance().setTimeProvider(TimeService::timestampCallback);
     LOG_INFO("App", "Clawd Mochi 启动中...");
 
+    _prefs.init();
     _tft.init();
     _tft.clear(COLOR_BLACK);
     _time.init();

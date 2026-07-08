@@ -9,12 +9,14 @@
 #include "wifi_config_service.h"
 #include "time_service.h"
 #include "display_service.h"
+#include "preference_service.h"
 #include "../utils/logger.h"
 
 class WebService {
 public:
     WebService(ClaudeCodeService* ccService, WifiConfigService* wifiService,
-               TimeService* timeService, DisplayService* displayService);
+               TimeService* timeService, DisplayService* displayService,
+               PreferenceService* preferenceService);
     void init();
     void update();
 
@@ -25,6 +27,7 @@ private:
     WifiConfigService* _wifiService;
     TimeService* _timeService;
     DisplayService* _displayService;
+    PreferenceService* _preferenceService;
 
     void setupRoutes();
 
@@ -44,6 +47,7 @@ private:
     void handleTimerPause();
     void handleTimerReset();
     void handleTimerConfig();
+    void handlePrefs();
     void handleState();
     void handleSerialMode();
 

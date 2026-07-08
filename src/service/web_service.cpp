@@ -90,6 +90,16 @@ input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
   color:#e8e0d6;font-family:'Courier New',monospace;font-size:11px;font-weight:bold;
   padding:11px 4px;cursor:pointer}
 .pbtn.hi{background:#c96a3e;border-color:#f0a060;color:#140c08}
+.pref{width:100%;max-width:390px;background:#201c18;border:1.5px solid #3a3028;
+  border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.pref-row{display:flex;align-items:center;gap:8px}
+.pref-row label{width:86px;color:#8a8278;font-size:10px;font-weight:bold;letter-spacing:1px}
+.pref select,.pref input[type=number]{flex:1;background:#101014;border:1.5px solid #38343a;
+  border-radius:8px;color:#e8e4dc;font-family:'Courier New',monospace;font-size:12px;
+  font-weight:bold;padding:10px;min-width:0}
+.pref input[type=checkbox]{width:20px;height:20px;accent-color:#c96a3e}
+.pref .mini{width:58px;flex:0 0 58px;text-align:center}
+.pref .save{background:#c96a3e;border-color:#f0a060;color:#140c08}
 .cwrap{width:100%;max-width:390px;background:#222028;border:1.5px solid #38343a;
   border-radius:12px;padding:12px;flex-direction:column;gap:10px;display:none}
 .cwrap.open{display:flex}
@@ -215,6 +225,27 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <input type="color" class="cs" id="penCol" value="#000000">
   </div>
 </div>
+<div class="sec">// preferences</div>
+<div class="pref">
+  <div class="pref-row">
+    <label>STARTUP</label>
+    <select id="startupView" onchange="savePrefs()">
+      <option value="0">Normal eyes</option>
+      <option value="1">Squish eyes</option>
+      <option value="6">Clock</option>
+      <option value="7">Pomodoro ready</option>
+    </select>
+  </div>
+  <div class="pref-row">
+    <label>NIGHT DIM</label>
+    <input id="nightDim" type="checkbox" onchange="savePrefs()">
+    <input class="mini" id="nightStart" type="number" min="0" max="23" value="22" onchange="savePrefs()">
+    <span style="color:#8a8278;font-size:12px">to</span>
+    <input class="mini" id="nightEnd" type="number" min="0" max="23" value="7" onchange="savePrefs()">
+    <input class="mini" id="nightBrightness" type="number" min="0" max="100" value="25" onchange="savePrefs()">
+  </div>
+  <button class="pbtn save" onclick="savePrefs()">save preferences</button>
+</div>
 <div class="sec">// terminal</div>
 <div class="twrap" id="twrap">
   <div class="thdr">
@@ -243,12 +274,14 @@ function toast(msg,ok=true){const el=document.getElementById('toast');el.textCon
 function setBusy(b){isBusy=b;document.getElementById('busy').classList.toggle('show',b);const locked=b||termOpen;document.querySelectorAll('.vbtn').forEach(el=>{el.disabled=canvasOpen?parseInt(el.dataset.v)!==3:locked;});document.querySelectorAll('.cbtn').forEach(el=>{if(el.id!=='blBtn')el.disabled=locked;});}
 async function req(path){try{const r=await fetch(path);return r.ok;}catch(e){toast('no connection',false);return false;}}
 async function waitNotBusy(){for(let i=0;i<100;i++){try{const r=await fetch('/state');const j=await r.json();if(!j.busy)return;}catch(e){}await new Promise(r=>setTimeout(r,150));}}
-async function onBgChange(hex){if(canvasOpen){await req('/draw/clear?bg='+encodeURIComponent(hex));}else{await req('/redraw?bg='+encodeURIComponent(hex));}redrawCanvas(hex);}
-async function setSpeed(v){document.getElementById('spdV').textContent=spdLabels[v];await req('/speed?v='+v);}
+async function onBgChange(hex){if(canvasOpen){await req('/draw/clear?bg='+encodeURIComponent(hex));}else{await req('/redraw?bg='+encodeURIComponent(hex));}redrawCanvas(hex);await savePrefs(false);}
+async function setSpeed(v){document.getElementById('spdV').textContent=spdLabels[v];await req('/speed?v='+v);await savePrefs(false);}
 async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7){toast(v===6?'clock open':'pomodoro open');return;}setBusy(true);await waitNotBusy();setBusy(false);}
 function updateBlButton(){const b=document.getElementById('blBtn');b.textContent=blOn?'☀ display on':'○ display off';b.classList.toggle('on',blOn);b.classList.toggle('dim',!blOn);}
-async function toggleBL(){blOn=!blOn;const v=blOn?100:0;document.getElementById('bright').value=v;document.getElementById('brightV').textContent=v+'%';await req('/backlight?on='+(blOn?1:0));updateBlButton();}
-async function setBrightness(v){v=parseInt(v||0);document.getElementById('brightV').textContent=v+'%';blOn=v>0;updateBlButton();await req('/brightness?v='+v);}
+async function toggleBL(){blOn=!blOn;const v=blOn?100:0;document.getElementById('bright').value=v;document.getElementById('brightV').textContent=v+'%';await req('/backlight?on='+(blOn?1:0));updateBlButton();await savePrefs(false);}
+async function setBrightness(v){v=parseInt(v||0);document.getElementById('brightV').textContent=v+'%';blOn=v>0;updateBlButton();await req('/brightness?v='+v);await savePrefs(false);}
+async function loadPrefs(){try{const r=await fetch('/prefs');const p=await r.json();document.getElementById('bgCol').value=p.bg||'#aa4818';document.getElementById('spd').value=p.speed||1;document.getElementById('spdV').textContent=spdLabels[p.speed||1];document.getElementById('startupView').value=String(p.startup||0);document.getElementById('nightDim').checked=!!p.nightDim;document.getElementById('nightStart').value=p.nightStart??22;document.getElementById('nightEnd').value=p.nightEnd??7;document.getElementById('nightBrightness').value=p.nightBrightness??25;redrawCanvas(p.bg||'#aa4818');}catch(e){}}
+async function savePrefs(showToast=true){const q=new URLSearchParams();q.set('bg',document.getElementById('bgCol').value);q.set('speed',document.getElementById('spd').value);q.set('startup',document.getElementById('startupView').value);q.set('brightness',document.getElementById('bright').value);q.set('night',document.getElementById('nightDim').checked?'1':'0');q.set('nightStart',document.getElementById('nightStart').value);q.set('nightEnd',document.getElementById('nightEnd').value);q.set('nightBrightness',document.getElementById('nightBrightness').value);try{await fetch('/prefs?'+q.toString());if(showToast)toast('preferences saved');}catch(e){if(showToast)toast('save failed',false);}}
 function fmtSec(s){s=Math.max(0,parseInt(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
 async function pollTimer(){try{const r=await fetch('/timer/status');const j=await r.json();document.getElementById('pPhase').textContent=(j.phase==='break'?'BREAK':'FOCUS')+(j.paused?' / PAUSED':'');document.getElementById('pTime').textContent=fmtSec(j.remaining);document.getElementById('focusMin').value=j.focus;document.getElementById('breakMin').value=j.break;}catch(e){}}
 async function startTimer(phase){await fetch('/timer/start?phase='+phase);document.getElementById('pwrap').classList.add('open');await pollTimer();toast(phase==='break'?'break started':'focus started');}
@@ -258,7 +291,7 @@ async function configTimer(){const f=document.getElementById('focusMin').value||
 async function useSerialMode(){if(!confirm('Switch Claude status input to USB serial? Local Web control stays available.'))return;await req('/serial_mode');toast('serial mode active');}
 async function loadWifiList(){const btn=document.getElementById('wscanBtn');btn.disabled=true;btn.textContent='scanning...';document.getElementById('wstatus').textContent='scanning...';document.getElementById('wlist').style.display='none';document.getElementById('wform').style.display='none';try{const r=await fetch('/wifi/scan');const nets=await r.json();const list=document.getElementById('wlist');list.innerHTML='';if(nets.length===0){document.getElementById('wstatus').textContent='no networks found';}else{nets.sort((a,b)=>b.rssi-a.rssi);nets.forEach(n=>{const btn=document.createElement('button');btn.className='cbtn';btn.style.textAlign='left';btn.style.padding='10px 12px';const sig=n.rssi>-50?'&#128267;':(n.rssi>-70?'&#128266;':'&#128268;');btn.innerHTML='<span style="color:#c96a3e">'+sig+'</span> '+n.ssid+(n.encrypted?' <span style="color:#5a5048">&#128274;</span>':'')+' <span style="color:#5a5048;font-size:9px">'+n.rssi+'dBm</span>';btn.onclick=()=>{document.getElementById('wssid').value=n.ssid;document.getElementById('wpass').focus();};list.appendChild(btn);});document.getElementById('wstatus').textContent='select network or type SSID:';document.getElementById('wlist').style.display='flex';document.getElementById('wform').style.display='flex';}}catch(e){document.getElementById('wstatus').textContent='scan failed';}btn.disabled=false;btn.textContent='🔍 scan networks';}
 async function connectWifi(){const ssid=document.getElementById('wssid').value.trim();const pass=document.getElementById('wpass').value;if(!ssid){toast('enter SSID',false);return;}const fd=new FormData();fd.append('ssid',ssid);fd.append('password',pass);document.getElementById('wstatus').textContent='connecting...';try{await fetch('/wifi/connect',{method:'POST',body:fd});}catch(e){}let ok=false;for(let i=0;i<30;i++){await new Promise(r=>setTimeout(r,1000));try{const r=await fetch('/wifi/status');const j=await r.json();if(j.connected){ok=true;break;}document.getElementById('wstatus').textContent='connecting... ('+(i+1)+'s)';}catch(e){}}if(ok){document.getElementById('wstatus').innerHTML='<span style="color:#28b878">✓ connected: '+ssid+'</span>';document.getElementById('wlist').style.display='none';document.getElementById('wform').style.display='none';toast('wifi connected');}else{document.getElementById('wstatus').innerHTML='<span style="color:#c96a3e">connection failed, retry</span>';toast('wifi failed',false);}}
-async function pollWifiStatus(){try{const r=await fetch('/wifi/status');const j=await r.json();const el=document.getElementById('wstatus');if(j.connected){el.innerHTML='<span style="color:#28b878">✓ connected: '+j.ssid+' ('+j.ip+')</span>';document.getElementById('wlist').style.display='none';document.getElementById('wform').style.display='none';document.getElementById('wscanBtn').style.display='none';}else{el.textContent='not connected — scan to setup';}}catch(e){document.getElementById('wstatus').textContent='status unavailable';}}
+async function pollWifiStatus(){try{const r=await fetch('/wifi/status');const j=await r.json();const el=document.getElementById('wstatus');if(j.connected){el.innerHTML='<span style="color:#28b878">✓ connected: '+j.ssid+' ('+j.ip+')</span>';document.getElementById('wlist').style.display='none';document.getElementById('wform').style.display='none';document.getElementById('wscanBtn').style.display='none';}else if(j.configured&&j.savedSsid){el.innerHTML='<span style="color:#c96a3e">saved: '+j.savedSsid+'</span> · not connected';}else{el.textContent='not connected — scan to setup';}}catch(e){document.getElementById('wstatus').textContent='status unavailable';}}
 async function toggleCanvas(){canvasOpen=!canvasOpen;document.getElementById('cwrap').classList.toggle('open',canvasOpen);document.querySelectorAll('.vbtn').forEach(btn=>btn.classList.toggle('active',canvasOpen&&parseInt(btn.dataset.v)===3));await req('/canvas?on='+(canvasOpen?1:0));if(canvasOpen){const bg=document.getElementById('bgCol').value;redrawCanvas(bg);await req('/draw/clear?bg='+encodeURIComponent(bg));document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);toast('canvas active');}else{setBusy(false);toast('canvas off');}}
 const tin=document.getElementById('tin');let lastVal='';
 tin.addEventListener('input',async()=>{const cur=tin.value,prev=lastVal;if(cur.length>prev.length){await req('/char?c='+encodeURIComponent(cur[cur.length-1]));}else if(cur.length<prev.length){await req('/char?c=%08');}lastVal=cur;});
@@ -274,7 +307,7 @@ async function endDraw(e){if(!drawing)return;drawing=false;if(!canvasOpen||strok
 cvs.addEventListener('mousedown',startDraw);cvs.addEventListener('mousemove',moveDraw);cvs.addEventListener('mouseup',endDraw);cvs.addEventListener('mouseleave',endDraw);
 cvs.addEventListener('touchstart',startDraw,{passive:false});cvs.addEventListener('touchmove',moveDraw,{passive:false});cvs.addEventListener('touchend',endDraw);
 async function clearAll(){const bg=document.getElementById('bgCol').value;redrawCanvas(bg);await req('/draw/clear?bg='+encodeURIComponent(bg));toast('cleared');}
-(async()=>{try{const r=await fetch('/state');const j=await r.json();const spd=j.speed||1;document.getElementById('spd').value=spd;document.getElementById('spdV').textContent=spdLabels[spd];const bv=typeof j.brightness==='number'?j.brightness:(j.bl===false?0:100);document.getElementById('bright').value=bv;document.getElementById('brightV').textContent=bv+'%';blOn=bv>0;updateBlButton();}catch(e){}document.getElementById('bgCol').value='#aa4818';redrawCanvas('#aa4818');pollWifiStatus();pollTimer();setInterval(pollTimer,1000);})();
+(async()=>{await loadPrefs();try{const r=await fetch('/state');const j=await r.json();const bv=typeof j.brightness==='number'?j.brightness:(j.bl===false?0:100);document.getElementById('bright').value=bv;document.getElementById('brightV').textContent=bv+'%';blOn=bv>0;updateBlButton();}catch(e){}pollWifiStatus();pollTimer();setInterval(pollTimer,1000);})();
 </script>
 </body>
 </html>
@@ -282,11 +315,13 @@ async function clearAll(){const bg=document.getElementById('bgCol').value;redraw
 
 // ── Constructor ────────────────────────────────────────────────
 WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiService,
-                       TimeService* timeService, DisplayService* displayService)
+                       TimeService* timeService, DisplayService* displayService,
+                       PreferenceService* preferenceService)
     : _server(CFG_WIFI_WEB_PORT)
     , _started(false)
     , _ccService(ccService), _wifiService(wifiService)
     , _timeService(timeService), _displayService(displayService)
+    , _preferenceService(preferenceService)
 {
 }
 
@@ -321,6 +356,7 @@ void WebService::setupRoutes() {
     _server.on("/timer/pause",  HTTP_GET, [this]() { handleTimerPause(); });
     _server.on("/timer/reset",  HTTP_GET, [this]() { handleTimerReset(); });
     _server.on("/timer/config", HTTP_GET, [this]() { handleTimerConfig(); });
+    _server.on("/prefs",       HTTP_GET, [this]() { handlePrefs(); });
     _server.on("/state",       HTTP_GET, [this]() { handleState(); });
     _server.on("/serial_mode", HTTP_GET, [this]() { handleSerialMode(); });
 
@@ -398,14 +434,18 @@ void WebService::handleChar() {
 
 void WebService::handleSpeed() {
     if (_server.hasArg("v")) {
-        _displayService->setAnimSpeed(constrain(_server.arg("v").toInt(), 1, 3));
+        const uint8_t speed = constrain(_server.arg("v").toInt(), 1, 3);
+        _displayService->setAnimSpeed(speed);
+        if (_preferenceService) _preferenceService->setAnimSpeed(speed);
     }
     _server.send(200, "application/json", "{\"ok\":1}");
 }
 
 void WebService::handleRedraw() {
     if (_server.hasArg("bg")) {
-        _displayService->setAnimBgColor(_displayService->hexToRgb565(_server.arg("bg")));
+        const String bg = _server.arg("bg");
+        _displayService->setAnimBgColor(_displayService->hexToRgb565(bg));
+        if (_preferenceService) _preferenceService->setDefaultBgHex(bg);
     }
     _displayService->redrawCurrentView();
     _server.send(200, "application/json", "{\"ok\":1}");
@@ -437,7 +477,9 @@ void WebService::handleDrawStroke() {
 
 void WebService::handleBacklight() {
     if (_server.hasArg("on")) {
-        _displayService->setBrightnessPercent(_server.arg("on") == "1" ? 100 : 0);
+        const uint8_t brightness = _server.arg("on") == "1" ? 100 : 0;
+        _displayService->setBrightnessPercent(brightness);
+        if (_preferenceService) _preferenceService->setBrightnessPercent(brightness);
         _server.send(200, "application/json", "{\"ok\":true}");
     } else {
         _server.send(400, "application/json", "{\"error\":\"missing on parameter\"}");
@@ -446,7 +488,9 @@ void WebService::handleBacklight() {
 
 void WebService::handleBrightness() {
     if (_server.hasArg("v")) {
-        _displayService->setBrightnessPercent(constrain(_server.arg("v").toInt(), 0, 100));
+        const uint8_t brightness = constrain(_server.arg("v").toInt(), 0, 100);
+        _displayService->setBrightnessPercent(brightness);
+        if (_preferenceService) _preferenceService->setBrightnessPercent(brightness);
     }
     String json = "{\"ok\":true,\"brightness\":";
     json += _displayService->getBrightnessPercent();
@@ -495,6 +539,60 @@ void WebService::handleTimerConfig() {
     const uint16_t breakMinutes = _server.hasArg("break") ? _server.arg("break").toInt() : _displayService->getBreakMinutes();
     _displayService->setPomodoroDurations(focus, breakMinutes);
     handleTimerStatus();
+}
+
+void WebService::handlePrefs() {
+    if (!_preferenceService) {
+        _server.send(500, "application/json", "{\"error\":\"preferences unavailable\"}");
+        return;
+    }
+
+    if (_server.hasArg("bg")) {
+        const String bg = _server.arg("bg");
+        _preferenceService->setDefaultBgHex(bg);
+        const uint16_t color = _displayService->hexToRgb565(bg);
+        _displayService->setAnimBgColor(color);
+        _displayService->setDrawBgColor(color);
+    }
+    if (_server.hasArg("speed")) {
+        const uint8_t speed = constrain(_server.arg("speed").toInt(), 1, 3);
+        _preferenceService->setAnimSpeed(speed);
+        _displayService->setAnimSpeed(speed);
+    }
+    if (_server.hasArg("startup")) {
+        _preferenceService->setStartupView(constrain(_server.arg("startup").toInt(), 0, 7));
+    }
+    if (_server.hasArg("brightness")) {
+        const uint8_t brightness = constrain(_server.arg("brightness").toInt(), 0, 100);
+        _preferenceService->setBrightnessPercent(brightness);
+        _displayService->setBrightnessPercent(brightness);
+    }
+    if (_server.hasArg("night")) {
+        _preferenceService->setNightDimEnabled(_server.arg("night") == "1" ||
+                                               _server.arg("night") == "true");
+    }
+    if (_server.hasArg("nightStart") || _server.hasArg("nightEnd")) {
+        const uint8_t startHour = _server.hasArg("nightStart")
+            ? _server.arg("nightStart").toInt()
+            : _preferenceService->getNightStartHour();
+        const uint8_t endHour = _server.hasArg("nightEnd")
+            ? _server.arg("nightEnd").toInt()
+            : _preferenceService->getNightEndHour();
+        _preferenceService->setNightHours(startHour, endHour);
+    }
+    if (_server.hasArg("nightBrightness")) {
+        _preferenceService->setNightBrightnessPercent(
+            constrain(_server.arg("nightBrightness").toInt(), 0, 100));
+    }
+
+    _displayService->setBrightnessPercent(_preferenceService->getBrightnessPercent());
+
+    String json = _preferenceService->getJson();
+    json.remove(json.length() - 1);
+    json += ",\"nightActive\":";
+    json += _preferenceService->isNightDimActive(_timeService) ? "true" : "false";
+    json += "}";
+    _server.send(200, "application/json", json);
 }
 
 void WebService::handleState() {

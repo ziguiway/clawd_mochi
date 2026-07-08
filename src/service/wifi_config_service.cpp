@@ -176,6 +176,8 @@ void WifiConfigService::handleConnectRequest(WebServer& server) {
 void WifiConfigService::handleStatusRequest(WebServer& server) {
     String json = "{\"connected\":" + String(_connected ? "true" : "false");
     json += ",\"ssid\":\"" + getSSID() + "\",\"ip\":\"" + getIP() + "\"";
+    json += ",\"configured\":" + String(_configured ? "true" : "false");
+    json += ",\"savedSsid\":\"" + _ssid + "\"";
     json += ",\"rssi\":" + String(WiFi.RSSI()) + "}";
     server.send(200, "application/json", json);
 }
