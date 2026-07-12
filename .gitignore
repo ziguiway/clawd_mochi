@@ -26,3 +26,7 @@ desktop.ini
 *.log
 *.tmp
 *.bak
+
+# Python bytecode cache
+__pycache__/
+*.pyc

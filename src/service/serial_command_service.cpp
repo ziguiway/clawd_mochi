@@ -33,7 +33,15 @@ void SerialCommandService::update() {
 }
 
 void SerialCommandService::processCommand(const String& cmd) {
-    if (cmd == "CC:ping") { Serial.println("CC:pong"); return; }
+    if (cmd == "CC:ping") {
+        // 回 pong:<mode>,供 hook/daemon 判断当前模式(LAN 走 UDP,SERIAL 走串口)
+        const char* mode = "lan";
+        auto* opMode = OperationModeService::current();
+        if (opMode && opMode->isSerial()) mode = "serial";
+        Serial.print("CC:pong:");
+        Serial.println(mode);
+        return;
+    }
     if (cmd.startsWith("CC:")) {
         _ccService->processPacket(cmd.c_str(), cmd.length());
         Serial.println("ok");

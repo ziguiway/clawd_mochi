@@ -30,9 +30,7 @@ void ProvisioningState::onUpdate() {
         static_cast<AppStateMachine*>(_ctx)->transitionTo(AppStateMachine::LAN_IDLE);
         return;
     }
-    if (_ctx->opMode()->isSerial()) {
-        static_cast<AppStateMachine*>(_ctx)->transitionTo(AppStateMachine::SERIAL_IDLE);
-    }
+    // 默认 LAN 模式:WiFi 未连上时停留在配网流程,不回退串口模式
 }
 
 void ProvisioningState::onExit() {

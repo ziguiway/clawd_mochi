@@ -90,6 +90,21 @@ void ClaudeCodeService::processPacket(const char* data, int len) {
 
     if (strncmp(data, "CC:", 3) != 0) return;
 
+    // ping 探测:回 pong:<mode>,供 hook 判断当前模式(LAN 走 UDP,SERIAL 走串口)
+    // 不改状态,只刷新活动时间
+    if (strcmp(data + 3, "ping") == 0) {
+        _lastActivityMs = millis();
+        const char* mode = "lan";
+        auto* opMode = OperationModeService::current();
+        if (opMode && opMode->isSerial()) mode = "serial";
+        char reply[16];
+        snprintf(reply, sizeof(reply), "CC:pong:%s", mode);
+        _udp.beginPacket(_udp.remoteIP(), _udp.remotePort());
+        _udp.write((const uint8_t*)reply, strlen(reply));
+        _udp.endPacket();
+        return;
+    }
+
     const char* p = data + 3;
     char event[16] = {0};
     char hook[CFG_CLAUDE_CODE_HOOK_MAX_LEN] = {0};
@@ -173,10 +188,13 @@ void ClaudeCodeService::setStatus(Status status, const char* hookName,
                                    const char* model) {
     updateTaskClock(status);
     _status = status;
-    if (hookName) strncpy(_hookName, hookName, CFG_CLAUDE_CODE_HOOK_MAX_LEN - 1);
-    if (toolName) strncpy(_toolName, toolName, CFG_CLAUDE_CODE_TOOL_MAX_LEN - 1);
-    if (detail)   strncpy(_detail, detail, CFG_CLAUDE_CODE_DETAIL_MAX_LEN - 1);
-    if (model)    strncpy(_model, model, CFG_CLAUDE_CODE_MODEL_MAX_LEN - 1);
+    // 空值守卫:hook 在多数事件(Stop/PostToolUse 等)里不携带 model,
+    // stdin JSON 也只有 SessionStart 才有 model 字段。空串不覆盖,保留上次有效值,
+    // 否则 working 后任意 done/error 事件都会把 model 清成 "-"。同理 hook/tool/detail。
+    if (hookName && hookName[0]) strncpy(_hookName, hookName, CFG_CLAUDE_CODE_HOOK_MAX_LEN - 1);
+    if (toolName && toolName[0]) strncpy(_toolName, toolName, CFG_CLAUDE_CODE_TOOL_MAX_LEN - 1);
+    if (detail && detail[0])     strncpy(_detail, detail, CFG_CLAUDE_CODE_DETAIL_MAX_LEN - 1);
+    if (model && model[0])       strncpy(_model, model, CFG_CLAUDE_CODE_MODEL_MAX_LEN - 1);
     LOG_INFO("ClaudeCode", "状态: %s hook=%s tool=%s", statusToText(status), _hookName, _toolName);
 }
 

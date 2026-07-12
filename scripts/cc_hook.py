@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Claude Code Hook — send status events to Clawd Mochi over USB serial or UDP."""
+"""Claude Code Hook — send status events to Clawd Mochi over WiFi UDP.
+
+固件默认 LAN(WiFi)模式:监听 UDP:4210。本脚本把 Claude Code 的 hook 事件
+压缩成短包发过去。串口路径已移除(ESP32-C3 USB-CDC 在 Windows 关 COM 会触发
+硬件复位,且 USB 插着会让设备进串口模式,与 LAN 默认模式冲突)。
+"""
 
 # /// script
 # requires-python = ">=3.10"
-# dependencies = [
-#   "pyserial>=3.5",
-# ]
 # ///
 
 import sys
@@ -19,15 +21,9 @@ from pathlib import Path
 
 # ========== 配置 ==========
 ESP32_PORT = 4210
-DAEMON_HOST = "127.0.0.1"
-DAEMON_PORT = 4211          # 本地串口守护进程(cc_serial_daemon.py)的 UDP 端口
-DAEMON_REPLY_TIMEOUT = 0.15  # 等 daemon 回 CC:ok 的超时(秒)
 CACHE_TTL = 86400  # 24 小时
 SCAN_TIMEOUT = 0.3  # 每个 IP 的 UDP 探测超时(秒)
 SCAN_WORKERS = 64   # 并发扫描线程数
-SERIAL_BAUD = 115200
-SERIAL_TIMEOUT = 0.2
-SERIAL_PROBE_TIMEOUT = 0.4  # 串口握手 CC:ping→CC:pong 超时
 CACHE_FILE_NAME = "cc_hook_cache.json"
 # ==========================
 
@@ -61,8 +57,24 @@ HOOK_MAP = {
     "StopFailure":       "error",
 }
 
-# CC:ping 探测包，ESP32 收到后只刷新计时不改状态
+# CC:ping 探测包，ESP32 收到后只刷新计时不改状态,回 CC:pong[:<mode>]
+# 注意:不能带换行。固件用 strcmp(data+3,"ping") 精确匹配,带 \n 会变成
+# "ping\n" 匹配失败,ping 拦截失效,被当普通状态包解析(误置 WORKING)且不回 pong。
 PROBE_MSG = b"CC:ping"
+
+
+def parse_pong(data: bytes) -> str | None:
+    """解析 CC:pong[:<mode>] 握手响应，返回模式名(None 表示不是 Clawd Mochi)。
+
+    兼容旧固件只回 CC:pong(无模式后缀)的情况——视为 unknown 模式。
+    """
+    text = data.decode("ascii", "ignore").strip()
+    if text == "CC:pong":
+        return "unknown"
+    if text.startswith("CC:pong:"):
+        mode = text[len("CC:pong:"):].strip().lower()
+        return mode or "unknown"
+    return None
 
 
 def app_cache_dir() -> Path:
@@ -169,108 +181,6 @@ def extract_tool_name(data: dict) -> str:
     return ""
 
 
-def serial_candidates() -> list[str]:
-    env_port = os.environ.get("CLAWD_MOCHI_PORT") or os.environ.get("ESP32_PORT")
-    try:
-        from serial.tools import list_ports
-        found = [p.device for p in list_ports.comports()]
-    except Exception:
-        found = []
-    ports = ([env_port] if env_port else []) + found
-    seen: set[str] = set()
-    return [p for p in ports if not (p in seen or seen.add(p))]
-
-
-def probe_serial_port(ser) -> bool:
-    """串口握手：发 CC:ping，期望 CC:pong 确认是 Clawd Mochi 设备"""
-    try:
-        ser.reset_input_buffer()
-        ser.write(b"CC:ping\n")
-        ser.flush()
-        line = ser.readline()
-        return line.strip() == b"CC:pong"
-    except Exception:
-        return False
-
-
-def read_serial_cache() -> str | None:
-    return read_cache_value("serial_port")
-
-
-def write_serial_cache(port: str) -> None:
-    write_cache_value("serial_port", port)
-
-
-def find_serial_port() -> str | None:
-    """查找 Clawd Mochi 串口：缓存 → 探测所有候选端口"""
-    if os.environ.get("CLAWD_MOCHI_NO_SERIAL"):
-        return None
-
-    try:
-        import serial
-    except Exception:
-        return None
-
-    cached = read_serial_cache()
-    if cached:
-        try:
-            with serial.Serial(cached, SERIAL_BAUD, timeout=SERIAL_PROBE_TIMEOUT, write_timeout=SERIAL_PROBE_TIMEOUT) as ser:
-                if probe_serial_port(ser):
-                    return cached
-        except Exception:
-            pass
-        write_serial_cache("")  # 缓存失效，清空
-
-    for port in serial_candidates():
-        try:
-            with serial.Serial(port, SERIAL_BAUD, timeout=SERIAL_PROBE_TIMEOUT, write_timeout=SERIAL_PROBE_TIMEOUT) as ser:
-                if probe_serial_port(ser):
-                    write_serial_cache(port)
-                    return port
-        except Exception:
-            continue
-    return None
-
-
-def send_to_daemon(msg: str) -> bool:
-    """走常驻串口守护进程转发，避免反复开关 COM 触发 ESP32-C3 复位。
-
-    daemon 收到后会回 CC:ok。命中返回 True，未命中(daemon 没跑/超时)返回 False，
-    由调用方回退到 send_serial() 自己开串口。
-    """
-    if os.environ.get("CLAWD_MOCHI_NO_DAEMON"):
-        return False
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.settimeout(DAEMON_REPLY_TIMEOUT)
-        sock.connect((DAEMON_HOST, DAEMON_PORT))
-        sock.sendall((msg + "\n").encode())
-        try:
-            data = sock.recv(64)
-        except (socket.timeout, OSError):
-            return False
-        finally:
-            sock.close()
-        return data.strip() == b"CC:ok"
-    except OSError:
-        return False
-
-
-def send_serial(msg: str) -> bool:
-    port = find_serial_port()
-    if not port:
-        return False
-    try:
-        import serial
-        with serial.Serial(port, SERIAL_BAUD, timeout=SERIAL_TIMEOUT, write_timeout=SERIAL_TIMEOUT) as ser:
-            ser.write((msg + "\n").encode())
-            ser.flush()
-        return True
-    except Exception:
-        write_serial_cache("")  # 端口失效，下次重新探测
-        return False
-
-
 def get_local_subnet() -> str | None:
     """获取本机所在 /24 子网"""
     try:
@@ -284,21 +194,27 @@ def get_local_subnet() -> str | None:
         return None
 
 
-def probe_host(ip: str) -> bool:
-    """UDP 探测：发 CC:ping，等待 CC:pong 响应确认是 ESP32"""
+def probe_host(ip: str) -> str | None:
+    """UDP 探测：发 CC:ping，等待 CC:pong[:<mode>] 响应确认是 ESP32。
+
+    返回设备当前模式(lan/serial/unknown),非本设备返回 None。
+    """
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.settimeout(SCAN_TIMEOUT)
         sock.sendto(PROBE_MSG, (ip, ESP32_PORT))
         data, _ = sock.recvfrom(1024)
         sock.close()
-        return data == b"CC:pong"
+        return parse_pong(data)
     except (socket.timeout, OSError):
-        return False
+        return None
 
 
-def scan_for_esp32() -> str | None:
-    """并发扫描局域网，找开放 UDP:4210 的设备"""
+def scan_for_esp32() -> tuple[str, str] | None:
+    """并发扫描局域网，找开放 UDP:4210 的 Clawd Mochi 设备。
+
+    返回 (ip, mode),找不到返回 None。
+    """
     subnet = get_local_subnet()
     if not subnet:
         return None
@@ -311,9 +227,10 @@ def scan_for_esp32() -> str | None:
             for future in concurrent.futures.as_completed(futures, timeout=5):
                 ip = futures[future]
                 try:
-                    if future.result():
+                    mode = future.result()
+                    if mode is not None:
                         # 找到一个就返回（UDP 无连接确认，但局域网内够用）
-                        return ip
+                        return ip, mode
                 except Exception:
                     continue
     except concurrent.futures.TimeoutError:
@@ -321,29 +238,44 @@ def scan_for_esp32() -> str | None:
     return None
 
 
-def read_ip_cache() -> str | None:
-    """读取缓存 IP，过期返回 None"""
-    return read_cache_value("ip")
+def find_esp32() -> tuple[str, str] | None:
+    """查找 ESP32：缓存 IP → 扫描。返回 (ip, mode) 或 None。
 
-
-def write_ip_cache(ip: str) -> None:
-    """写入缓存"""
-    write_cache_value("ip", ip)
-
-
-def find_esp32() -> str | None:
-    """查找 ESP32 IP：缓存 → 扫描"""
+    缓存命中时直接用缓存的 IP 发包(UDP 无连接,发包本身就是探测),
+    缓存过期或为空时才扫描子网。
+    """
     if os.environ.get("CLAWD_MOCHI_NO_NETWORK"):
         return None
 
-    ip = read_ip_cache()
+    ip = read_cache_value("ip")
+    mode = read_cache_value("ip_mode")
     if ip:
-        return ip
+        return ip, (mode or "unknown")
 
-    ip = scan_for_esp32()
-    if ip:
-        write_ip_cache(ip)
-    return ip
+    found = scan_for_esp32()
+    if found:
+        ip, mode = found
+        write_cache_value("ip", ip)
+        write_cache_value("ip_mode", mode)
+    return found
+
+
+def send_to_esp32(msg: str) -> bool:
+    """走 UDP 把状态包发给 ESP32。找不到设备返回 False。"""
+    found = find_esp32()
+    if not found:
+        return False
+    ip, _mode = found
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.sendto(msg.encode(), (ip, ESP32_PORT))
+        sock.close()
+        return True
+    except OSError:
+        # 缓存 IP 失效,清掉让下次重新扫描
+        write_cache_value("ip", None)
+        write_cache_value("ip_mode", None)
+        return False
 
 
 def main() -> None:
@@ -370,22 +302,7 @@ def main() -> None:
         clean_field(model, 31),
     ])
 
-    if send_to_daemon(msg):
-        return
-
-    if send_serial(msg):
-        return
-
-    ip = find_esp32()
-    if not ip:
-        sys.exit(0)
-
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.sendto(msg.encode(), (ip, ESP32_PORT))
-        sock.close()
-    except OSError:
-        pass
+    send_to_esp32(msg)
 
 
 if __name__ == "__main__":
