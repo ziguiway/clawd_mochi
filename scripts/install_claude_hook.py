@@ -268,7 +268,7 @@ def install_settings(settings: dict, command: str, runner_args: list[str],
         hooks_root.setdefault(event, [])
         if not isinstance(hooks_root[event], list):
             raise SystemExit(f'settings["hooks"]["{event}"] must be a JSON array')
-        matchers = tool_matchers if event in TOOL_MATCHER_EVENTS else [None]
+        matchers = tool_matchers if (tool_matchers and event in TOOL_MATCHER_EVENTS) else [None]
         for matcher in matchers:
             hooks_root[event].append(hook_group(command, runner_args, hook_script, event, matcher))
             installed += 1

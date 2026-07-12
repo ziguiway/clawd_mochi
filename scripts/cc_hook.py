@@ -19,6 +19,9 @@ from pathlib import Path
 
 # ========== 配置 ==========
 ESP32_PORT = 4210
+DAEMON_HOST = "127.0.0.1"
+DAEMON_PORT = 4211          # 本地串口守护进程(cc_serial_daemon.py)的 UDP 端口
+DAEMON_REPLY_TIMEOUT = 0.15  # 等 daemon 回 CC:ok 的超时(秒)
 CACHE_TTL = 86400  # 24 小时
 SCAN_TIMEOUT = 0.3  # 每个 IP 的 UDP 探测超时(秒)
 SCAN_WORKERS = 64   # 并发扫描线程数
@@ -229,6 +232,30 @@ def find_serial_port() -> str | None:
     return None
 
 
+def send_to_daemon(msg: str) -> bool:
+    """走常驻串口守护进程转发，避免反复开关 COM 触发 ESP32-C3 复位。
+
+    daemon 收到后会回 CC:ok。命中返回 True，未命中(daemon 没跑/超时)返回 False，
+    由调用方回退到 send_serial() 自己开串口。
+    """
+    if os.environ.get("CLAWD_MOCHI_NO_DAEMON"):
+        return False
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.settimeout(DAEMON_REPLY_TIMEOUT)
+        sock.connect((DAEMON_HOST, DAEMON_PORT))
+        sock.sendall((msg + "\n").encode())
+        try:
+            data = sock.recv(64)
+        except (socket.timeout, OSError):
+            return False
+        finally:
+            sock.close()
+        return data.strip() == b"CC:ok"
+    except OSError:
+        return False
+
+
 def send_serial(msg: str) -> bool:
     port = find_serial_port()
     if not port:
@@ -342,6 +369,9 @@ def main() -> None:
         clean_field(detail, 63),
         clean_field(model, 31),
     ])
+
+    if send_to_daemon(msg):
+        return
 
     if send_serial(msg):
         return
