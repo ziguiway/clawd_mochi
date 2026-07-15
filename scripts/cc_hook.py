@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Claude Code Hook — send status events to Clawd Mochi over WiFi UDP.
+"""Claude Code Hook — 把状态事件广播给局域网内所有 Clawd Mochi 设备。
 
 固件默认 LAN(WiFi)模式:监听 UDP:4210。本脚本把 Claude Code 的 hook 事件
-压缩成短包发过去。串口路径已移除(ESP32-C3 USB-CDC 在 Windows 关 COM 会触发
-硬件复位,且 USB 插着会让设备进串口模式,与 LAN 默认模式冲突)。
+压缩成短包广播给所有扫描发现的设备,支持多台同时在线。串口路径已移除
+(ESP32-C3 USB-CDC 在 Windows 关 COM 会触发硬件复位,且 USB 插着会让设备
+进串口模式,与 LAN 默认模式冲突)。
 """
 
 # /// script
@@ -124,28 +125,64 @@ def save_cache(data: dict) -> None:
         pass
 
 
-def read_cache_value(key: str) -> str | None:
-    entry = load_cache().get(key)
-    if not isinstance(entry, dict):
-        return None
-
-    value = entry.get("value")
-    updated_at = entry.get("updated_at", 0)
-    try:
-        if isinstance(value, str) and value and time.time() - float(updated_at) < CACHE_TTL:
-            return value
-    except (TypeError, ValueError):
-        return None
-    return None
+# ========== 多设备缓存 ==========
+# 缓存结构:{"devices": [{"ip": "1.2.3.4", "mode": "lan", "updated_at": ...}, ...]}
+# 支持多台设备同时在线,每个事件广播给缓存里的全部设备。单个设备缓存过期
+# (CACHE_TTL)后整表失效重扫;发包失败的设备即时从缓存剔除,下次重扫补回。
+DEVICES_KEY = "devices"
 
 
-def write_cache_value(key: str, value: str | None) -> None:
+def load_devices() -> list[dict]:
+    """返回未过期的缓存设备列表(可能为空)。整表 updated_at 用最新条目判断。"""
     data = load_cache()
-    if value:
-        data[key] = {"value": value, "updated_at": time.time()}
+    devices = data.get(DEVICES_KEY)
+    if not isinstance(devices, list):
+        return []
+    now = time.time()
+    fresh = []
+    for d in devices:
+        if not isinstance(d, dict):
+            continue
+        ip = d.get("ip")
+        updated_at = d.get("updated_at", 0)
+        try:
+            if isinstance(ip, str) and ip and now - float(updated_at) < CACHE_TTL:
+                fresh.append(d)
+        except (TypeError, ValueError):
+            continue
+    return fresh
+
+
+def save_devices(devices: list[dict]) -> None:
+    """覆盖整表。devices 为空时清空缓存,下次重扫。"""
+    data = load_cache()
+    if devices:
+        data[DEVICES_KEY] = devices
     else:
-        data.pop(key, None)
+        data.pop(DEVICES_KEY, None)
     save_cache(data)
+
+
+def upsert_device(ip: str, mode: str) -> list[dict]:
+    """插入或更新单个设备,返回更新后的设备列表(并写回缓存)。"""
+    devices = load_devices()
+    now = time.time()
+    for d in devices:
+        if d.get("ip") == ip:
+            d["mode"] = mode
+            d["updated_at"] = now
+            save_devices(devices)
+            return devices
+    devices.append({"ip": ip, "mode": mode, "updated_at": now})
+    save_devices(devices)
+    return devices
+
+
+def drop_device(ip: str) -> None:
+    """从缓存剔除一个设备(发包失败时调用)。"""
+    devices = load_devices()
+    devices = [d for d in devices if d.get("ip") != ip]
+    save_devices(devices)
 
 
 def clean_field(value: object, limit: int = 48) -> str:
@@ -210,16 +247,18 @@ def probe_host(ip: str) -> str | None:
         return None
 
 
-def scan_for_esp32() -> tuple[str, str] | None:
-    """并发扫描局域网，找开放 UDP:4210 的 Clawd Mochi 设备。
+def scan_for_esp32() -> list[tuple[str, str]]:
+    """并发扫描局域网,找全部开放 UDP:4210 的 Clawd Mochi 设备。
 
-    返回 (ip, mode),找不到返回 None。
+    返回 [(ip, mode), ...],找不到返回空列表。扫描完全网才返回(收集所有
+    响应),以便多台设备同时被发现。UDP 无连接确认,局域网内够用。
     """
     subnet = get_local_subnet()
     if not subnet:
-        return None
+        return []
 
     hosts = [str(h) for h in ipaddress.ip_network(subnet).hosts()]
+    found: list[tuple[str, str]] = []
 
     try:
         with concurrent.futures.ThreadPoolExecutor(max_workers=SCAN_WORKERS) as pool:
@@ -229,53 +268,55 @@ def scan_for_esp32() -> tuple[str, str] | None:
                 try:
                     mode = future.result()
                     if mode is not None:
-                        # 找到一个就返回（UDP 无连接确认，但局域网内够用）
-                        return ip, mode
+                        found.append((ip, mode))
                 except Exception:
                     continue
     except concurrent.futures.TimeoutError:
-        return None
-    return None
+        pass
+    return found
 
 
-def find_esp32() -> tuple[str, str] | None:
-    """查找 ESP32：缓存 IP → 扫描。返回 (ip, mode) 或 None。
+def find_esp32() -> list[tuple[str, str]]:
+    """查找 ESP32:缓存设备列表 → 扫描。返回 [(ip, mode), ...] 可能空。
 
-    缓存命中时直接用缓存的 IP 发包(UDP 无连接,发包本身就是探测),
-    缓存过期或为空时才扫描子网。
+    缓存命中(列表非空)时直接用缓存的全部 IP 发包(UDP 无连接,发包本身
+    就是探测);缓存为空或全部过期时才扫描子网并写回缓存。
     """
     if os.environ.get("CLAWD_MOCHI_NO_NETWORK"):
-        return None
+        return []
 
-    ip = read_cache_value("ip")
-    mode = read_cache_value("ip_mode")
-    if ip:
-        return ip, (mode or "unknown")
+    cached = load_devices()
+    if cached:
+        return [(d["ip"], d.get("mode") or "unknown") for d in cached]
 
     found = scan_for_esp32()
-    if found:
-        ip, mode = found
-        write_cache_value("ip", ip)
-        write_cache_value("ip_mode", mode)
+    now = time.time()
+    devices = [{"ip": ip, "mode": mode, "updated_at": now} for ip, mode in found]
+    if devices:
+        save_devices(devices)
     return found
 
 
 def send_to_esp32(msg: str) -> bool:
-    """走 UDP 把状态包发给 ESP32。找不到设备返回 False。"""
+    """把状态包广播给所有已知 ESP32 设备。全部失败返回 False。
+
+    单个设备发包失败时从缓存剔除(下次重扫补回);只要至少一台发成功就返回 True。
+    """
     found = find_esp32()
     if not found:
         return False
-    ip, _mode = found
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.sendto(msg.encode(), (ip, ESP32_PORT))
-        sock.close()
-        return True
-    except OSError:
-        # 缓存 IP 失效,清掉让下次重新扫描
-        write_cache_value("ip", None)
-        write_cache_value("ip_mode", None)
-        return False
+
+    ok = False
+    for ip, _mode in found:
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.sendto(msg.encode(), (ip, ESP32_PORT))
+            sock.close()
+            ok = True
+        except OSError:
+            # 该设备缓存 IP 失效,剔除让下次重新扫描补回
+            drop_device(ip)
+    return ok
 
 
 def main() -> None:
