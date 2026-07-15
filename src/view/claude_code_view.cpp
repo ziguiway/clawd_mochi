@@ -12,10 +12,37 @@ static constexpr int16_t FACE_EYE_H = 60;
 static constexpr int16_t FACE_EYE_GAP = 120;
 static constexpr int16_t FACE_EYE_X = (CFG_DISPLAY_WIDTH - (FACE_EYE_W * 2 + FACE_EYE_GAP)) / 2;
 static constexpr int16_t FACE_EYE_Y = (CFG_DISPLAY_HEIGHT - FACE_EYE_H) / 2 - 40;
+static constexpr int16_t FACE_SLEEP_EYE_W = 42;
+static constexpr int16_t FACE_SLEEP_EYE_H = 10;
 static constexpr int16_t CAPTION_X = 0;
 static constexpr int16_t CAPTION_Y = 202;
 static constexpr int16_t CAPTION_W = CFG_DISPLAY_WIDTH;
 static constexpr int16_t CAPTION_H = 38;
+
+static void drawThickLine(TftDisplay* tft, int16_t x0, int16_t y0,
+                          int16_t x1, int16_t y1, uint8_t thickness) {
+    const int8_t half = thickness / 2;
+    for (int8_t offset = -half; offset <= half; offset++) {
+        tft->drawLine(x0, y0 + offset, x1, y1 + offset, COLOR_BLACK);
+    }
+}
+
+static void drawChevronEye(TftDisplay* tft, int16_t cx, int16_t cy, bool pointsRight) {
+    const int16_t outerX = pointsRight ? cx - 15 : cx + 15;
+    const int16_t pointX = pointsRight ? cx + 15 : cx - 15;
+    drawThickLine(tft, outerX, cy - 30, pointX, cy, 11);
+    drawThickLine(tft, pointX, cy, outerX, cy + 30, 11);
+}
+
+static void drawXEye(TftDisplay* tft, int16_t cx, int16_t cy) {
+    drawThickLine(tft, cx - 16, cy - 25, cx + 16, cy + 25, 9);
+    drawThickLine(tft, cx + 16, cy - 25, cx - 16, cy + 25, 9);
+}
+
+static void drawIdleEyes(TftDisplay* tft, int16_t leftX, int16_t rightX) {
+    tft->fillRect(leftX, FACE_EYE_Y, FACE_EYE_W, FACE_EYE_H, COLOR_BLACK);
+    tft->fillRect(rightX, FACE_EYE_Y, FACE_EYE_W, FACE_EYE_H, COLOR_BLACK);
+}
 
 static const char* statusToText(ClaudeCodeService::Status status) {
     switch (status) {
@@ -113,7 +140,10 @@ void ClaudeCodeView::drawShell() {
 }
 
 void ClaudeCodeView::drawHeader(ClaudeCodeService::Status status) {
-    (void)status;
+    _tft->fillRect(0, 0, CFG_DISPLAY_WIDTH, 24, COLOR_MOCHI_BG);
+    _tft->drawText(10, 9, "CC / MOCHI", COLOR_BLACK, COLOR_MOCHI_BG, FONT_SMALL);
+    _tft->fillRect(216, 7, 14, 14, COLOR_BLACK);
+    _tft->fillRect(218, 9, 10, 10, getStatusColor(status));
 }
 
 void ClaudeCodeView::drawStatusPanel(ClaudeCodeService::Status status) {
@@ -151,37 +181,44 @@ void ClaudeCodeView::drawFooter(const char* model, unsigned long elapsedSec) {
 void ClaudeCodeView::drawStatusIcon(ClaudeCodeService::Status status, int x, int y) {
     (void)x;
     (void)y;
+    const int16_t leftX = FACE_EYE_X;
+    const int16_t rightX = FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP;
+    const int16_t leftCX = leftX + FACE_EYE_W / 2;
+    const int16_t rightCX = rightX + FACE_EYE_W / 2;
+    const int16_t eyeCY = FACE_EYE_Y + FACE_EYE_H / 2;
+
     switch (status) {
         case ClaudeCodeService::Status::IDLE:
-        case ClaudeCodeService::Status::SLEEPING:
         case ClaudeCodeService::Status::THINKING:
         case ClaudeCodeService::Status::WORKING:
-        case ClaudeCodeService::Status::ERROR:
         case ClaudeCodeService::Status::PERMISSION:
-            _tft->fillRect(FACE_EYE_X, FACE_EYE_Y, FACE_EYE_W, FACE_EYE_H, COLOR_BLACK);
-            _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP, FACE_EYE_Y,
-                           FACE_EYE_W, FACE_EYE_H, COLOR_BLACK);
-            break;
-        case ClaudeCodeService::Status::DONE:
-            for (int8_t t = -5; t <= 5; t++) {
-                int16_t cy = FACE_EYE_Y + FACE_EYE_H / 2;
-                int16_t lcx = FACE_EYE_X + FACE_EYE_W / 2;
-                int16_t rcx = FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP + FACE_EYE_W / 2;
-                _tft->drawLine(lcx - FACE_EYE_W / 2, cy - FACE_EYE_H / 2 + t,
-                               lcx + FACE_EYE_W / 2, cy + t, COLOR_BLACK);
-                _tft->drawLine(lcx + FACE_EYE_W / 2, cy + t,
-                               lcx - FACE_EYE_W / 2, cy + FACE_EYE_H / 2 + t, COLOR_BLACK);
-                _tft->drawLine(rcx + FACE_EYE_W / 2, cy - FACE_EYE_H / 2 + t,
-                               rcx - FACE_EYE_W / 2, cy + t, COLOR_BLACK);
-                _tft->drawLine(rcx - FACE_EYE_W / 2, cy + t,
-                               rcx + FACE_EYE_W / 2, cy + FACE_EYE_H / 2 + t, COLOR_BLACK);
-            }
-            break;
         case ClaudeCodeService::Status::SWEEPING:
-            _tft->fillRect(FACE_EYE_X, FACE_EYE_Y + FACE_EYE_H / 2 - 3,
-                           FACE_EYE_W, 6, COLOR_BLACK);
-            _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP,
-                           FACE_EYE_Y + FACE_EYE_H / 2 - 3, FACE_EYE_W, 6, COLOR_BLACK);
+            // 活动态统一保留原始 Mochi 的宽眼距纯黑矩形眼。
+            drawIdleEyes(_tft, leftX, rightX);
+            break;
+
+        case ClaudeCodeService::Status::DONE:
+            // 沿用原项目的 > < squish 表情。
+            drawChevronEye(_tft, leftCX, eyeCY, true);
+            drawChevronEye(_tft, rightCX, eyeCY, false);
+            break;
+
+        case ClaudeCodeService::Status::ERROR:
+            // X 眼，不依赖状态色也能识别错误。
+            drawXEye(_tft, leftCX, eyeCY);
+            drawXEye(_tft, rightCX, eyeCY);
+            break;
+
+        case ClaudeCodeService::Status::SLEEPING:
+            // 两条完全水平的闭眼，Z 是唯一额外状态标记。
+            _tft->fillRect(leftCX - FACE_SLEEP_EYE_W / 2,
+                           eyeCY - FACE_SLEEP_EYE_H / 2,
+                           FACE_SLEEP_EYE_W, FACE_SLEEP_EYE_H, COLOR_BLACK);
+            _tft->fillRect(rightCX - FACE_SLEEP_EYE_W / 2,
+                           eyeCY - FACE_SLEEP_EYE_H / 2,
+                           FACE_SLEEP_EYE_W, FACE_SLEEP_EYE_H, COLOR_BLACK);
+            _tft->drawText(151, 38, "Z", COLOR_BLACK, COLOR_MOCHI_BG, FONT_MEDIUM);
+            _tft->drawText(171, 26, "Z", COLOR_BLACK, COLOR_MOCHI_BG, FONT_SMALL);
             break;
     }
 }
