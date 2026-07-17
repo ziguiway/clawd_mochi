@@ -846,10 +846,20 @@ void DisplayService::updateProvisioning() {
 
         _tft->getTft().setTextColor(COLOR_WHITE);
         _tft->getTft().setTextSize(1);
-        String ip = "IP: " + _wifiService->getIP();
-        int16_t ipX = (CFG_DISPLAY_WIDTH - (int)ip.length() * 6) / 2;
-        _tft->getTft().setCursor(ipX, 138);
-        _tft->getTft().print(ip);
+        String lanIp = "LAN: " + _wifiService->getLanIP();
+        String apIp = "AP: " + _wifiService->getAPIP();
+        String mdns = "clawd-mochi.local";
+
+        int16_t lanX = (CFG_DISPLAY_WIDTH - (int)lanIp.length() * 6) / 2;
+        int16_t apX = (CFG_DISPLAY_WIDTH - (int)apIp.length() * 6) / 2;
+        int16_t mdnsX = (CFG_DISPLAY_WIDTH - (int)mdns.length() * 6) / 2;
+        _tft->getTft().setCursor(lanX, 132);
+        _tft->getTft().print(lanIp);
+        _tft->getTft().setCursor(apX, 148);
+        _tft->getTft().print(apIp);
+        _tft->getTft().setTextColor(COLOR_MUTED);
+        _tft->getTft().setCursor(mdnsX, 164);
+        _tft->getTft().print(mdns);
     }
 }
 

@@ -9,6 +9,8 @@
 #define CFG_WIFI_AP_PASSWORD              "clawd1234"
 #define CFG_WIFI_AP_CHANNEL               1
 
+#define CFG_WIFI_MDNS_HOSTNAME            "clawd-mochi"
+
 // STA 连接超时 (ms)
 #define CFG_WIFI_CONNECT_TIMEOUT_MS       15000
 

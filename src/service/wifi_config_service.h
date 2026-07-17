@@ -23,6 +23,9 @@ public:
     bool isConfigured();
     bool isConnected();
     String getIP();
+    String getLanIP();
+    String getAPIP();
+    String getMDNSUrl() const;
     String getSSID();
     String getSavedSSID() const { return _ssid; }
 
@@ -52,6 +55,8 @@ private:
     bool _configured;
     bool _connected;
     bool _connecting;
+    bool _apStarted;
+    bool _mdnsStarted;
     unsigned long _connectStartTime;
 
     ProvisioningMode _provMode;
@@ -61,4 +66,7 @@ private:
 
     void setProvisioningMode(ProvisioningMode mode);
     void loadCredentials();
+    void ensureAccessPoint();
+    void startMDNS();
+    void stopMDNS();
 };
