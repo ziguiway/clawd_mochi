@@ -6,7 +6,8 @@ bool shouldShowInfo(ClaudeCodeService::Status status) {
     return status == ClaudeCodeService::Status::THINKING ||
            status == ClaudeCodeService::Status::WORKING ||
            status == ClaudeCodeService::Status::PERMISSION ||
-           status == ClaudeCodeService::Status::SWEEPING;
+           status == ClaudeCodeService::Status::SWEEPING ||
+           status == ClaudeCodeService::Status::SLEEPING;
 }
 }
 

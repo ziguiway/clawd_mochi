@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude Code Sleep UI Mockup</title>
+  <style>
+    :root {
+      --mochi-orange: #f36b21;
+      --panel: #071014;
+      --black: #050505;
+      --white: #f8f8f2;
+      --soft: #d7b195;
+      --muted: #9b745f;
+      --line: #ff8a2a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #171615;
+      color: var(--white);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .stage {
+      display: grid;
+      gap: 18px;
+      justify-items: center;
+    }
+
+    .device {
+      padding: 18px;
+      border: 1px solid #34302c;
+      background: #211f1d;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, .42);
+    }
+
+    .screen {
+      position: relative;
+      width: 240px;
+      height: 240px;
+      overflow: hidden;
+      background: var(--mochi-orange);
+      image-rendering: pixelated;
+      transform: scale(2);
+      transform-origin: center;
+      margin: 120px;
+    }
+
+    .zzz {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 240px;
+      height: 120px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: 0;
+      color: var(--black);
+    }
+
+    .zzz .z1 {
+      position: absolute;
+      left: 176px;
+      top: 28px;
+      display: block;
+      font-size: 24px;
+    }
+
+    .zzz .z2 {
+      position: absolute;
+      left: 150px;
+      top: 50px;
+      display: block;
+      color: var(--black);
+      font-size: 24px;
+    }
+
+    .face {
+      position: absolute;
+      left: 0;
+      top: 56px;
+      width: 240px;
+      height: 92px;
+    }
+
+    .eye {
+      position: absolute;
+      top: 48px;
+      width: 34px;
+      height: 8px;
+      background: var(--black);
+    }
+
+    .eye.left {
+      left: 42px;
+    }
+
+    .eye.right {
+      right: 42px;
+    }
+
+    .divider {
+      position: absolute;
+      left: 0;
+      bottom: 38px;
+      width: 240px;
+      height: 4px;
+      background: var(--black);
+    }
+
+    .caption {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 240px;
+      height: 38px;
+      background: var(--panel);
+      border-top: 2px solid var(--line);
+      padding: 7px 10px 0;
+      font-size: 8px;
+      line-height: 1;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 44px 96px 28px 1fr;
+      align-items: center;
+      height: 12px;
+      white-space: nowrap;
+    }
+
+    .row + .row {
+      margin-top: 4px;
+    }
+
+    .key {
+      color: var(--line);
+      font-weight: 700;
+    }
+
+    .value {
+      color: var(--white);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .value.soft {
+      color: var(--soft);
+    }
+
+    .meta {
+      max-width: 520px;
+      color: #b8ada6;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .meta strong {
+      color: #f5eee8;
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <section class="device" aria-label="240 by 240 TFT sleep mockup">
+      <div class="screen">
+        <div class="zzz" aria-hidden="true">
+          <span class="z1">Z</span>
+          <span class="z2">z</span>
+        </div>
+
+        <div class="face" aria-hidden="true">
+          <div class="eye left"></div>
+          <div class="eye right"></div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="caption">
+          <div class="row">
+            <span class="key">STATUS</span>
+            <span class="value">SLEEPING</span>
+            <span class="key">TOOL</span>
+            <span class="value">-</span>
+          </div>
+          <div class="row">
+            <span class="key">MODEL</span>
+            <span class="value soft">claude</span>
+            <span class="key">TIME</span>
+            <span class="value">0s</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p class="meta">
+      <strong>Direction:</strong> quiet Claude Code sleep panel, no moon, raised plain
+      horizontal eyes, with dark z marks drifting toward the upper-right corner.
+    </p>
+  </main>
+</body>
+</html>

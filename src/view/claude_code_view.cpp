@@ -153,7 +153,6 @@ void ClaudeCodeView::drawStatusIcon(ClaudeCodeService::Status status, int x, int
     (void)y;
     switch (status) {
         case ClaudeCodeService::Status::IDLE:
-        case ClaudeCodeService::Status::SLEEPING:
         case ClaudeCodeService::Status::THINKING:
         case ClaudeCodeService::Status::WORKING:
         case ClaudeCodeService::Status::ERROR:
@@ -162,6 +161,15 @@ void ClaudeCodeView::drawStatusIcon(ClaudeCodeService::Status status, int x, int
             _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP, FACE_EYE_Y,
                            FACE_EYE_W, FACE_EYE_H, COLOR_BLACK);
             break;
+        case ClaudeCodeService::Status::SLEEPING: {
+            const int16_t eyeY = FACE_EYE_Y + 34;
+            _tft->fillRect(FACE_EYE_X - 2, eyeY, FACE_EYE_W + 4, 8, COLOR_BLACK);
+            _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP - 2,
+                           eyeY, FACE_EYE_W + 4, 8, COLOR_BLACK);
+            _tft->drawText(176, 28, "Z", COLOR_BLACK, COLOR_MOCHI_BG, FONT_MEDIUM);
+            _tft->drawText(150, 50, "z", COLOR_BLACK, COLOR_MOCHI_BG, FONT_MEDIUM);
+            break;
+        }
         case ClaudeCodeService::Status::DONE:
             for (int8_t t = -5; t <= 5; t++) {
                 int16_t cy = FACE_EYE_Y + FACE_EYE_H / 2;
@@ -188,7 +196,7 @@ void ClaudeCodeView::drawStatusIcon(ClaudeCodeService::Status status, int x, int
 
 uint16_t ClaudeCodeView::getStatusColor(ClaudeCodeService::Status status) {
     switch (status) {
-        case ClaudeCodeService::Status::IDLE:
+        case ClaudeCodeService::Status::IDLE:       return COLOR_ORANGE;
         case ClaudeCodeService::Status::SLEEPING:   return COLOR_ORANGE;
         case ClaudeCodeService::Status::THINKING:   return COLOR_CYAN;
         case ClaudeCodeService::Status::WORKING:    return COLOR_GREEN;

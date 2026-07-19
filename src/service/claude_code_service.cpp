@@ -187,6 +187,11 @@ void ClaudeCodeService::setStatus(Status status, const char* hookName,
                                    const char* toolName, const char* detail,
                                    const char* model) {
     updateTaskClock(status);
+    if (status == Status::SLEEPING && _status != Status::SLEEPING) {
+        _sleepStartMs = millis();
+    } else if (status == Status::IDLE) {
+        _sleepStartMs = 0;
+    }
     _status = status;
     // 空值守卫:hook 在多数事件(Stop/PostToolUse 等)里不携带 model,
     // stdin JSON 也只有 SessionStart 才有 model 字段。空串不覆盖,保留上次有效值,

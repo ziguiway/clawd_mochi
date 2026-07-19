@@ -24,8 +24,7 @@ void SerialWorkingState::onUpdate() {
     _ctx->display()->update();
 
     auto status = _ctx->cc()->getStatus();
-    if (status == ClaudeCodeService::Status::IDLE ||
-        status == ClaudeCodeService::Status::SLEEPING) {
+    if (status == ClaudeCodeService::Status::IDLE) {
         static_cast<AppStateMachine*>(_ctx)->transitionTo(AppStateMachine::SERIAL_IDLE);
         return;
     }
