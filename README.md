@@ -182,7 +182,7 @@ The automatic Claude Code status view currently uses the following mappings:
 | Claude Code hook event | Firmware status | Expression currently shown |
 | ---------------------- | --------------- | -------------------------- |
 | `SessionStart`, `Setup` | `IDLE` | Normal animated eyes in expression mode |
-| `UserPromptSubmit`, `UserPromptExpansion` | `THINKING` | Static vertical eyes |
+| `UserPromptSubmit`, `UserPromptExpansion` | `THINKING` | Solid vertical eyes with three sequential thought dots |
 | `PermissionRequest`, `Elicitation` | `PERMISSION` | Static vertical eyes |
 | `ElicitationResult` | `WORKING` | Static vertical eyes |
 | `PreToolUse` for `AskUserQuestion` or `ExitPlanMode` | `PERMISSION` | Static vertical eyes |
@@ -191,14 +191,14 @@ The automatic Claude Code status view currently uses the following mappings:
 | `TaskCreated` | `WORKING` | Static vertical eyes |
 | `TaskCompleted` | `DONE` | Inward chevron (`> <`) eyes, held for 10 seconds |
 | `WorktreeCreate`, `WorktreeRemove` | `WORKING` | Static vertical eyes |
-| `PreCompact`, `PostCompact` | `COMPACTING` | Two horizontal line eyes |
+| `PreCompact`, `PostCompact` | `COMPACTING` | Flat eyes with three narrowing compression bars |
 | `PermissionDenied`, `PostToolUseFailure`, `StopFailure` | `ERROR` | Two crossed (`X X`) eyes, held for 10 seconds |
 | `Stop` | `DONE` | Inward chevron (`> <`) eyes, held for 10 seconds |
 | `SessionEnd` | `SLEEPING` | Closed eyes with `Z z`, then returns to idle |
 
 `Notification` is mapped by `notification_type`: permission prompts, MCP dialogs, and agents waiting for input become `PERMISSION`; idle prompts and completed agents become `DONE`; successful authentication and completed MCP interactions return to `WORKING`. Unknown notification types default to `WORKING`. An `idle_prompt` notification does not trigger `SLEEPING`.
 
-The Thinking dots and alternating Working blink animations exist in the web-controlled interactive views only; they are not currently connected to automatic Claude Code statuses. `PERMISSION` does not have a distinct expression.
+The alternating Working blink animation exists in the web-controlled interactive view only; it is not currently connected to the automatic `WORKING` status. `PERMISSION` does not yet have a distinct expression.
 
 The information bar shows `STATUS`, the most recent non-empty `TOOL`, `MODEL`, and elapsed `TIME`. The firmware retains the previous tool name when an event has no tool field, so a tool such as `Bash` can remain visible after that tool has finished. Hook name and tool detail are received but are not currently rendered.
 

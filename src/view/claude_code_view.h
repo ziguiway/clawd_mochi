@@ -23,6 +23,8 @@ private:
     char _lastDetail[96];
     char _lastModel[32];
     unsigned long _lastElapsedSec;
+    unsigned long _lastThinkingFrameMs;
+    uint8_t _thinkingFrame;
 
     void drawShell();
     void drawHeader(ClaudeCodeService::Status status);
@@ -31,6 +33,7 @@ private:
     void drawDetail(const char* detail);
     void drawFooter(const char* model, unsigned long elapsedSec);
     void drawStatusIcon(ClaudeCodeService::Status status, int x, int y);
+    void drawThinkingDots(uint8_t visibleDots);
     uint16_t getStatusColor(ClaudeCodeService::Status status);
     const char* getStatusVerb(ClaudeCodeService::Status status);
     const char* safeText(const char* text, const char* fallback);
