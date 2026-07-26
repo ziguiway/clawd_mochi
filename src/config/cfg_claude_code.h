@@ -7,9 +7,6 @@
 // UDP 端口
 #define CFG_CLAUDE_CODE_UDP_PORT          4210
 
-// 无活动超时 (ms)
-#define CFG_CLAUDE_CODE_TIMEOUT_MS        60000
-
 // SLEEPING 持续时间 (ms)
 #define CFG_CLAUDE_CODE_SLEEP_DURATION_MS 10000
 

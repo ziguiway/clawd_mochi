@@ -6,7 +6,6 @@
 ClaudeCodeService::ClaudeCodeService(StateMachine* sm)
     : _stateMachine(sm)
     , _status(Status::IDLE)
-    , _lastActivityMs(0)
     , _taskStartMs(0)
     , _taskElapsedMs(0)
     , _taskActive(false)
@@ -62,15 +61,6 @@ void ClaudeCodeService::update() {
     }
 
     unsigned long now = millis();
-    if (_taskActive) {
-        if (now - _lastActivityMs > CFG_CLAUDE_CODE_TIMEOUT_MS) {
-            if (_status != Status::SLEEPING) {
-                LOG_WARN("ClaudeCode", "无活动超时，进入休眠");
-                setStatus(Status::SLEEPING);
-                _sleepStartMs = now;
-            }
-        }
-    }
     if (_status == Status::SLEEPING) {
         if (now - _sleepStartMs > CFG_CLAUDE_CODE_SLEEP_DURATION_MS) {
             LOG_INFO("ClaudeCode", "休眠结束，回到空闲");
@@ -90,10 +80,9 @@ void ClaudeCodeService::processPacket(const char* data, int len) {
 
     if (strncmp(data, "CC:", 3) != 0) return;
 
-    // ping 探测:回 pong:<mode>,供 hook 判断当前模式(LAN 走 UDP,SERIAL 走串口)
-    // 不改状态,只刷新活动时间
+    // ping 探测:回 pong:<mode>,供 hook 判断当前模式
+    // 不改状态
     if (strcmp(data + 3, "ping") == 0) {
-        _lastActivityMs = millis();
         const char* mode = "lan";
         auto* opMode = OperationModeService::current();
         if (opMode && opMode->isSerial()) mode = "serial";
@@ -121,7 +110,6 @@ void ClaudeCodeService::processPacket(const char* data, int len) {
     } else {
         strncpy(event, p, sizeof(event) - 1);
         setStatus(mapEventToStatus(event));
-        _lastActivityMs = millis();
         return;
     }
 
@@ -134,7 +122,6 @@ void ClaudeCodeService::processPacket(const char* data, int len) {
     } else {
         strncpy(hook, p, sizeof(hook) - 1);
         setStatus(mapEventToStatus(event), hook);
-        _lastActivityMs = millis();
         return;
     }
 
@@ -147,7 +134,6 @@ void ClaudeCodeService::processPacket(const char* data, int len) {
     } else {
         strncpy(tool, p, sizeof(tool) - 1);
         setStatus(mapEventToStatus(event), hook, tool);
-        _lastActivityMs = millis();
         return;
     }
 
@@ -163,7 +149,6 @@ void ClaudeCodeService::processPacket(const char* data, int len) {
     }
 
     setStatus(mapEventToStatus(event), hook, tool, detail, model);
-    _lastActivityMs = millis();
 }
 
 ClaudeCodeService::Status ClaudeCodeService::mapEventToStatus(const char* event) {
@@ -295,6 +280,5 @@ void ClaudeCodeService::injectStatus(Status status, const char* hookName,
                                      const char* toolName, const char* detail,
                                      const char* model) {
     setStatus(status, hookName, toolName, detail, model);
-    _lastActivityMs = millis();
     LOG_INFO("ClaudeCode", "串口注入: %s", statusToText(status));
 }

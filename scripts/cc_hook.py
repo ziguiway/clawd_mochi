@@ -7,8 +7,10 @@
 进串口模式,与 LAN 默认模式冲突)。
 """
 
+from __future__ import annotations
+
 # /// script
-# requires-python = ">=3.10"
+# requires-python = ">=3.9"
 # ///
 
 import sys
@@ -58,7 +60,7 @@ HOOK_MAP = {
     "StopFailure":       "error",
 }
 
-# CC:ping 探测包，ESP32 收到后只刷新计时不改状态,回 CC:pong[:<mode>]
+# CC:ping 探测包，ESP32 收到后不改状态,回 CC:pong[:<mode>]
 # 注意:不能带换行。固件用 strcmp(data+3,"ping") 精确匹配,带 \n 会变成
 # "ping\n" 匹配失败,ping 拦截失效,被当普通状态包解析(误置 WORKING)且不回 pong。
 PROBE_MSG = b"CC:ping"

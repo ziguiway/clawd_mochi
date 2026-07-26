@@ -48,7 +48,6 @@ private:
     char _detail[CFG_CLAUDE_CODE_DETAIL_MAX_LEN];
     char _model[CFG_CLAUDE_CODE_MODEL_MAX_LEN];
 
-    unsigned long _lastActivityMs;
     unsigned long _taskStartMs;
     unsigned long _taskElapsedMs;
     bool _taskActive;

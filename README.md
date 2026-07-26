@@ -145,7 +145,7 @@ You should see the web controller:
 
 ## Claude Code status hook
 
-The Claude Code hook streams session, prompt, tool, and completion events to Clawd Mochi over USB serial first, then UDP as a fallback.
+The Claude Code hook streams session, prompt, tool, and completion events to all discovered Clawd Mochi devices over UDP on port 4210. The current hook uses LAN discovery and does not send events over USB serial.
 
 Install it from this repo:
 
@@ -165,7 +165,7 @@ The installer writes a user-wide Claude Code config at `~/.claude/settings.json`
 scripts/install_claude_hook.sh uninstall
 ```
 
-If `uv` is installed, the installer uses it automatically and writes hook entries like `uv run --script cc_hook.py`. This lets `cc_hook.py` declare its own Python dependency on `pyserial`. You can force a runner with `--runner uv` or `--runner python`.
+If `uv` is installed, the installer uses it automatically and writes hook entries like `uv run --script cc_hook.py`. You can force a runner with `--runner uv` or `--runner python`.
 
 Claude Code tool hook matchers are exact tool filters. For example, `Bash` only matches the Bash tool, and `Edit|Write` matches either the Edit or Write tool by exact name. If you prefer explicit tool-only hooks, install with:
 
@@ -175,13 +175,35 @@ scripts/install_claude_hook.sh --tool-matchers "Bash;Edit,Write"
 
 The installer writes `Edit,Write` as `Edit|Write` in Claude Code settings. Clawd Mochi still displays the actual tool from each hook event, so the screen shows `Bash`, `Edit`, or `Write`, not the matcher pattern.
 
+### Current status and expression mapping
+
+The automatic Claude Code status view currently uses the following mappings:
+
+| Claude Code hook event | Firmware status | Expression currently shown |
+| ---------------------- | --------------- | -------------------------- |
+| `SessionStart`, `Setup` | `IDLE` | Normal animated eyes in expression mode |
+| `UserPromptSubmit` | `THINKING` | Static vertical eyes |
+| `PermissionRequest` | `PERMISSION` | Static vertical eyes |
+| `PreToolUse`, `PostToolUse`, `PostToolBatch` | `WORKING` | Static vertical eyes |
+| `SubagentStart`, `SubagentStop` | `WORKING` | Static vertical eyes |
+| `TaskCreated`, `TaskCompleted` | `WORKING` | Static vertical eyes |
+| `WorktreeCreate`, `WorktreeRemove` | `WORKING` | Static vertical eyes |
+| `PreCompact`, `PostCompact` | `COMPACTING` | Two horizontal line eyes |
+| `PostToolUseFailure`, `StopFailure` | `ERROR` | Static vertical eyes, held for 10 seconds |
+| `Stop` | `DONE` | Inward chevron (`> <`) eyes, held for 10 seconds |
+| `SessionEnd` | `SLEEPING` | Closed eyes with `Z z`, then returns to idle |
+
+The Thinking dots and alternating Working blink animations exist in the web-controlled interactive views only; they are not currently connected to automatic Claude Code statuses. `PERMISSION` and `ERROR` do not have distinct expressions, and `TaskCompleted` currently maps to `WORKING`, not `DONE`.
+
+The information bar shows `STATUS`, the most recent non-empty `TOOL`, `MODEL`, and elapsed `TIME`. The firmware retains the previous tool name when an event has no tool field, so a tool such as `Bash` can remain visible after that tool has finished. Hook name and tool detail are received but are not currently rendered.
+
 Hook discovery cache is stored in one JSON file:
 
 - macOS: `~/Library/Caches/ClawdMochi/cc_hook_cache.json`
 - Windows: `%LOCALAPPDATA%\ClawdMochi\cc_hook_cache.json`
 - Linux: `${XDG_CACHE_HOME:-~/.cache}/clawd-mochi/cc_hook_cache.json`
 
-Set `CLAWD_MOCHI_PORT` to force a serial port, or `CLAWD_MOCHI_CACHE_DIR` to override the cache location.
+Set `CLAWD_MOCHI_CACHE_DIR` to override the cache location.
 
 ---
 
