@@ -23,6 +23,11 @@ void LANWorkingState::onUpdate() {
     _ctx->serial()->update();
     _ctx->display()->update();
 
+    if (!_ctx->display()->isClaudeStatusEnabled()) {
+        static_cast<AppStateMachine*>(_ctx)->transitionTo(AppStateMachine::LAN_IDLE);
+        return;
+    }
+
     auto status = _ctx->cc()->getStatus();
     if (status == ClaudeCodeService::Status::IDLE) {
         static_cast<AppStateMachine*>(_ctx)->transitionTo(AppStateMachine::LAN_IDLE);

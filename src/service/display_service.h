@@ -105,6 +105,9 @@ public:
     void setBrightnessPercent(uint8_t percent);
     uint8_t getBrightnessPercent() const { return _brightnessPercent; }
 
+    void setClaudeStatusEnabled(bool enabled) { _claudeStatusEnabled = enabled; }
+    bool isClaudeStatusEnabled() const { return _claudeStatusEnabled; }
+
     // 配网流程绘制(供 ProvisioningState 调用)
     void updateProvisioning();
 
@@ -131,6 +134,7 @@ private:
     uint16_t _animBgColor;
     uint16_t _drawBgColor;
     uint8_t _brightnessPercent;
+    bool _claudeStatusEnabled;
 
     // Clock / Pomodoro state
     uint16_t _focusMinutes;

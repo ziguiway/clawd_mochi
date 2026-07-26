@@ -90,16 +90,6 @@ input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
   color:#e8e0d6;font-family:'Courier New',monospace;font-size:11px;font-weight:bold;
   padding:11px 4px;cursor:pointer}
 .pbtn.hi{background:#c96a3e;border-color:#f0a060;color:#140c08}
-.pref{width:100%;max-width:390px;background:#201c18;border:1.5px solid #3a3028;
-  border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
-.pref-row{display:flex;align-items:center;gap:8px}
-.pref-row label{width:86px;color:#8a8278;font-size:10px;font-weight:bold;letter-spacing:1px}
-.pref select,.pref input[type=number]{flex:1;background:#101014;border:1.5px solid #38343a;
-  border-radius:8px;color:#e8e4dc;font-family:'Courier New',monospace;font-size:12px;
-  font-weight:bold;padding:10px;min-width:0}
-.pref input[type=checkbox]{width:20px;height:20px;accent-color:#c96a3e}
-.pref .mini{width:58px;flex:0 0 58px;text-align:center}
-.pref .save{background:#c96a3e;border-color:#f0a060;color:#140c08}
 .cwrap{width:100%;max-width:390px;background:#222028;border:1.5px solid #38343a;
   border-radius:12px;padding:12px;flex-direction:column;gap:10px;display:none}
 .cwrap.open{display:flex}
@@ -131,6 +121,7 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
 <div class="sec">// controls</div>
 <div class="ctrl">
   <button class="cbtn on" id="blBtn" onclick="toggleBL()">&#9728; display on</button>
+  <button class="cbtn on" id="ccStatusBtn" onclick="toggleClaudeStatus()">&#9670; claude status on</button>
 </div>
 <div class="bright">
   <span class="bicon">&#9728;</span>
@@ -225,27 +216,6 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <input type="color" class="cs" id="penCol" value="#000000">
   </div>
 </div>
-<div class="sec">// preferences</div>
-<div class="pref">
-  <div class="pref-row">
-    <label>STARTUP</label>
-    <select id="startupView" onchange="savePrefs()">
-      <option value="0">Normal eyes</option>
-      <option value="1">Squish eyes</option>
-      <option value="6">Clock</option>
-      <option value="7">Pomodoro ready</option>
-    </select>
-  </div>
-  <div class="pref-row">
-    <label>NIGHT DIM</label>
-    <input id="nightDim" type="checkbox" onchange="savePrefs()">
-    <input class="mini" id="nightStart" type="number" min="0" max="23" value="22" onchange="savePrefs()">
-    <span style="color:#8a8278;font-size:12px">to</span>
-    <input class="mini" id="nightEnd" type="number" min="0" max="23" value="7" onchange="savePrefs()">
-    <input class="mini" id="nightBrightness" type="number" min="0" max="100" value="25" onchange="savePrefs()">
-  </div>
-  <button class="pbtn save" onclick="savePrefs()">save preferences</button>
-</div>
 <div class="sec">// terminal</div>
 <div class="twrap" id="twrap">
   <div class="thdr">
@@ -267,21 +237,22 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
 </div>
 <div class="toast" id="toast"></div>
 <script>
-let activeView=0,termOpen=false,canvasOpen=false,blOn=true,isBusy=false,drawing=false;
+let activeView=0,termOpen=false,canvasOpen=false,blOn=true,claudeStatusOn=true,isBusy=false,drawing=false;
 let lastX=0,lastY=0,tt;
 const spdLabels=['','slow','normal','fast'];
 function toast(msg,ok=true){const el=document.getElementById('toast');el.textContent=msg;el.style.borderColor=ok?'#28b878':'#c96a3e';el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),1300);}
-function setBusy(b){isBusy=b;document.getElementById('busy').classList.toggle('show',b);const locked=b||termOpen;document.querySelectorAll('.vbtn').forEach(el=>{el.disabled=canvasOpen?parseInt(el.dataset.v)!==3:locked;});document.querySelectorAll('.cbtn').forEach(el=>{if(el.id!=='blBtn')el.disabled=locked;});}
+function setBusy(b){isBusy=b;document.getElementById('busy').classList.toggle('show',b);const locked=b||termOpen;document.querySelectorAll('.vbtn').forEach(el=>{el.disabled=canvasOpen?parseInt(el.dataset.v)!==3:locked;});document.querySelectorAll('.cbtn').forEach(el=>{if(el.id!=='blBtn'&&el.id!=='ccStatusBtn')el.disabled=locked;});}
 async function req(path){try{const r=await fetch(path);return r.ok;}catch(e){toast('no connection',false);return false;}}
 async function waitNotBusy(){for(let i=0;i<100;i++){try{const r=await fetch('/state');const j=await r.json();if(!j.busy)return;}catch(e){}await new Promise(r=>setTimeout(r,150));}}
-async function onBgChange(hex){if(canvasOpen){await req('/draw/clear?bg='+encodeURIComponent(hex));}else{await req('/redraw?bg='+encodeURIComponent(hex));}redrawCanvas(hex);await savePrefs(false);}
-async function setSpeed(v){document.getElementById('spdV').textContent=spdLabels[v];await req('/speed?v='+v);await savePrefs(false);}
+async function onBgChange(hex){if(canvasOpen){await req('/draw/clear?bg='+encodeURIComponent(hex));await req('/prefs?bg='+encodeURIComponent(hex));}else{await req('/redraw?bg='+encodeURIComponent(hex));}redrawCanvas(hex);}
+async function setSpeed(v){document.getElementById('spdV').textContent=spdLabels[v];await req('/speed?v='+v);}
 async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7){toast(v===6?'clock open':'pomodoro open');return;}setBusy(true);await waitNotBusy();setBusy(false);}
 function updateBlButton(){const b=document.getElementById('blBtn');b.textContent=blOn?'☀ display on':'○ display off';b.classList.toggle('on',blOn);b.classList.toggle('dim',!blOn);}
-async function toggleBL(){blOn=!blOn;const v=blOn?100:0;document.getElementById('bright').value=v;document.getElementById('brightV').textContent=v+'%';await req('/backlight?on='+(blOn?1:0));updateBlButton();await savePrefs(false);}
-async function setBrightness(v){v=parseInt(v||0);document.getElementById('brightV').textContent=v+'%';blOn=v>0;updateBlButton();await req('/brightness?v='+v);await savePrefs(false);}
-async function loadPrefs(){try{const r=await fetch('/prefs');const p=await r.json();document.getElementById('bgCol').value=p.bg||'#aa4818';document.getElementById('spd').value=p.speed||1;document.getElementById('spdV').textContent=spdLabels[p.speed||1];document.getElementById('startupView').value=String(p.startup||0);document.getElementById('nightDim').checked=!!p.nightDim;document.getElementById('nightStart').value=p.nightStart??22;document.getElementById('nightEnd').value=p.nightEnd??7;document.getElementById('nightBrightness').value=p.nightBrightness??25;redrawCanvas(p.bg||'#aa4818');}catch(e){}}
-async function savePrefs(showToast=true){const q=new URLSearchParams();q.set('bg',document.getElementById('bgCol').value);q.set('speed',document.getElementById('spd').value);q.set('startup',document.getElementById('startupView').value);q.set('brightness',document.getElementById('bright').value);q.set('night',document.getElementById('nightDim').checked?'1':'0');q.set('nightStart',document.getElementById('nightStart').value);q.set('nightEnd',document.getElementById('nightEnd').value);q.set('nightBrightness',document.getElementById('nightBrightness').value);try{await fetch('/prefs?'+q.toString());if(showToast)toast('preferences saved');}catch(e){if(showToast)toast('save failed',false);}}
+function updateClaudeStatusButton(){const b=document.getElementById('ccStatusBtn');b.textContent=claudeStatusOn?'◆ claude status on':'◇ claude status off';b.classList.toggle('on',claudeStatusOn);b.classList.toggle('dim',!claudeStatusOn);}
+async function toggleBL(){blOn=!blOn;const v=blOn?100:0;document.getElementById('bright').value=v;document.getElementById('brightV').textContent=v+'%';await req('/backlight?on='+(blOn?1:0));updateBlButton();}
+async function toggleClaudeStatus(){const next=!claudeStatusOn;if(!await req('/prefs?claudeStatus='+(next?'1':'0')))return;claudeStatusOn=next;updateClaudeStatusButton();toast(claudeStatusOn?'Claude status on':'Claude status off');}
+async function setBrightness(v){v=parseInt(v||0);document.getElementById('brightV').textContent=v+'%';blOn=v>0;updateBlButton();await req('/brightness?v='+v);}
+async function loadPrefs(){try{const r=await fetch('/prefs');const p=await r.json();document.getElementById('bgCol').value=p.bg||'#aa4818';document.getElementById('spd').value=p.speed||1;document.getElementById('spdV').textContent=spdLabels[p.speed||1];claudeStatusOn=p.claudeStatus!==false;updateClaudeStatusButton();redrawCanvas(p.bg||'#aa4818');}catch(e){}}
 function fmtSec(s){s=Math.max(0,parseInt(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
 async function pollTimer(){try{const r=await fetch('/timer/status');const j=await r.json();document.getElementById('pPhase').textContent=(j.phase==='break'?'BREAK':'FOCUS')+(j.paused?' / PAUSED':'');document.getElementById('pTime').textContent=fmtSec(j.remaining);document.getElementById('focusMin').value=j.focus;document.getElementById('breakMin').value=j.break;}catch(e){}}
 async function startTimer(phase){await fetch('/timer/start?phase='+phase);document.getElementById('pwrap').classList.add('open');await pollTimer();toast(phase==='break'?'break started':'focus started');}
@@ -568,6 +539,12 @@ void WebService::handlePrefs() {
         _preferenceService->setBrightnessPercent(brightness);
         _displayService->setBrightnessPercent(brightness);
     }
+    if (_server.hasArg("claudeStatus")) {
+        const bool enabled = _server.arg("claudeStatus") == "1" ||
+                             _server.arg("claudeStatus") == "true";
+        _preferenceService->setClaudeStatusEnabled(enabled);
+        _displayService->setClaudeStatusEnabled(enabled);
+    }
     if (_server.hasArg("night")) {
         _preferenceService->setNightDimEnabled(_server.arg("night") == "1" ||
                                                _server.arg("night") == "true");
@@ -603,6 +580,7 @@ void WebService::handleState() {
     j += ",\"bl\":";     j += _displayService->getBrightnessPercent() > 0 ? "true" : "false";
     j += ",\"brightness\":"; j += _displayService->getBrightnessPercent();
     j += ",\"speed\":";  j += _displayService->getAnimSpeed();
+    j += ",\"claudeStatus\":"; j += _displayService->isClaudeStatusEnabled() ? "true" : "false";
     j += ",\"serial\":"; j += _wifiService->isSerialMode() ? "true" : "false";
     j += "}";
     _server.send(200, "application/json", j);

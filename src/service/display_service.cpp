@@ -21,6 +21,7 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _busy(false), _animSpeed(1)
     , _animBgColor(COLOR_ORANGE), _drawBgColor(COLOR_ORANGE)
     , _brightnessPercent(100)
+    , _claudeStatusEnabled(true)
     , _focusMinutes(25), _breakMinutes(5), _pomodoroPhase(PomodoroPhase::FOCUS)
     , _pomodoroRunning(false), _pomodoroPaused(false)
     , _pomodoroDurationSec(25UL * 60UL), _pomodoroRemainingAtPauseSec(25UL * 60UL)
@@ -40,6 +41,7 @@ void DisplayService::init() {
         _animBgColor = hexToRgb565(_preferenceService->getDefaultBgHex());
         _drawBgColor = _animBgColor;
         _brightnessPercent = _preferenceService->getBrightnessPercent();
+        _claudeStatusEnabled = _preferenceService->getClaudeStatusEnabled();
     } else {
         _animBgColor = COLOR_ORANGE;
         _drawBgColor = COLOR_ORANGE;
@@ -865,6 +867,10 @@ void DisplayService::updateProvisioning() {
 
 void DisplayService::switchToExpressionMode() {
     _currentMode = DisplayMode::EXPRESSION;
+    if (!_claudeStatusEnabled) {
+        applyIdleDefaultView();
+        return;
+    }
     auto status = _ccService->getStatus();
     if (status == ClaudeCodeService::Status::THINKING) drawThinking(3);
     else if (status == ClaudeCodeService::Status::WORKING) drawWorking();

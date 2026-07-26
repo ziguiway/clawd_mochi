@@ -37,7 +37,7 @@ void SerialIdleState::onUpdate() {
     _ctx->display()->update();
 
     auto status = _ctx->cc()->getStatus();
-    if (shouldShowInfo(status)) {
+    if (_ctx->display()->isClaudeStatusEnabled() && shouldShowInfo(status)) {
         static_cast<AppStateMachine*>(_ctx)->transitionTo(AppStateMachine::SERIAL_WORKING);
     }
 }

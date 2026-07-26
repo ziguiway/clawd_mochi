@@ -10,6 +10,7 @@ void PreferenceService::init() {
     _startupView = _prefs.getUChar("startup", _startupView);
     if (!isStartupViewAllowed(_startupView)) _startupView = VIEW_EYES_NORMAL;
     _brightnessPercent = constrain(_prefs.getUChar("bright", _brightnessPercent), 0, 100);
+    _claudeStatusEnabled = _prefs.getBool("ccstatus", _claudeStatusEnabled);
     _nightDimEnabled = _prefs.getBool("night", _nightDimEnabled);
     _nightStartHour = constrain(_prefs.getUChar("nstart", _nightStartHour), 0, 23);
     _nightEndHour = constrain(_prefs.getUChar("nend", _nightEndHour), 0, 23);
@@ -36,6 +37,11 @@ void PreferenceService::setStartupView(uint8_t view) {
 void PreferenceService::setBrightnessPercent(uint8_t percent) {
     _brightnessPercent = constrain(percent, 0, 100);
     _prefs.putUChar("bright", _brightnessPercent);
+}
+
+void PreferenceService::setClaudeStatusEnabled(bool enabled) {
+    _claudeStatusEnabled = enabled;
+    _prefs.putBool("ccstatus", _claudeStatusEnabled);
 }
 
 void PreferenceService::setNightDimEnabled(bool enabled) {
@@ -71,6 +77,7 @@ String PreferenceService::getJson() const {
     json += ",\"speed\":" + String(_animSpeed);
     json += ",\"startup\":" + String(_startupView);
     json += ",\"brightness\":" + String(_brightnessPercent);
+    json += ",\"claudeStatus\":" + String(_claudeStatusEnabled ? "true" : "false");
     json += ",\"nightDim\":" + String(_nightDimEnabled ? "true" : "false");
     json += ",\"nightStart\":" + String(_nightStartHour);
     json += ",\"nightEnd\":" + String(_nightEndHour);

@@ -202,6 +202,8 @@ The alternating Working blink animation exists in the web-controlled interactive
 
 The information bar shows `STATUS`, the most recent non-empty `TOOL`, `MODEL`, and elapsed `TIME`. The firmware retains the previous tool name when an event has no tool field, so a tool such as `Bash` can remain visible after that tool has finished. Hook name and tool detail are received but are not currently rendered.
 
+The web controller includes a persistent `CLAUDE STATUS` switch. When disabled, Hook events are still received but no longer replace the current display with the Claude Code status panel.
+
 Hook discovery cache is stored in one JSON file:
 
 - macOS: `~/Library/Caches/ClawdMochi/cc_hook_cache.json`

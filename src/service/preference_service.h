@@ -21,6 +21,9 @@ public:
     uint8_t getBrightnessPercent() const { return _brightnessPercent; }
     void setBrightnessPercent(uint8_t percent);
 
+    bool getClaudeStatusEnabled() const { return _claudeStatusEnabled; }
+    void setClaudeStatusEnabled(bool enabled);
+
     bool getNightDimEnabled() const { return _nightDimEnabled; }
     void setNightDimEnabled(bool enabled);
 
@@ -40,6 +43,7 @@ private:
     uint8_t _animSpeed = 1;
     uint8_t _startupView = 0;
     uint8_t _brightnessPercent = 100;
+    bool _claudeStatusEnabled = true;
     bool _nightDimEnabled = false;
     uint8_t _nightStartHour = 22;
     uint8_t _nightEndHour = 7;
