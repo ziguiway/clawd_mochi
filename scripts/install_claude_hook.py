@@ -22,7 +22,12 @@ HOOK_EVENTS = [
     "Setup",
     "SessionEnd",
     "UserPromptSubmit",
+    "UserPromptExpansion",
     "PermissionRequest",
+    "PermissionDenied",
+    "Elicitation",
+    "ElicitationResult",
+    "Notification",
     "PreToolUse",
     "PostToolUse",
     "PostToolUseFailure",
@@ -43,6 +48,7 @@ HOOK_STATUS_MESSAGE = "Clawd Mochi status hook"
 HOOK_TIMEOUT_SECONDS = 10
 TOOL_MATCHER_EVENTS = {
     "PermissionRequest",
+    "PermissionDenied",
     "PreToolUse",
     "PostToolUse",
     "PostToolUseFailure",

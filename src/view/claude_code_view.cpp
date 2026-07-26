@@ -155,12 +155,33 @@ void ClaudeCodeView::drawStatusIcon(ClaudeCodeService::Status status, int x, int
         case ClaudeCodeService::Status::IDLE:
         case ClaudeCodeService::Status::THINKING:
         case ClaudeCodeService::Status::WORKING:
-        case ClaudeCodeService::Status::ERROR:
         case ClaudeCodeService::Status::PERMISSION:
             _tft->fillRect(FACE_EYE_X, FACE_EYE_Y, FACE_EYE_W, FACE_EYE_H, COLOR_BLACK);
             _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP, FACE_EYE_Y,
                            FACE_EYE_W, FACE_EYE_H, COLOR_BLACK);
             break;
+        case ClaudeCodeService::Status::ERROR: {
+            const int16_t leftX = FACE_EYE_X;
+            const int16_t rightX = FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP;
+            constexpr int8_t HALF_STROKE = 5;
+
+            // 两条等粗斜线组成 X 眼；底色由 drawStatusPanel() 统一使用 COLOR_MOCHI_BG 清除。
+            for (int8_t t = -HALF_STROKE; t <= HALF_STROKE; t++) {
+                _tft->drawLine(leftX, FACE_EYE_Y + t,
+                               leftX + FACE_EYE_W, FACE_EYE_Y + FACE_EYE_H + t,
+                               COLOR_BLACK);
+                _tft->drawLine(leftX + FACE_EYE_W, FACE_EYE_Y + t,
+                               leftX, FACE_EYE_Y + FACE_EYE_H + t,
+                               COLOR_BLACK);
+                _tft->drawLine(rightX, FACE_EYE_Y + t,
+                               rightX + FACE_EYE_W, FACE_EYE_Y + FACE_EYE_H + t,
+                               COLOR_BLACK);
+                _tft->drawLine(rightX + FACE_EYE_W, FACE_EYE_Y + t,
+                               rightX, FACE_EYE_Y + FACE_EYE_H + t,
+                               COLOR_BLACK);
+            }
+            break;
+        }
         case ClaudeCodeService::Status::SLEEPING: {
             const int16_t eyeY = FACE_EYE_Y + 34;
             _tft->fillRect(FACE_EYE_X - 2, eyeY, FACE_EYE_W + 4, 8, COLOR_BLACK);

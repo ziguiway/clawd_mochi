@@ -36,8 +36,13 @@ HOOK_MAP = {
     "Setup":             "session_start",
     "SessionEnd":        "session_end",
     # 用户交互
-    "UserPromptSubmit":  "thinking",
-    "PermissionRequest": "permission",
+    "UserPromptSubmit":   "thinking",
+    "UserPromptExpansion":"thinking",
+    "PermissionRequest":  "permission",
+    "PermissionDenied":   "error",
+    "Elicitation":        "permission",
+    "ElicitationResult":  "working",
+    "Notification":       "working",
     # 工具调用
     "PreToolUse":        "working",
     "PostToolUse":       "working",
@@ -48,7 +53,7 @@ HOOK_MAP = {
     "SubagentStop":      "working",
     # 任务
     "TaskCreated":       "working",
-    "TaskCompleted":     "working",
+    "TaskCompleted":     "done",
     # 上下文压缩
     "PreCompact":        "COMPACTING",
     "PostCompact":       "COMPACTING",
@@ -58,6 +63,22 @@ HOOK_MAP = {
     # 响应结束
     "Stop":              "done",
     "StopFailure":       "error",
+}
+
+NOTIFICATION_EVENT_MAP = {
+    "permission_prompt":    "permission",
+    "elicitation_dialog":   "permission",
+    "agent_needs_input":    "permission",
+    "idle_prompt":          "done",
+    "agent_completed":      "done",
+    "auth_success":         "working",
+    "elicitation_complete": "working",
+    "elicitation_response": "working",
+}
+
+USER_INPUT_TOOLS = {
+    "AskUserQuestion",
+    "ExitPlanMode",
 }
 
 # CC:ping 探测包，ESP32 收到后不改状态,回 CC:pong[:<mode>]
@@ -220,6 +241,31 @@ def extract_tool_name(data: dict) -> str:
     return ""
 
 
+def resolve_event(hook: str, data: dict) -> str | None:
+    """按 hook 类型和载荷解析设备状态，Notification 需要细分通知类型。"""
+    if hook == "Notification":
+        notification_type = clean_field(data.get("notification_type"), 48)
+        return NOTIFICATION_EVENT_MAP.get(notification_type, "working")
+    if hook == "PreToolUse" and extract_tool_name(data) in USER_INPUT_TOOLS:
+        return "permission"
+    return HOOK_MAP.get(hook)
+
+
+def extract_display_tool(hook: str, data: dict) -> str:
+    """优先显示真实工具；命令展开和 MCP 交互显示对应的活动来源。"""
+    tool = extract_tool_name(data)
+    if tool:
+        return tool
+    if hook == "UserPromptExpansion":
+        command_name = clean_field(data.get("command_name"), 30)
+        return f"/{command_name}" if command_name else "Command"
+    if hook in ("Elicitation", "ElicitationResult"):
+        return clean_field(data.get("mcp_server_name"), 31) or "MCP"
+    if hook == "Notification":
+        return "-"
+    return ""
+
+
 def get_local_subnet() -> str | None:
     """获取本机所在 /24 子网"""
     try:
@@ -330,12 +376,18 @@ def main() -> None:
             pass
 
     hook = sys.argv[1] if len(sys.argv) > 1 else clean_field(data.get("hook_event_name"), 48)
-    event = HOOK_MAP.get(hook)
+    event = resolve_event(hook, data)
     if not event:
         sys.exit(0)
 
-    tool = extract_tool_name(data)
-    detail = summarize_tool_input(data.get("tool_input") or data.get("prompt") or data.get("message"))
+    tool = extract_display_tool(hook, data)
+    detail = summarize_tool_input(
+        data.get("tool_input")
+        or data.get("prompt")
+        or data.get("message")
+        or data.get("reason")
+        or data.get("action")
+    )
     model = data.get("model", "") or os.environ.get("CLAUDE_MODEL", "") or os.environ.get("ANTHROPIC_MODEL", "")
     msg = ",".join([
         f"CC:{event}",

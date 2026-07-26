@@ -182,18 +182,23 @@ The automatic Claude Code status view currently uses the following mappings:
 | Claude Code hook event | Firmware status | Expression currently shown |
 | ---------------------- | --------------- | -------------------------- |
 | `SessionStart`, `Setup` | `IDLE` | Normal animated eyes in expression mode |
-| `UserPromptSubmit` | `THINKING` | Static vertical eyes |
-| `PermissionRequest` | `PERMISSION` | Static vertical eyes |
+| `UserPromptSubmit`, `UserPromptExpansion` | `THINKING` | Static vertical eyes |
+| `PermissionRequest`, `Elicitation` | `PERMISSION` | Static vertical eyes |
+| `ElicitationResult` | `WORKING` | Static vertical eyes |
+| `PreToolUse` for `AskUserQuestion` or `ExitPlanMode` | `PERMISSION` | Static vertical eyes |
 | `PreToolUse`, `PostToolUse`, `PostToolBatch` | `WORKING` | Static vertical eyes |
 | `SubagentStart`, `SubagentStop` | `WORKING` | Static vertical eyes |
-| `TaskCreated`, `TaskCompleted` | `WORKING` | Static vertical eyes |
+| `TaskCreated` | `WORKING` | Static vertical eyes |
+| `TaskCompleted` | `DONE` | Inward chevron (`> <`) eyes, held for 10 seconds |
 | `WorktreeCreate`, `WorktreeRemove` | `WORKING` | Static vertical eyes |
 | `PreCompact`, `PostCompact` | `COMPACTING` | Two horizontal line eyes |
-| `PostToolUseFailure`, `StopFailure` | `ERROR` | Static vertical eyes, held for 10 seconds |
+| `PermissionDenied`, `PostToolUseFailure`, `StopFailure` | `ERROR` | Two crossed (`X X`) eyes, held for 10 seconds |
 | `Stop` | `DONE` | Inward chevron (`> <`) eyes, held for 10 seconds |
 | `SessionEnd` | `SLEEPING` | Closed eyes with `Z z`, then returns to idle |
 
-The Thinking dots and alternating Working blink animations exist in the web-controlled interactive views only; they are not currently connected to automatic Claude Code statuses. `PERMISSION` and `ERROR` do not have distinct expressions, and `TaskCompleted` currently maps to `WORKING`, not `DONE`.
+`Notification` is mapped by `notification_type`: permission prompts, MCP dialogs, and agents waiting for input become `PERMISSION`; idle prompts and completed agents become `DONE`; successful authentication and completed MCP interactions return to `WORKING`. Unknown notification types default to `WORKING`. An `idle_prompt` notification does not trigger `SLEEPING`.
+
+The Thinking dots and alternating Working blink animations exist in the web-controlled interactive views only; they are not currently connected to automatic Claude Code statuses. `PERMISSION` does not have a distinct expression.
 
 The information bar shows `STATUS`, the most recent non-empty `TOOL`, `MODEL`, and elapsed `TIME`. The firmware retains the previous tool name when an event has no tool field, so a tool such as `Bash` can remain visible after that tool has finished. Hook name and tool detail are received but are not currently rendered.
 
