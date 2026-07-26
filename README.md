@@ -183,9 +183,9 @@ The automatic Claude Code status view currently uses the following mappings:
 | ---------------------- | --------------- | -------------------------- |
 | `SessionStart`, `Setup` | `IDLE` | Normal animated eyes in expression mode |
 | `UserPromptSubmit`, `UserPromptExpansion` | `THINKING` | Solid vertical eyes with three sequential thought dots |
-| `PermissionRequest`, `Elicitation` | `PERMISSION` | Static vertical eyes |
+| `PermissionRequest`, `Elicitation` | `PERMISSION` | Solid vertical eyes with an upper-right pixel question mark |
 | `ElicitationResult` | `WORKING` | Static vertical eyes |
-| `PreToolUse` for `AskUserQuestion` or `ExitPlanMode` | `PERMISSION` | Static vertical eyes |
+| `PreToolUse` for `AskUserQuestion` or `ExitPlanMode` | `PERMISSION` | Solid vertical eyes with an upper-right pixel question mark |
 | `PreToolUse`, `PostToolUse`, `PostToolBatch` | `WORKING` | Static vertical eyes |
 | `SubagentStart`, `SubagentStop` | `WORKING` | Static vertical eyes |
 | `TaskCreated` | `WORKING` | Static vertical eyes |
@@ -198,7 +198,7 @@ The automatic Claude Code status view currently uses the following mappings:
 
 `Notification` is mapped by `notification_type`: permission prompts, MCP dialogs, and agents waiting for input become `PERMISSION`; idle prompts and completed agents become `DONE`; successful authentication and completed MCP interactions return to `WORKING`. Unknown notification types default to `WORKING`. An `idle_prompt` notification does not trigger `SLEEPING`.
 
-The alternating Working blink animation exists in the web-controlled interactive view only; it is not currently connected to the automatic `WORKING` status. `PERMISSION` does not yet have a distinct expression.
+The alternating Working blink animation exists in the web-controlled interactive view only; it is not currently connected to the automatic `WORKING` status.
 
 The information bar shows `STATUS`, the most recent non-empty `TOOL`, `MODEL`, and elapsed `TIME`. The firmware retains the previous tool name when an event has no tool field, so a tool such as `Bash` can remain visible after that tool has finished. Hook name and tool detail are received but are not currently rendered.
 

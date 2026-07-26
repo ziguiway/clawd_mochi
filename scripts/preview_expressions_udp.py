@@ -25,11 +25,12 @@ PROBE_TIMEOUT_SEC = 0.35
 SCAN_WORKERS = 64
 
 STATUS_SEQUENCE = [
-    ("thinking", "thinking eye offset"),
-    ("working", "focused working eyes"),
-    ("permission", "waiting narrow eyes"),
-    ("sweeping", "compacting eyes"),
-    ("done", "done squish eyes"),
+    ("idle", "normal animated eyes"),
+    ("thinking", "solid eyes with animated thought dots"),
+    ("working", "solid vertical eyes"),
+    ("permission", "waiting vertical eyes"),
+    ("sweeping", "flat eyes with compression bars"),
+    ("done", "inward chevron eyes"),
     ("working", "prime before error"),
     ("error", "error cross eyes"),
     ("thinking", "prime before sleep"),

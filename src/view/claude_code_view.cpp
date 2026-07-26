@@ -174,7 +174,6 @@ void ClaudeCodeView::drawStatusIcon(ClaudeCodeService::Status status, int x, int
     switch (status) {
         case ClaudeCodeService::Status::IDLE:
         case ClaudeCodeService::Status::WORKING:
-        case ClaudeCodeService::Status::PERMISSION:
             _tft->fillRect(FACE_EYE_X, FACE_EYE_Y, FACE_EYE_W, FACE_EYE_H, COLOR_BLACK);
             _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP, FACE_EYE_Y,
                            FACE_EYE_W, FACE_EYE_H, COLOR_BLACK);
@@ -184,6 +183,18 @@ void ClaudeCodeView::drawStatusIcon(ClaudeCodeService::Status status, int x, int
             _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP, FACE_EYE_Y,
                            FACE_EYE_W, FACE_EYE_H, COLOR_BLACK);
             drawThinkingDots(_thinkingFrame);
+            break;
+        case ClaudeCodeService::Status::PERMISSION:
+            _tft->fillRect(FACE_EYE_X, FACE_EYE_Y, FACE_EYE_W, FACE_EYE_H, COLOR_BLACK);
+            _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP, FACE_EYE_Y,
+                           FACE_EYE_W, FACE_EYE_H, COLOR_BLACK);
+
+            // 右上角粗像素问号：表示正在等待用户授权。
+            _tft->fillRect(214, 24, 16, 6, COLOR_BLACK);
+            _tft->fillRect(230, 30, 6, 16, COLOR_BLACK);
+            _tft->fillRect(220, 46, 16, 6, COLOR_BLACK);
+            _tft->fillRect(220, 52, 6, 8, COLOR_BLACK);
+            _tft->fillRect(220, 66, 6, 6, COLOR_BLACK);
             break;
         case ClaudeCodeService::Status::ERROR: {
             const int16_t leftX = FACE_EYE_X;
