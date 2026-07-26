@@ -3,6 +3,7 @@
 #include "../config/app_config.h"
 #include "../view/boot_animation.h"
 #include <qrcode.h>
+#include <time.h>
 
 #define EYE_W   30
 #define EYE_H   60
@@ -12,9 +13,11 @@
 
 DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
                                WifiConfigService* wifiService, TimeService* timeService,
-                               PreferenceService* preferenceService)
+                               PreferenceService* preferenceService,
+                               WeatherService* weatherService)
     : _tft(tft), _ccService(ccService), _wifiService(wifiService), _timeService(timeService)
     , _preferenceService(preferenceService)
+    , _weatherService(weatherService)
     , _ccView(tft), _eyesView(tft)
     , _currentMode(DisplayMode::SETUP), _lastRefreshMs(0)
     , _interactiveView(InteractiveView::EYES_NORMAL), _interactiveActive(false)
@@ -26,6 +29,7 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _pomodoroRunning(false), _pomodoroPaused(false)
     , _pomodoroDurationSec(25UL * 60UL), _pomodoroRemainingAtPauseSec(25UL * 60UL)
     , _pomodoroStartedMs(0), _lastClockRenderSec(0)
+    , _lastWeatherVersion(0)
     , _lastNightDimCheckMs(0), _lastAppliedBrightnessPercent(255)
     , _timeViewDirty(true), _timeViewLayoutDrawn(false)
     , _lastTimeText{0}, _lastSubText{0}, _lastHintText{0}
@@ -285,6 +289,119 @@ void DisplayService::drawPomodoroView() {
     renderTimeScreen(mark, timeText, sub, "POMODORO", hint, progress, isBreak);
 }
 
+void DisplayService::drawWeatherIcon(int weatherCode, int16_t x, int16_t y) {
+    const bool isClear = weatherCode == 0;
+    const bool isFog = weatherCode == 45 || weatherCode == 48;
+    const bool isRain = (weatherCode >= 51 && weatherCode <= 67) ||
+                        (weatherCode >= 80 && weatherCode <= 82);
+    const bool isSnow = (weatherCode >= 71 && weatherCode <= 77) ||
+                        (weatherCode >= 85 && weatherCode <= 86);
+    const bool isStorm = weatherCode >= 95;
+
+    if (isFog) {
+        _tft->fillRect(x + 10, y + 24, 76, 6, COLOR_BLACK);
+        _tft->fillRect(x,      y + 42, 86, 6, COLOR_BLACK);
+        _tft->fillRect(x + 14, y + 60, 76, 6, COLOR_BLACK);
+        return;
+    }
+
+    // 仅晴天和多云间晴显示太阳；阴雨天气不再出现多余太阳。
+    const bool showSun = isClear || weatherCode <= 2;
+    if (showSun) {
+        const int16_t sunX = isClear ? x + 50 : x + 72;
+        const int16_t sunY = isClear ? y + 42 : y + 22;
+        _tft->fillRect(sunX - 10, sunY - 15, 20, 30, COLOR_BLACK);
+        _tft->fillRect(sunX - 15, sunY - 10, 30, 20, COLOR_BLACK);
+        _tft->fillRect(sunX - 3,  sunY - 30, 6, 9, COLOR_BLACK);
+        _tft->fillRect(sunX - 3,  sunY + 21, 6, 9, COLOR_BLACK);
+        _tft->fillRect(sunX - 30, sunY - 3, 9, 6, COLOR_BLACK);
+        _tft->fillRect(sunX + 21, sunY - 3, 9, 6, COLOR_BLACK);
+    }
+
+    if (isClear) return;
+
+    // 云朵改为连贯的实心阶梯剪影，避免空心轮廓在小屏上变形。
+    _tft->fillRect(x + 8,  y + 50, 84, 24, COLOR_BLACK);
+    _tft->fillRect(x + 18, y + 40, 64, 10, COLOR_BLACK);
+    _tft->fillRect(x + 30, y + 30, 38, 10, COLOR_BLACK);
+    _tft->fillRect(x + 40, y + 24, 20, 6, COLOR_BLACK);
+
+    if (isStorm) {
+        _tft->fillRect(x + 48, y + 78, 10, 8, COLOR_BLACK);
+        _tft->fillRect(x + 42, y + 86, 10, 8, COLOR_BLACK);
+        _tft->fillRect(x + 36, y + 94, 10, 6, COLOR_BLACK);
+    } else if (isRain) {
+        // 三条错位雨滴，避免看起来像云朵的支脚。
+        _tft->fillRect(x + 24, y + 82, 6, 10, COLOR_BLACK);
+        _tft->fillRect(x + 45, y + 78, 6, 10, COLOR_BLACK);
+        _tft->fillRect(x + 66, y + 82, 6, 10, COLOR_BLACK);
+    } else if (isSnow) {
+        _tft->fillRect(x + 26, y + 84, 6, 6, COLOR_BLACK);
+        _tft->fillRect(x + 50, y + 90, 6, 6, COLOR_BLACK);
+        _tft->fillRect(x + 74, y + 84, 6, 6, COLOR_BLACK);
+    }
+}
+
+void DisplayService::drawWeatherView() {
+    _tft->fillScreen(COLOR_ORANGE);
+
+    if (!_weatherService || !_weatherService->isValid()) {
+        _tft->drawTextCentered(82, "WEATHER", COLOR_BLACK, COLOR_ORANGE, FONT_LARGE);
+        const char* message = (_weatherService && _weatherService->isLoading())
+            ? "LOCATING..."
+            : "WAITING FOR NETWORK";
+        _tft->drawTextCentered(132, message, COLOR_BLACK, COLOR_ORANGE, FONT_SMALL);
+        _tft->fillRect(0, 198, CFG_DISPLAY_WIDTH, 4, COLOR_BLACK);
+        _tft->fillRect(0, 202, CFG_DISPLAY_WIDTH, 38, COLOR_DARKBG);
+        _tft->drawText(10, 216, "IP LOCATION + OPEN-METEO",
+                       COLOR_WHITE, COLOR_DARKBG, FONT_SMALL);
+        return;
+    }
+
+    // 方案 1 / Temperature Hero：温度是绝对主视觉。
+    char temp[8];
+    snprintf(temp, sizeof(temp), "%d", _weatherService->getTemperature());
+    const uint8_t tempSize = strlen(temp) <= 2 ? 9 : 7;
+    _tft->drawText(8, 14, temp, COLOR_BLACK, COLOR_ORANGE, tempSize);
+    const int16_t degreeX = 8 + strlen(temp) * 6 * tempSize + 6;
+    _tft->fillRect(degreeX, 18, 18, 18, COLOR_BLACK);
+    _tft->fillRect(degreeX + 5, 23, 8, 8, COLOR_ORANGE);
+
+    drawWeatherIcon(_weatherService->getWeatherCode(), 128, 78);
+
+    // 底栏严格保持两行：城市/日期在上，湿度/高低温在下。
+    _tft->fillRect(0, 184, CFG_DISPLAY_WIDTH, 4, COLOR_BLACK);
+    _tft->fillRect(0, 188, CFG_DISPLAY_WIDTH, 52, COLOR_DARKBG);
+    _tft->fillRect(0, 188, CFG_DISPLAY_WIDTH, 2, COLOR_ORANGE);
+
+    char city[19];
+    strncpy(city, _weatherService->getCity(), sizeof(city) - 1);
+    city[sizeof(city) - 1] = '\0';
+    _tft->drawText(8, 198, city, COLOR_WHITE, COLOR_DARKBG, FONT_SMALL);
+
+    const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
+    char date[12] = "--- --/--";
+    if (_timeService && _timeService->getEpoch() > 1000000000UL) {
+        const time_t now = static_cast<time_t>(_timeService->getEpoch());
+        const struct tm* current = localtime(&now);
+        snprintf(date, sizeof(date), "%s %02d/%02d",
+                 weekdays[current->tm_wday], current->tm_mon + 1, current->tm_mday);
+    }
+    const int16_t dateX = CFG_DISPLAY_WIDTH - _tft->getTextWidth(date, FONT_SMALL) - 8;
+    _tft->drawText(dateX, 198, date, COLOR_WHITE, COLOR_DARKBG, FONT_SMALL);
+
+    char humidity[12];
+    snprintf(humidity, sizeof(humidity), "HUM %d%%", _weatherService->getHumidity());
+    _tft->drawText(8, 220, humidity, COLOR_WHITE, COLOR_DARKBG, FONT_SMALL);
+
+    char highLow[18];
+    snprintf(highLow, sizeof(highLow), "H%d / L%d",
+             _weatherService->getHighTemperature(),
+             _weatherService->getLowTemperature());
+    const int16_t highLowX = CFG_DISPLAY_WIDTH - _tft->getTextWidth(highLow, FONT_SMALL) - 8;
+    _tft->drawText(highLowX, 220, highLow, COLOR_WHITE, COLOR_DARKBG, FONT_SMALL);
+}
+
 // ── Terminal ───────────────────────────────────────────────────
 void DisplayService::termClear() {
     for (uint8_t i = 0; i < TERM_ROWS; i++) _termLines[i] = "";
@@ -515,6 +632,10 @@ void DisplayService::setInteractiveView(uint8_t view) {
         case InteractiveView::POMODORO:
             startPomodoro(PomodoroPhase::FOCUS);
             break;
+        case InteractiveView::WEATHER:
+            if (_weatherService) _weatherService->requestRefresh();
+            drawWeatherView();
+            break;
     }
 }
 
@@ -528,6 +649,7 @@ void DisplayService::redrawCurrentView() {
         case InteractiveView::WORKING:     drawWorking();  break;
         case InteractiveView::CLOCK:       drawClockView(); break;
         case InteractiveView::POMODORO:    drawPomodoroView(); break;
+        case InteractiveView::WEATHER:     drawWeatherView(); break;
     }
 }
 
@@ -713,11 +835,20 @@ void DisplayService::applyIdleDefaultView() {
 // 本方法只负责按当前 _currentMode 渲染。
 void DisplayService::update() {
     unsigned long now = millis();
+    if (_weatherService) _weatherService->update();
     if (now - _lastNightDimCheckMs > 30000UL) {
         _lastNightDimCheckMs = now;
         applyNightDimming();
     }
     if (_currentMode == DisplayMode::INTERACTIVE) {
+        if (_interactiveView == InteractiveView::WEATHER) {
+            const uint32_t version = _weatherService ? _weatherService->getVersion() : 0;
+            if (version != _lastWeatherVersion) {
+                _lastWeatherVersion = version;
+                drawWeatherView();
+            }
+            return;
+        }
         if (_interactiveView != InteractiveView::CLOCK &&
             _interactiveView != InteractiveView::POMODORO) {
             return;

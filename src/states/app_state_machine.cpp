@@ -4,7 +4,8 @@
 
 AppStateMachine::AppStateMachine()
     : _cc(&_sm)
-    , _display(&_tft, &_cc, &_wifi, &_time, &_prefs)
+    , _weather(&_wifi)
+    , _display(&_tft, &_cc, &_wifi, &_time, &_prefs, &_weather)
     , _web(&_cc, &_wifi, &_time, &_display, &_prefs)
     , _serial(&_wifi, &_cc, &_time)
     , _bootButton(&_tft, &_wifi)
@@ -26,6 +27,7 @@ void AppStateMachine::init() {
     LOG_INFO("App", "Clawd Mochi 启动中...");
 
     _prefs.init();
+    _weather.init();
     _tft.init();
     _tft.clear(COLOR_BLACK);
     _time.init();

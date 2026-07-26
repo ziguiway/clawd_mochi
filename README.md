@@ -5,7 +5,7 @@
 
 # Clawd Mochi 🦀🤖
 
-A physical desk companion inspired by **Clawd** — the pixel-crab mascot of Claude Code by Anthropic. An ESP32-C3 drives a 1.54" color TFT display and hosts a mobile web controller — no app, no internet, no cloud required.
+A physical desk companion inspired by **Clawd** — the pixel-crab mascot of Claude Code by Anthropic. An ESP32-C3 drives a 1.54" color TFT display and hosts a mobile web controller. Core controls work locally; the optional weather view uses internet weather services.
 
 **Cost: ~$6–8 · Build time: ~1 hour · Skill level: Beginner**
 
@@ -33,6 +33,7 @@ Clawd Mochi sits on your desk and shows animated expressions on a small color di
 - **Squish eyes** — `> <` happy squint with open/close animation
 - **Claude Code** — displays "Claude Code" with an interactive terminal
 - **Canvas** — draw anything on the display from your phone in real time
+- **Weather** — automatically estimates the city from the public IP and shows current conditions
 
 ---
 
@@ -135,11 +136,21 @@ You should see the web controller:
 | Squish eyes        | Plays open/close animation                      |
 | Claude Code        | Shows code display, opens terminal              |
 | Canvas             | Enter drawing mode — draw on display from phone |
+| Clock              | Shows the current time                           |
+| Pomodoro           | Runs a focus or break timer                      |
+| Weather            | Shows IP-located weather and the daily high/low  |
 | Speed slider       | Controls animation speed (slow / normal / fast) |
 | Background color   | Changes background color of all views           |
 | Pen color          | Sets drawing color for canvas                   |
 | Display on/off     | Toggles the backlight                           |
+| Claude status      | Enables or disables automatic Hook status views |
 | ✓ done (in canvas) | Exits canvas mode                               |
+
+---
+
+### Weather data
+
+The Weather view first uses IPWhois to estimate the current city and coordinates, then requests current temperature, humidity, weather code, and the daily high/low from Open-Meteo. It requires internet access but no API key. IP-based location is approximate and can be affected by VPNs or carrier routing. Weather refreshes every 30 minutes and the IP location refreshes every 24 hours.
 
 ---
 
