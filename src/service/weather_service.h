@@ -29,7 +29,7 @@ private:
 
     WifiConfigService* _wifiService;
     bool _valid;
-    bool _loading;
+    volatile bool _loading;
     bool _locationValid;
     bool _refreshRequested;
     float _latitude;
@@ -43,8 +43,11 @@ private:
     unsigned long _lastWeatherMs;
     unsigned long _lastLocationMs;
     unsigned long _lastAttemptMs;
-    uint32_t _version;
+    volatile uint32_t _version;
+    TaskHandle_t _refreshTask;
 
+    static void refreshTaskEntry(void* parameter);
+    void runRefresh();
     bool fetchLocation();
     bool fetchWeather();
     void copyCity(const char* city);

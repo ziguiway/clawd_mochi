@@ -25,7 +25,7 @@ void SerialIdleState::onEnter() {
         _ctx->display()->init();
         LOG_INFO("SerialIdle", "串口模式服务初始化完成");
     }
-    _ctx->display()->switchToExpressionMode();
+    _ctx->display()->switchToIdleDisplay();
 }
 
 void SerialIdleState::onUpdate() {

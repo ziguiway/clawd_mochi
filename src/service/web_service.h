@@ -11,6 +11,7 @@
 #include "display_service.h"
 #include "preference_service.h"
 #include "crypto_service.h"
+#include "market_service.h"
 #include "../utils/logger.h"
 
 class WebService {
@@ -18,7 +19,8 @@ public:
     WebService(ClaudeCodeService* ccService, WifiConfigService* wifiService,
                TimeService* timeService, DisplayService* displayService,
                PreferenceService* preferenceService,
-               CryptoService* cryptoService);
+               CryptoService* cryptoService,
+               MarketService* marketService);
     void init();
     void update();
 
@@ -31,6 +33,7 @@ private:
     DisplayService* _displayService;
     PreferenceService* _preferenceService;
     CryptoService* _cryptoService;
+    MarketService* _marketService;
 
     void setupRoutes();
 
@@ -56,6 +59,10 @@ private:
     void handleCryptoConfig();
     void handleCryptoUpdate();
     void handleCryptoRefresh();
+    void handleMarketConfig();
+    void handleMarketUpdate();
+    void handleMarketRefresh();
+    void handleMarketSearch();
 
     // Existing routes
     void handleWifiSetup();

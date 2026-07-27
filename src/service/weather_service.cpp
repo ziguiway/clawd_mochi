@@ -6,6 +6,7 @@
 #include <math.h>
 
 #include "../utils/logger.h"
+#include "../utils/network_request_gate.h"
 
 WeatherService::WeatherService(WifiConfigService* wifiService)
     : _wifiService(wifiService)
@@ -24,6 +25,7 @@ WeatherService::WeatherService(WifiConfigService* wifiService)
     , _lastLocationMs(0)
     , _lastAttemptMs(0)
     , _version(0)
+    , _refreshTask(nullptr)
 {
     strncpy(_city, "LOCATING", sizeof(_city) - 1);
     _city[sizeof(_city) - 1] = '\0';
@@ -48,11 +50,34 @@ void WeatherService::update() {
     const bool weatherDue = _valid && now - _lastWeatherMs >= WEATHER_REFRESH_MS;
     if (!_refreshRequested && !retryDue && !weatherDue) return;
 
+    if (!NetworkRequestGate::tryAcquire()) return;
+
     _loading = true;
     _refreshRequested = false;
     _lastAttemptMs = now;
     _version++;
+    if (xTaskCreate(refreshTaskEntry, "WeatherNet", 8192, this, 1,
+                    &_refreshTask) != pdPASS) {
+        _refreshTask = nullptr;
+        _loading = false;
+        _refreshRequested = true;
+        NetworkRequestGate::release();
+        LOG_WARN("Weather", "后台请求任务创建失败");
+    }
+}
 
+void WeatherService::refreshTaskEntry(void* parameter) {
+    WeatherService* service = static_cast<WeatherService*>(parameter);
+    service->runRefresh();
+    service->_loading = false;
+    service->_refreshTask = nullptr;
+    service->_version++;
+    NetworkRequestGate::release();
+    vTaskDelete(nullptr);
+}
+
+void WeatherService::runRefresh() {
+    const unsigned long now = millis();
     const bool locationDue = !_locationValid ||
         _lastLocationMs == 0 ||
         now - _lastLocationMs >= LOCATION_REFRESH_MS;
@@ -60,9 +85,7 @@ void WeatherService::update() {
     if (locationDue) ok = fetchLocation();
     if (ok && _locationValid) ok = fetchWeather();
 
-    _loading = false;
     if (!ok) LOG_WARN("Weather", "天气更新失败，将稍后重试");
-    _version++;
 }
 
 bool WeatherService::fetchLocation() {

@@ -12,7 +12,7 @@ bool shouldShowInfo(ClaudeCodeService::Status status) {
 }
 
 void LANIdleState::onEnter() {
-    _ctx->display()->switchToExpressionMode();
+    _ctx->display()->switchToIdleDisplay();
 }
 
 void LANIdleState::onUpdate() {

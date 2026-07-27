@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <Preferences.h>
+#include "../config/cfg_display.h"
 
 class TimeService;
 
@@ -24,6 +25,16 @@ public:
     bool getClaudeStatusEnabled() const { return _claudeStatusEnabled; }
     void setClaudeStatusEnabled(bool enabled);
 
+    // 空闲信息轮播（天气 / Crypto / Market）
+    bool getCarouselEnabled() const { return _carouselEnabled; }
+    void setCarouselEnabled(bool enabled);
+    uint8_t getCarouselSpeedSeconds() const { return _carouselSpeedSeconds; }
+    void setCarouselSpeedSeconds(uint8_t seconds);
+    uint8_t getCarouselView(uint8_t index) const;
+    bool setCarouselOrder(const uint8_t order[3]);
+    uint8_t getCarouselFixedView() const { return _carouselFixedView; }
+    void setCarouselFixedView(uint8_t view);
+
     bool getNightDimEnabled() const { return _nightDimEnabled; }
     void setNightDimEnabled(bool enabled);
 
@@ -44,6 +55,10 @@ private:
     uint8_t _startupView = 0;
     uint8_t _brightnessPercent = 100;
     bool _claudeStatusEnabled = true;
+    bool _carouselEnabled = false;
+    uint8_t _carouselSpeedSeconds = 12;
+    uint8_t _carouselOrder[3] = {VIEW_WEATHER, VIEW_CRYPTO, VIEW_MARKET};
+    uint8_t _carouselFixedView = VIEW_WEATHER;
     bool _nightDimEnabled = false;
     uint8_t _nightStartHour = 22;
     uint8_t _nightEndHour = 7;
@@ -51,4 +66,5 @@ private:
 
     bool isValidHexColor(const String& hex) const;
     bool isStartupViewAllowed(uint8_t view) const;
+    bool isCarouselView(uint8_t view) const;
 };

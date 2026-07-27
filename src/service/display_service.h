@@ -10,6 +10,7 @@
 #include "preference_service.h"
 #include "weather_service.h"
 #include "crypto_service.h"
+#include "market_service.h"
 #include "../config/cfg_display.h"
 
 enum class DisplayMode {
@@ -30,7 +31,8 @@ enum class InteractiveView {
     CLOCK,
     POMODORO,
     WEATHER,
-    CRYPTO
+    CRYPTO,
+    MARKET
 };
 
 enum class PomodoroPhase {
@@ -44,7 +46,8 @@ public:
                    WifiConfigService* wifiService, TimeService* timeService,
                    PreferenceService* preferenceService,
                    WeatherService* weatherService,
-                   CryptoService* cryptoService);
+                   CryptoService* cryptoService,
+                   MarketService* marketService);
     void init();
     void update();
 
@@ -119,7 +122,10 @@ public:
 
     // 表情/信息模式切换(供 Idle/Working 状态调用)
     void switchToExpressionMode();
+    void switchToIdleDisplay();
     void switchToInfoMode();
+    void reloadIdleDisplayPreferences();
+    bool isCarouselEnabled() const { return _carouselEnabled; }
 
 private:
     TftDisplay* _tft;
@@ -129,6 +135,7 @@ private:
     PreferenceService* _preferenceService;
     WeatherService* _weatherService;
     CryptoService* _cryptoService;
+    MarketService* _marketService;
     ClaudeCodeView _ccView;
     EyesView _eyesView;
     DisplayMode _currentMode;
@@ -144,6 +151,15 @@ private:
     uint8_t _brightnessPercent;
     bool _claudeStatusEnabled;
 
+    // 空闲时的信息轮播。Claude Code 进入 INFO 后只暂停，不丢失当前位置。
+    bool _carouselEnabled;
+    uint8_t _carouselSpeedSeconds;
+    uint8_t _carouselOrder[3];
+    uint8_t _carouselFixedView;
+    uint8_t _carouselIndex;
+    unsigned long _carouselPageStartedMs;
+    bool _carouselSuspended;
+
     // Clock / Pomodoro state
     uint16_t _focusMinutes;
     uint16_t _breakMinutes;
@@ -156,6 +172,7 @@ private:
     unsigned long _lastClockRenderSec;
     uint32_t _lastWeatherVersion;
     uint32_t _lastCryptoVersion;
+    uint32_t _lastMarketVersion;
     unsigned long _lastNightDimCheckMs;
     uint8_t _lastAppliedBrightnessPercent;
 
@@ -184,6 +201,8 @@ private:
     void drawWeatherIcon(int weatherCode, int16_t x, int16_t y);
     void drawCryptoView();
     void formatCryptoPrice(float price, char* output, size_t size);
+    void drawMarketView();
+    void formatMarketPrice(float price, char* output, size_t size);
     void renderTimeScreen(const char* mark, const char* timeText, const char* subText,
                           const char* modeText, const char* hintText,
                           uint16_t progressPermille, bool lightProgress);
@@ -193,6 +212,10 @@ private:
                                  uint16_t progressPermille, bool lightProgress);
     void invalidateTimeView();
     void applyIdleDefaultView();
+    void loadIdleDisplayPreferences();
+    void showCarouselCurrentView();
+    bool isCarouselView(uint8_t view) const;
+    void syncCarouselIndexForView(uint8_t view);
     void applyNightDimming();
     void drawChevron(int16_t cx, int16_t cy, int16_t arm, int16_t reach, uint8_t thk, bool rightFacing, uint16_t col);
 

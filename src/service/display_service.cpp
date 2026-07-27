@@ -15,11 +15,13 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
                                WifiConfigService* wifiService, TimeService* timeService,
                                PreferenceService* preferenceService,
                                WeatherService* weatherService,
-                               CryptoService* cryptoService)
+                               CryptoService* cryptoService,
+                               MarketService* marketService)
     : _tft(tft), _ccService(ccService), _wifiService(wifiService), _timeService(timeService)
     , _preferenceService(preferenceService)
     , _weatherService(weatherService)
     , _cryptoService(cryptoService)
+    , _marketService(marketService)
     , _ccView(tft), _eyesView(tft)
     , _currentMode(DisplayMode::SETUP), _lastRefreshMs(0)
     , _interactiveView(InteractiveView::EYES_NORMAL), _interactiveActive(false)
@@ -27,12 +29,17 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _animBgColor(COLOR_ORANGE), _drawBgColor(COLOR_ORANGE)
     , _brightnessPercent(100)
     , _claudeStatusEnabled(true)
+    , _carouselEnabled(false), _carouselSpeedSeconds(12)
+    , _carouselOrder{VIEW_WEATHER, VIEW_CRYPTO, VIEW_MARKET}
+    , _carouselFixedView(VIEW_WEATHER), _carouselIndex(0)
+    , _carouselPageStartedMs(0), _carouselSuspended(false)
     , _focusMinutes(25), _breakMinutes(5), _pomodoroPhase(PomodoroPhase::FOCUS)
     , _pomodoroRunning(false), _pomodoroPaused(false)
     , _pomodoroDurationSec(25UL * 60UL), _pomodoroRemainingAtPauseSec(25UL * 60UL)
     , _pomodoroStartedMs(0), _lastClockRenderSec(0)
     , _lastWeatherVersion(0)
     , _lastCryptoVersion(0)
+    , _lastMarketVersion(0)
     , _lastNightDimCheckMs(0), _lastAppliedBrightnessPercent(255)
     , _timeViewDirty(true), _timeViewLayoutDrawn(false)
     , _lastTimeText{0}, _lastSubText{0}, _lastHintText{0}
@@ -49,6 +56,7 @@ void DisplayService::init() {
         _drawBgColor = _animBgColor;
         _brightnessPercent = _preferenceService->getBrightnessPercent();
         _claudeStatusEnabled = _preferenceService->getClaudeStatusEnabled();
+        loadIdleDisplayPreferences();
     } else {
         _animBgColor = COLOR_ORANGE;
         _drawBgColor = COLOR_ORANGE;
@@ -500,6 +508,94 @@ void DisplayService::drawCryptoView() {
     }
 }
 
+void DisplayService::formatMarketPrice(float price, char* output, size_t size) {
+    if (!output || size == 0) return;
+    if (price >= 10000.0f) {
+        snprintf(output, size, "%.0f", price);
+    } else if (price >= 1000.0f) {
+        snprintf(output, size, "%.1f", price);
+    } else {
+        snprintf(output, size, "%.2f", price);
+    }
+}
+
+void DisplayService::drawMarketView() {
+    constexpr uint16_t MARKET_HEADER_DIVIDER = 0xFF9B;  // 暖白 #FFF0D8
+    constexpr uint16_t MARKET_ROW_DIVIDER = 0xC203;     // 深橙 #C74318
+    _tft->fillScreen(COLOR_ORANGE);
+
+    auto drawBold = [this](int16_t x, int16_t y, const char* text, uint8_t size) {
+        _tft->drawText(x, y, text, COLOR_WHITE, COLOR_ORANGE, size);
+        Adafruit_ST7789& screen = _tft->getTft();
+        screen.setTextSize(size);
+        screen.setTextColor(COLOR_WHITE);
+        screen.setCursor(x + 1, y);
+        screen.print(text);
+    };
+
+    drawBold(8, 8, "MARKET", FONT_MEDIUM);
+    if (_timeService && _timeService->isSynced() && _marketService &&
+        _marketService->getLastSuccessMs() != 0) {
+        const unsigned long ageSec =
+            (millis() - _marketService->getLastSuccessMs()) / 1000UL;
+        const time_t updatedEpoch =
+            static_cast<time_t>(_timeService->getEpoch() - ageSec);
+        const struct tm* updated = localtime(&updatedEpoch);
+        char updatedText[16];
+        snprintf(updatedText, sizeof(updatedText), "UPDATED %02d:%02d",
+                 updated->tm_hour, updated->tm_min);
+        const int16_t updatedX = CFG_DISPLAY_WIDTH -
+            _tft->getTextWidth(updatedText, FONT_SMALL) - 8;
+        drawBold(updatedX, 12, updatedText, FONT_SMALL);
+    }
+    _tft->fillRect(0, 30, CFG_DISPLAY_WIDTH, 2, MARKET_HEADER_DIVIDER);
+
+    if (!_marketService || _marketService->getAssetCount() == 0) {
+        const char* emptyText = "NO STOCKS";
+        const int16_t emptyX = (CFG_DISPLAY_WIDTH -
+            _tft->getTextWidth(emptyText, FONT_MEDIUM)) / 2;
+        drawBold(emptyX, 116, emptyText, FONT_MEDIUM);
+        return;
+    }
+
+    const uint8_t count = _marketService->getAssetCount();
+    const int16_t listTop = 33;
+    const int16_t listHeight = CFG_DISPLAY_HEIGHT - listTop;
+    for (uint8_t i = 0; i < count; i++) {
+        const int16_t rowTop = listTop + (listHeight * i) / count;
+        const int16_t rowBottom = listTop + (listHeight * (i + 1)) / count;
+        const int16_t rowHeight = rowBottom - rowTop;
+        const MarketAsset& asset = _marketService->getAsset(i);
+
+        if (i > 0) {
+            _tft->fillRect(0, rowTop, CFG_DISPLAY_WIDTH, 1,
+                           MARKET_ROW_DIVIDER);
+        }
+        const int16_t centeredOffset = (rowHeight - 16) / 2;
+        const int16_t textY = rowTop + (centeredOffset > 3 ? centeredOffset : 3);
+        const uint8_t labelSize = strlen(asset.label) <= 4 ?
+            FONT_MEDIUM : FONT_SMALL;
+        drawBold(8, textY + (labelSize == FONT_SMALL ? 4 : 0),
+                 asset.label, labelSize);
+
+        char price[12] = "--";
+        if (asset.priceValid) {
+            formatMarketPrice(asset.price, price, sizeof(price));
+        }
+        const uint8_t priceSize = strlen(price) <= 7 ? FONT_MEDIUM : FONT_SMALL;
+        drawBold(66, textY + (priceSize == FONT_SMALL ? 4 : 0),
+                 price, priceSize);
+
+        char change[12] = "--";
+        if (asset.changeValid) {
+            snprintf(change, sizeof(change), "%+.1f%%", asset.changePercent);
+        }
+        const int16_t changeX = CFG_DISPLAY_WIDTH -
+            _tft->getTextWidth(change, FONT_MEDIUM) - 8;
+        drawBold(changeX, textY, change, FONT_MEDIUM);
+    }
+}
+
 // ── Terminal ───────────────────────────────────────────────────
 void DisplayService::termClear() {
     for (uint8_t i = 0; i < TERM_ROWS; i++) _termLines[i] = "";
@@ -698,10 +794,14 @@ void DisplayService::exitInteractive() {
 void DisplayService::setInteractiveView(uint8_t view) {
     if (!_interactiveActive) {
         _interactiveActive = true;
-        _currentMode = DisplayMode::INTERACTIVE;
     }
+    _currentMode = DisplayMode::INTERACTIVE;
     _interactiveView = static_cast<InteractiveView>(view);
     _termMode = false;
+    if (_carouselEnabled && isCarouselView(view) && !_carouselSuspended) {
+        syncCarouselIndexForView(view);
+        _carouselPageStartedMs = millis();
+    }
     switch (_interactiveView) {
         case InteractiveView::EYES_NORMAL:
             animNormalEyes();
@@ -731,12 +831,15 @@ void DisplayService::setInteractiveView(uint8_t view) {
             startPomodoro(PomodoroPhase::FOCUS);
             break;
         case InteractiveView::WEATHER:
-            if (_weatherService) _weatherService->requestRefresh();
+            // 轮播只展示已有缓存；刷新由服务自身的定时后台任务负责，
+            // 不能因每次翻页触发新的网络请求。
             drawWeatherView();
             break;
         case InteractiveView::CRYPTO:
-            if (_cryptoService) _cryptoService->requestRefresh();
             drawCryptoView();
+            break;
+        case InteractiveView::MARKET:
+            drawMarketView();
             break;
     }
 }
@@ -753,6 +856,7 @@ void DisplayService::redrawCurrentView() {
         case InteractiveView::POMODORO:    drawPomodoroView(); break;
         case InteractiveView::WEATHER:     drawWeatherView(); break;
         case InteractiveView::CRYPTO:      drawCryptoView(); break;
+        case InteractiveView::MARKET:      drawMarketView(); break;
     }
 }
 
@@ -933,6 +1037,59 @@ void DisplayService::applyIdleDefaultView() {
     }
 }
 
+bool DisplayService::isCarouselView(uint8_t view) const {
+    return view == VIEW_WEATHER || view == VIEW_CRYPTO || view == VIEW_MARKET;
+}
+
+void DisplayService::loadIdleDisplayPreferences() {
+    if (!_preferenceService) return;
+    _carouselEnabled = _preferenceService->getCarouselEnabled();
+    _carouselSpeedSeconds = _preferenceService->getCarouselSpeedSeconds();
+    _carouselFixedView = _preferenceService->getCarouselFixedView();
+    for (uint8_t i = 0; i < 3; i++) {
+        _carouselOrder[i] = _preferenceService->getCarouselView(i);
+    }
+    if (_carouselIndex >= 3) _carouselIndex = 0;
+}
+
+void DisplayService::syncCarouselIndexForView(uint8_t view) {
+    for (uint8_t i = 0; i < 3; i++) {
+        if (_carouselOrder[i] == view) {
+            _carouselIndex = i;
+            return;
+        }
+    }
+    _carouselIndex = 0;
+}
+
+void DisplayService::showCarouselCurrentView() {
+    _carouselIndex %= 3;
+    _carouselSuspended = false;
+    _carouselPageStartedMs = millis();
+    setInteractiveView(_carouselOrder[_carouselIndex]);
+}
+
+void DisplayService::switchToIdleDisplay() {
+    if (_carouselEnabled) {
+        showCarouselCurrentView();
+        return;
+    }
+    _carouselSuspended = false;
+    setInteractiveView(_carouselFixedView);
+}
+
+void DisplayService::reloadIdleDisplayPreferences() {
+    const uint8_t currentView = static_cast<uint8_t>(_interactiveView);
+    loadIdleDisplayPreferences();
+    if (isCarouselView(currentView)) syncCarouselIndexForView(currentView);
+    else _carouselIndex = 0;
+
+    // Claude Code 正在占用屏幕时只更新配置；结束后再按新配置恢复。
+    if (_currentMode != DisplayMode::INFO && _currentMode != DisplayMode::PROVISIONING) {
+        switchToIdleDisplay();
+    }
+}
+
 // ── Main update loop ───────────────────────────────────────────
 // 状态机负责切换显示模式(switchToExpressionMode/switchToInfoMode/updateProvisioning),
 // 本方法只负责按当前 _currentMode 渲染。
@@ -940,11 +1097,20 @@ void DisplayService::update() {
     unsigned long now = millis();
     if (_weatherService) _weatherService->update();
     if (_cryptoService) _cryptoService->update();
+    if (_marketService) _marketService->update();
     if (now - _lastNightDimCheckMs > 30000UL) {
         _lastNightDimCheckMs = now;
         applyNightDimming();
     }
     if (_currentMode == DisplayMode::INTERACTIVE) {
+        if (_carouselEnabled && !_carouselSuspended &&
+            isCarouselView(static_cast<uint8_t>(_interactiveView)) &&
+            now - _carouselPageStartedMs >=
+                static_cast<unsigned long>(_carouselSpeedSeconds) * 1000UL) {
+            _carouselIndex = (_carouselIndex + 1) % 3;
+            showCarouselCurrentView();
+            return;
+        }
         if (_interactiveView == InteractiveView::WEATHER) {
             const uint32_t version = _weatherService ? _weatherService->getVersion() : 0;
             if (version != _lastWeatherVersion) {
@@ -958,6 +1124,14 @@ void DisplayService::update() {
             if (version != _lastCryptoVersion) {
                 _lastCryptoVersion = version;
                 drawCryptoView();
+            }
+            return;
+        }
+        if (_interactiveView == InteractiveView::MARKET) {
+            const uint32_t version = _marketService ? _marketService->getVersion() : 0;
+            if (version != _lastMarketVersion) {
+                _lastMarketVersion = version;
+                drawMarketView();
             }
             return;
         }
@@ -1121,6 +1295,7 @@ void DisplayService::switchToExpressionMode() {
 }
 
 void DisplayService::switchToInfoMode() {
+    _carouselSuspended = _carouselEnabled;
     _currentMode = DisplayMode::INFO;
     _ccView.reset();
     _tft->clear(COLOR_DARKBG);

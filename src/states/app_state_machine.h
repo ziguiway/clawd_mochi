@@ -18,6 +18,7 @@
 #include "../service/preference_service.h"
 #include "../service/weather_service.h"
 #include "../service/crypto_service.h"
+#include "../service/market_service.h"
 #include "../service/web_service.h"
 #include "../service/display_service.h"
 #include "../service/serial_command_service.h"
@@ -66,6 +67,7 @@ private:
     PreferenceService    _prefs;
     WeatherService       _weather;
     CryptoService        _crypto;
+    MarketService        _market;
     DisplayService       _display;
     WebService           _web;
     SerialCommandService _serial;

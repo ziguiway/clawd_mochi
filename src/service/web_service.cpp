@@ -55,7 +55,7 @@ body{background:#1c1c20;font-family:'Courier New',monospace;color:#e8e4dc;
 .vbtn[data-v="2"].active{border-color:#4a8acd;background:#0c1628}
 .vbtn[data-v="3"].active{border-color:#38343a;background:#201c18}
 .vbtn[data-v="6"].active,.vbtn[data-v="7"].active{border-color:#f0a060;background:#22140a}
-.vbtn[data-v="8"].active,.vbtn[data-v="9"].active{border-color:#f0a060;background:#22140a}
+  .vbtn[data-v="8"].active,.vbtn[data-v="9"].active,.vbtn[data-v="10"].active{border-color:#f0a060;background:#22140a}
 .speed-row{width:100%;max-width:390px;display:flex;align-items:center;gap:10px}
 .sl{font-size:10px;color:#6a6058;white-space:nowrap;min-width:36px}
 input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
@@ -136,9 +136,28 @@ input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
 .mresult{border:1px solid #39353b;border-radius:9px}
 .madd{background:#c96a3e;border:0;border-radius:7px;color:#140b06;
   font:700 10px 'Courier New',monospace;padding:8px 10px;cursor:pointer}
-.madd:disabled{opacity:.35}
-.minfo{border:1px solid #6d3a25;border-radius:8px;color:#bbb4ac;font-size:10px;
+  .madd:disabled{opacity:.35}
+  .minfo{border:1px solid #6d3a25;border-radius:8px;color:#bbb4ac;font-size:10px;
   line-height:1.45;padding:10px 12px}
+  .idle-open{width:100%;max-width:390px;display:flex;align-items:center;justify-content:space-between}
+  .rwrap{width:100%;max-width:390px;background:#151418;border:1.5px solid #3a3028;
+  border-radius:14px;padding:14px;display:none;flex-direction:column;gap:11px}
+  .rwrap.open{display:flex}
+  .rhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .rttl{font-size:14px;color:#f0ece4;font-weight:bold;letter-spacing:1px}
+  .rtoggle{flex:none;min-width:118px;padding:10px 8px}
+  .rrow{display:flex;align-items:center;gap:10px}
+  .rrow .mlabel{min-width:58px}
+  .rselect{flex:1;background:#0e0e11;border:1.5px solid #494249;border-radius:8px;
+  color:#eee8df;font:700 12px 'Courier New',monospace;padding:10px;outline:none}
+  .rselect:disabled,.rrange:disabled{opacity:.35}
+  .rrange{flex:1;accent-color:#c96a3e;cursor:pointer}
+  .rtime{font-size:12px;color:#df6734;font-weight:bold;min-width:34px;text-align:right}
+  .rorder{display:flex;flex-direction:column;border:1px solid #4b372c;border-radius:9px;overflow:hidden}
+  .ritem{display:flex;align-items:center;gap:9px;background:#222126;border-bottom:1px solid #4b372c;padding:8px 10px;
+  transition:transform .08s,opacity .08s}.ritem:last-child{border-bottom:0}.ritem.dragging{opacity:.75;background:#2d201a;z-index:3}
+  .rindex{font-size:10px;color:#746b63;min-width:16px}.rname{flex:1;color:#f0ece4;font-size:12px;font-weight:bold}
+  .rdrag:disabled{opacity:.25;cursor:default}
 .cwrap{width:100%;max-width:390px;background:#222028;border:1.5px solid #38343a;
   border-radius:12px;padding:12px;flex-direction:column;gap:10px;display:none}
 .cwrap.open{display:flex}
@@ -237,6 +256,21 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <span class="nm">Crypto</span>
     <span class="ht">1-5 live assets</span>
   </button>
+  <button class="vbtn" data-v="10" onclick="setView(10)">
+    <span class="ic">SH  SZ</span>
+    <span class="nm">Market</span>
+    <span class="ht">China stocks & indices</span>
+  </button>
+</div>
+<div class="sec">// idle display</div>
+<button class="cbtn idle-open" id="carouselPanelBtn" onclick="toggleCarouselPanel()"><span>↻ idle display settings</span><span id="carouselPanelState">open</span></button>
+<div class="rwrap" id="carouselWrap">
+  <div class="rhead"><span class="rttl">INFO CAROUSEL</span><button class="cbtn rtoggle" id="carouselToggle" onclick="toggleCarousel()">○ carousel off</button></div>
+  <div class="rrow"><span class="mlabel">FIXED PAGE</span><select class="rselect" id="carouselFixed" onchange="setCarouselFixed(this.value)"><option value="8">Weather</option><option value="9">Crypto</option><option value="10">Market</option></select></div>
+  <div class="rrow"><span class="mlabel">INTERVAL</span><input class="rrange" id="carouselSpeed" type="range" min="5" max="60" step="1" oninput="setCarouselSpeed(this.value)"><span class="rtime" id="carouselSpeedV">12s</span></div>
+  <div class="mlabel">ROTATION ORDER</div>
+  <div class="rorder" id="carouselOrder"></div>
+  <div class="minfo" id="carouselHint">When Claude Code becomes active, the carousel pauses and resumes from the same page afterwards.</div>
 </div>
 <div class="pwrap" id="pwrap">
   <div class="pstat"><span id="pPhase">FOCUS</span><strong id="pTime">25:00</strong></div>
@@ -275,6 +309,23 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
   <div class="mresults" id="mResults"></div>
   <div class="minfo">Remove an item above to enable Add.<br>Max 5 assets shown on device.</div>
   <div class="mauto"><strong id="mAuto">● SAVED TO DEVICE</strong><span>AUTO-SAVED</span></div>
+</div>
+<div class="mwrap" id="swrap">
+  <div class="mttl">// market display</div>
+  <div class="mlabel">LIVE PREVIEW (240x240)</div>
+  <div class="mpreview">
+    <div class="mhead"><span>MARKET</span><span class="mtime" id="sTime">UPDATED --:--</span></div>
+    <div class="mrows" id="sPreview"></div>
+  </div>
+  <div class="mlabel">DISPLAYED <span id="sCount">0 / 5</span></div>
+  <div class="msel" id="sSelected"></div>
+  <div class="mlabel">SEARCH STOCK CODE OR NAME</div>
+  <input class="msearch" id="sSearch" type="search" placeholder="600519, 贵州茅台..."
+         autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  <div class="mlabelrow"><span class="mlabel">SEARCH RESULTS</span><span class="mlabel" id="sResultCount"></span></div>
+  <div class="mresults" id="sResults"></div>
+  <div class="minfo">The Market title stays fixed.<br>Replace the default indices with up to 5 A-share stocks.</div>
+  <div class="mauto"><strong id="sAuto">● SAVED TO DEVICE</strong><span>AUTO-SAVED</span></div>
 </div>
 <div class="sec">// speed</div>
 <div class="speed-row">
@@ -316,6 +367,8 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
 let activeView=0,termOpen=false,canvasOpen=false,blOn=true,claudeStatusOn=true,isBusy=false,drawing=false;
 let lastX=0,lastY=0,tt;
 let marketSelected=[],marketDirectory=[],marketLoaded=false,marketSaving=false,marketSaveQueued=false,marketUpdatedAt=null,marketDrag=null;
+let stockSelected=[],stockSaving=false,stockSaveQueued=false,stockUpdatedAt=null,stockDrag=null,stockSearchTimer=null,stockSearchSeq=0;
+let carouselConfig={enabled:false,speed:12,order:[8,9,10],fixed:8},carouselSpeedTimer=null,carouselPanelOpen=false,carouselDrag=null;
 const spdLabels=['','slow','normal','fast'];
 function toast(msg,ok=true){const el=document.getElementById('toast');el.textContent=msg;el.style.borderColor=ok?'#28b878':'#c96a3e';el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),1300);}
 function setBusy(b){isBusy=b;document.getElementById('busy').classList.toggle('show',b);const locked=b||termOpen;document.querySelectorAll('.vbtn').forEach(el=>{el.disabled=canvasOpen?parseInt(el.dataset.v)!==3:locked;});document.querySelectorAll('.cbtn').forEach(el=>{if(el.id!=='blBtn'&&el.id!=='ccStatusBtn')el.disabled=locked;});}
@@ -323,13 +376,50 @@ async function req(path){try{const r=await fetch(path);return r.ok;}catch(e){toa
 async function waitNotBusy(){for(let i=0;i<100;i++){try{const r=await fetch('/state');const j=await r.json();if(!j.busy)return;}catch(e){}await new Promise(r=>setTimeout(r,150));}}
 async function onBgChange(hex){if(canvasOpen){await req('/draw/clear?bg='+encodeURIComponent(hex));await req('/prefs?bg='+encodeURIComponent(hex));}else{await req('/redraw?bg='+encodeURIComponent(hex));}redrawCanvas(hex);}
 async function setSpeed(v){document.getElementById('spdV').textContent=spdLabels[v];await req('/speed?v='+v);}
-async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e',9:'m'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);document.getElementById('mwrap').classList.toggle('open',v===9);if(v===9){await loadMarketConfig();loadMarketDirectory();toast('crypto open');return;}if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
+async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e',9:'m',10:'k'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);document.getElementById('mwrap').classList.toggle('open',v===9);document.getElementById('swrap').classList.toggle('open',v===10);if(v===9){await loadMarketConfig();loadMarketDirectory();toast('crypto open');return;}if(v===10){await loadStockConfig();toast('market open');return;}if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
 function updateBlButton(){const b=document.getElementById('blBtn');b.textContent=blOn?'☀ display on':'○ display off';b.classList.toggle('on',blOn);b.classList.toggle('dim',!blOn);}
 function updateClaudeStatusButton(){const b=document.getElementById('ccStatusBtn');b.textContent=claudeStatusOn?'◆ claude status on':'◇ claude status off';b.classList.toggle('on',claudeStatusOn);b.classList.toggle('dim',!claudeStatusOn);}
+function carouselName(v){return({8:'Weather',9:'Crypto',10:'Market'})[v]||'Weather';}
+function applyCarouselPrefs(p){
+  carouselConfig.enabled=p.carousel===true;carouselConfig.speed=Math.max(5,Math.min(60,Number(p.carouselSpeed)||12));
+  carouselConfig.order=Array.isArray(p.carouselOrder)&&p.carouselOrder.length===3?p.carouselOrder.map(Number):[8,9,10];
+  carouselConfig.fixed=[8,9,10].includes(Number(p.carouselFixed))?Number(p.carouselFixed):8;renderCarousel();
+}
+function renderCarousel(){
+  const enabled=carouselConfig.enabled,toggle=document.getElementById('carouselToggle'),fixed=document.getElementById('carouselFixed'),speed=document.getElementById('carouselSpeed');
+  toggle.textContent=enabled?'● carousel on':'○ carousel off';toggle.classList.toggle('on',enabled);toggle.classList.toggle('dim',!enabled);
+  fixed.value=String(carouselConfig.fixed);fixed.disabled=enabled;speed.value=String(carouselConfig.speed);speed.disabled=!enabled;document.getElementById('carouselSpeedV').textContent=carouselConfig.speed+'s';
+  document.getElementById('carouselHint').textContent=enabled?'Claude Code pauses the carousel, then it resumes from the interrupted page.':'Select the single info page shown while the carousel is off.';
+  const out=document.getElementById('carouselOrder');out.innerHTML='';carouselConfig.order.forEach((view,i)=>{
+    const row=document.createElement('div');row.className='ritem';
+    const index=document.createElement('span');index.className='rindex';index.textContent=String(i+1).padStart(2,'0');
+    const name=document.createElement('span');name.className='rname';name.textContent=carouselName(view);
+    const handle=document.createElement('button');handle.className='mdrag rdrag';handle.type='button';handle.textContent='⠿';handle.disabled=!enabled;handle.setAttribute('aria-label','Drag '+carouselName(view));
+    handle.addEventListener('pointerdown',e=>startCarouselDrag(e,i,row));
+    row.append(index,name,handle);out.appendChild(row);
+  });
+}
+function toggleCarouselPanel(){carouselPanelOpen=!carouselPanelOpen;const panel=document.getElementById('carouselWrap'),state=document.getElementById('carouselPanelState');panel.classList.toggle('open',carouselPanelOpen);state.textContent=carouselPanelOpen?'close':'open';}
+async function saveCarousel(){
+  const q=new URLSearchParams({carousel:carouselConfig.enabled?'1':'0',carouselSpeed:String(carouselConfig.speed),carouselFixed:String(carouselConfig.fixed),carouselOrder:carouselConfig.order.join(',')});
+  try{const r=await fetch('/prefs?'+q.toString(),{cache:'no-store'});if(!r.ok)throw new Error();const p=await r.json();if(typeof p.carousel==='boolean')applyCarouselPrefs(p);toast('idle display saved');}
+  catch(e){toast('idle display save failed',false);}
+}
+function toggleCarousel(){carouselConfig.enabled=!carouselConfig.enabled;renderCarousel();saveCarousel();}
+function setCarouselFixed(value){carouselConfig.fixed=Number(value);saveCarousel();}
+function setCarouselSpeed(value){carouselConfig.speed=Number(value);document.getElementById('carouselSpeedV').textContent=carouselConfig.speed+'s';clearTimeout(carouselSpeedTimer);carouselSpeedTimer=setTimeout(saveCarousel,260);}
+function startCarouselDrag(e,index,row){
+  if(e.button!==undefined&&e.button!==0||!carouselConfig.enabled)return;e.preventDefault();
+  const rows=[...document.querySelectorAll('#carouselOrder .ritem')],box=document.getElementById('carouselOrder').getBoundingClientRect();
+  carouselDrag={index,target:index,row,startY:e.clientY,box,rowH:box.height/rows.length};row.classList.add('dragging');e.currentTarget.setPointerCapture(e.pointerId);
+  document.addEventListener('pointermove',moveCarouselDrag,{passive:false});document.addEventListener('pointerup',endCarouselDrag,{once:true});
+}
+function moveCarouselDrag(e){if(!carouselDrag)return;e.preventDefault();const delta=e.clientY-carouselDrag.startY;carouselDrag.row.style.transform='translateY('+delta+'px)';carouselDrag.target=Math.max(0,Math.min(carouselConfig.order.length-1,Math.floor((e.clientY-carouselDrag.box.top)/carouselDrag.rowH)));}
+function endCarouselDrag(){document.removeEventListener('pointermove',moveCarouselDrag);if(!carouselDrag)return;const from=carouselDrag.index,to=carouselDrag.target;carouselDrag.row.classList.remove('dragging');carouselDrag.row.style.transform='';carouselDrag=null;if(from===to)return;const view=carouselConfig.order.splice(from,1)[0];carouselConfig.order.splice(to,0,view);renderCarousel();saveCarousel();}
 async function toggleBL(){blOn=!blOn;const v=blOn?100:0;document.getElementById('bright').value=v;document.getElementById('brightV').textContent=v+'%';await req('/backlight?on='+(blOn?1:0));updateBlButton();}
 async function toggleClaudeStatus(){const next=!claudeStatusOn;if(!await req('/prefs?claudeStatus='+(next?'1':'0')))return;claudeStatusOn=next;updateClaudeStatusButton();toast(claudeStatusOn?'Claude status on':'Claude status off');}
 async function setBrightness(v){v=parseInt(v||0);document.getElementById('brightV').textContent=v+'%';blOn=v>0;updateBlButton();await req('/brightness?v='+v);}
-async function loadPrefs(){try{const r=await fetch('/prefs');const p=await r.json();document.getElementById('bgCol').value=p.bg||'#aa4818';document.getElementById('spd').value=p.speed||1;document.getElementById('spdV').textContent=spdLabels[p.speed||1];claudeStatusOn=p.claudeStatus!==false;updateClaudeStatusButton();redrawCanvas(p.bg||'#aa4818');}catch(e){}}
+async function loadPrefs(){try{const r=await fetch('/prefs');const p=await r.json();document.getElementById('bgCol').value=p.bg||'#aa4818';document.getElementById('spd').value=p.speed||1;document.getElementById('spdV').textContent=spdLabels[p.speed||1];claudeStatusOn=p.claudeStatus!==false;updateClaudeStatusButton();applyCarouselPrefs(p);redrawCanvas(p.bg||'#aa4818');}catch(e){renderCarousel();}}
 function fmtSec(s){s=Math.max(0,parseInt(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
 async function pollTimer(){try{const r=await fetch('/timer/status');const j=await r.json();document.getElementById('pPhase').textContent=(j.phase==='break'?'BREAK':'FOCUS')+(j.paused?' / PAUSED':'');document.getElementById('pTime').textContent=fmtSec(j.remaining);document.getElementById('focusMin').value=j.focus;document.getElementById('breakMin').value=j.break;}catch(e){}}
 async function startTimer(phase){await fetch('/timer/start?phase='+phase);document.getElementById('pwrap').classList.add('open');await pollTimer();toast(phase==='break'?'break started':'focus started');}
@@ -435,6 +525,80 @@ function endMarketDrag(){
   marketDrag=null;if(from===to)return;const asset=marketSelected.splice(from,1)[0];marketSelected.splice(to,0,asset);renderMarket();saveMarket();
 }
 document.getElementById('mSearch').addEventListener('input',renderMarketResults);
+function stockPrice(v){if(v==null)return'--';if(v>=10000)return Math.round(v).toString();if(v>=1000)return Number(v).toFixed(1);return Number(v).toFixed(2);}
+function stockTime(){if(!stockUpdatedAt)return'UPDATED --:--';return'UPDATED '+stockUpdatedAt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false});}
+function renderStocks(){
+  document.getElementById('sCount').textContent=stockSelected.length+' / 5';
+  document.getElementById('sTime').textContent=stockTime();
+  const preview=document.getElementById('sPreview');preview.innerHTML='';
+  const selected=document.getElementById('sSelected');selected.innerHTML='';
+  stockSelected.forEach((a,i)=>{
+    const row=document.createElement('div');row.className='mrow';
+    const sym=document.createElement('span');sym.className='msym';sym.textContent=a.label||a.code;if(sym.textContent.length>4)sym.style.fontSize='11px';row.appendChild(sym);
+    const price=document.createElement('span');price.className='mprice';price.textContent=stockPrice(a.price);row.appendChild(price);
+    const change=document.createElement('span');change.className='mchg';change.textContent=marketChange(a.change);row.appendChild(change);preview.appendChild(row);
+    const item=document.createElement('div');item.className='mselrow';item.dataset.index=i;
+    const handle=document.createElement('button');handle.className='mdrag';handle.type='button';handle.textContent='⠿';handle.setAttribute('aria-label','Drag '+a.code);
+    handle.addEventListener('pointerdown',e=>startStockDrag(e,i,item));item.appendChild(handle);
+    const name=document.createElement('div');name.className='mselname';
+    const strong=document.createElement('strong');strong.textContent=a.code;
+    const label=document.createElement('span');label.textContent=a.name;
+    name.append(strong,label);item.appendChild(name);
+    const remove=document.createElement('button');remove.className='mmini remove';remove.textContent='×';remove.setAttribute('aria-label','Remove '+a.code);remove.onclick=()=>removeStock(i);item.appendChild(remove);
+    selected.appendChild(item);
+  });
+}
+async function loadStockConfig(){
+  try{const r=await fetch('/market/config',{cache:'no-store'});const j=await r.json();stockSelected=Array.isArray(j.assets)?j.assets:[];stockUpdatedAt=typeof j.updatedAgeSec==='number'?new Date(Date.now()-j.updatedAgeSec*1000):null;renderStocks();}
+  catch(e){toast('market config unavailable',false);}
+}
+async function searchStocksNow(){
+  const q=document.getElementById('sSearch').value.trim(),out=document.getElementById('sResults'),count=document.getElementById('sResultCount'),seq=++stockSearchSeq;
+  out.innerHTML='';count.textContent='';
+  if(!q){out.textContent='type a stock code or Chinese name';return;}
+  out.textContent='searching...';
+  try{
+    const r=await fetch('/market/search?q='+encodeURIComponent(q),{cache:'no-store'});if(!r.ok)throw new Error();const j=await r.json();if(seq!==stockSearchSeq)return;
+    const results=Array.isArray(j.results)?j.results:[],selectedIds=new Set(stockSelected.map(a=>a.secid));
+    out.innerHTML='';count.textContent=results.length+' result'+(results.length===1?'':'s');
+    if(!results.length){out.textContent='no matching A-share stocks';return;}
+    results.forEach(a=>{
+      const row=document.createElement('div');row.className='mresult';
+      const name=document.createElement('div');name.className='mresname';
+      const strong=document.createElement('strong');strong.textContent=a.code;
+      const small=document.createElement('small');small.textContent=a.name;
+      name.append(strong,small);row.appendChild(name);
+      const add=document.createElement('button');add.className='madd';add.textContent=selectedIds.has(a.secid)?'ADDED':'ADD';
+      add.disabled=stockSelected.length>=5||selectedIds.has(a.secid);add.onclick=()=>addStock(a);row.appendChild(add);out.appendChild(row);
+    });
+  }catch(e){if(seq===stockSearchSeq){count.textContent='';out.textContent='stock search unavailable';}}
+}
+document.getElementById('sSearch').addEventListener('input',()=>{clearTimeout(stockSearchTimer);stockSearchTimer=setTimeout(searchStocksNow,280);});
+async function saveStocks(){
+  if(stockSaving){stockSaveQueued=true;return;}stockSaving=true;document.getElementById('sAuto').textContent='● SAVING...';
+  try{const r=await fetch('/market/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({assets:stockSelected.map(a=>({secid:a.secid,code:a.code,label:a.label||a.code,name:a.name}))})});if(!r.ok)throw new Error();const j=await r.json();stockSelected=j.assets||stockSelected;document.getElementById('sAuto').textContent='● SAVED TO DEVICE';renderStocks();}
+  catch(e){document.getElementById('sAuto').textContent='● SAVE FAILED';toast('save failed',false);}
+  stockSaving=false;if(stockSaveQueued){stockSaveQueued=false;saveStocks();}
+}
+function addStock(a){if(stockSelected.length>=5)return;stockSelected.push({...a,price:null,change:null});renderStocks();searchStocksNow();saveStocks();}
+function removeStock(i){if(stockSelected.length<=1){toast('keep at least one stock',false);return;}stockSelected.splice(i,1);renderStocks();searchStocksNow();saveStocks();}
+function startStockDrag(e,index,row){
+  if(e.button!==undefined&&e.button!==0)return;e.preventDefault();
+  const rows=[...document.querySelectorAll('#sSelected .mselrow')],box=document.getElementById('sSelected').getBoundingClientRect();
+  stockDrag={index,target:index,row,startY:e.clientY,box,rowH:box.height/rows.length};
+  row.classList.add('dragging');e.currentTarget.setPointerCapture(e.pointerId);
+  document.addEventListener('pointermove',moveStockDrag,{passive:false});document.addEventListener('pointerup',endStockDrag,{once:true});
+}
+function moveStockDrag(e){
+  if(!stockDrag)return;e.preventDefault();const delta=e.clientY-stockDrag.startY;
+  stockDrag.row.style.transform='translateY('+delta+'px)';
+  stockDrag.target=Math.max(0,Math.min(stockSelected.length-1,Math.floor((e.clientY-stockDrag.box.top)/stockDrag.rowH)));
+}
+function endStockDrag(){
+  document.removeEventListener('pointermove',moveStockDrag);
+  if(!stockDrag)return;const from=stockDrag.index,to=stockDrag.target;stockDrag.row.classList.remove('dragging');stockDrag.row.style.transform='';
+  stockDrag=null;if(from===to)return;const asset=stockSelected.splice(from,1)[0];stockSelected.splice(to,0,asset);renderStocks();saveStocks();
+}
 async function useSerialMode(){if(!confirm('Switch Claude status input to USB serial? Local Web control stays available.'))return;await req('/serial_mode');toast('serial mode active');}
 async function loadWifiList(){const btn=document.getElementById('wscanBtn');btn.disabled=true;btn.textContent='scanning...';document.getElementById('wstatus').textContent='scanning...';document.getElementById('wlist').style.display='none';document.getElementById('wform').style.display='none';try{const r=await fetch('/wifi/scan');const nets=await r.json();const list=document.getElementById('wlist');list.innerHTML='';if(nets.length===0){document.getElementById('wstatus').textContent='no networks found';}else{nets.sort((a,b)=>b.rssi-a.rssi);nets.forEach(n=>{const btn=document.createElement('button');btn.className='cbtn';btn.style.textAlign='left';btn.style.padding='10px 12px';const sig=n.rssi>-50?'&#128267;':(n.rssi>-70?'&#128266;':'&#128268;');btn.innerHTML='<span style="color:#c96a3e">'+sig+'</span> '+n.ssid+(n.encrypted?' <span style="color:#5a5048">&#128274;</span>':'')+' <span style="color:#5a5048;font-size:9px">'+n.rssi+'dBm</span>';btn.onclick=()=>{document.getElementById('wssid').value=n.ssid;document.getElementById('wpass').focus();};list.appendChild(btn);});document.getElementById('wstatus').textContent='select network or type SSID:';document.getElementById('wlist').style.display='flex';document.getElementById('wform').style.display='flex';}}catch(e){document.getElementById('wstatus').textContent='scan failed';}btn.disabled=false;btn.textContent='🔍 scan networks';}
 function wifiStatusHtml(j){const ap='http://'+(j.apIp||'192.168.4.1');const mdns=j.mdns||'http://clawd-mochi.local';const line='font-size:10px;color:#8a8278;margin-top:3px';if(j.connected){const lan='http://'+(j.lanIp||j.ip);return '<span style="color:#28b878">connected: '+j.ssid+'</span><div style="'+line+'">LAN: '+lan+'</div><div style="'+line+'">Name: '+mdns+'</div><div style="'+line+'">AP: '+ap+' ('+(j.apSsid||'ClaWD-Mochi')+')</div>';}if(j.configured&&j.savedSsid){return '<span style="color:#c96a3e">saved: '+j.savedSsid+'</span><div style="'+line+'">not connected - AP still works: '+ap+'</div>';}return 'not connected - scan to setup<div style="'+line+'">AP: '+ap+' ('+(j.apSsid||'ClaWD-Mochi')+')</div>';}
@@ -455,7 +619,7 @@ async function endDraw(e){if(!drawing)return;drawing=false;if(!canvasOpen||strok
 cvs.addEventListener('mousedown',startDraw);cvs.addEventListener('mousemove',moveDraw);cvs.addEventListener('mouseup',endDraw);cvs.addEventListener('mouseleave',endDraw);
 cvs.addEventListener('touchstart',startDraw,{passive:false});cvs.addEventListener('touchmove',moveDraw,{passive:false});cvs.addEventListener('touchend',endDraw);
 async function clearAll(){const bg=document.getElementById('bgCol').value;redrawCanvas(bg);await req('/draw/clear?bg='+encodeURIComponent(bg));toast('cleared');}
-(async()=>{await loadPrefs();try{const r=await fetch('/state');const j=await r.json();const bv=typeof j.brightness==='number'?j.brightness:(j.bl===false?0:100);document.getElementById('bright').value=bv;document.getElementById('brightV').textContent=bv+'%';blOn=bv>0;updateBlButton();}catch(e){}pollWifiStatus();pollTimer();setInterval(pollTimer,1000);setInterval(()=>{if(activeView===9&&!marketSaving&&!marketDrag)loadMarketConfig();},30000);})();
+(async()=>{await loadPrefs();try{const r=await fetch('/state');const j=await r.json();const bv=typeof j.brightness==='number'?j.brightness:(j.bl===false?0:100);document.getElementById('bright').value=bv;document.getElementById('brightV').textContent=bv+'%';blOn=bv>0;updateBlButton();}catch(e){}pollWifiStatus();pollTimer();setInterval(pollTimer,1000);setInterval(()=>{if(activeView===9&&!marketSaving&&!marketDrag)loadMarketConfig();if(activeView===10&&!stockSaving&&!stockDrag)loadStockConfig();},30000);})();
 </script>
 </body>
 </html>
@@ -465,13 +629,15 @@ async function clearAll(){const bg=document.getElementById('bgCol').value;redraw
 WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiService,
                        TimeService* timeService, DisplayService* displayService,
                        PreferenceService* preferenceService,
-                       CryptoService* cryptoService)
+                       CryptoService* cryptoService,
+                       MarketService* marketService)
     : _server(CFG_WIFI_WEB_PORT)
     , _started(false)
     , _ccService(ccService), _wifiService(wifiService)
     , _timeService(timeService), _displayService(displayService)
     , _preferenceService(preferenceService)
     , _cryptoService(cryptoService)
+    , _marketService(marketService)
 {
 }
 
@@ -512,6 +678,10 @@ void WebService::setupRoutes() {
     _server.on("/crypto/config", HTTP_GET, [this]() { handleCryptoConfig(); });
     _server.on("/crypto/config", HTTP_POST, [this]() { handleCryptoUpdate(); });
     _server.on("/crypto/refresh", HTTP_POST, [this]() { handleCryptoRefresh(); });
+    _server.on("/market/config", HTTP_GET, [this]() { handleMarketConfig(); });
+    _server.on("/market/config", HTTP_POST, [this]() { handleMarketUpdate(); });
+    _server.on("/market/refresh", HTTP_POST, [this]() { handleMarketRefresh(); });
+    _server.on("/market/search", HTTP_GET, [this]() { handleMarketSearch(); });
 
     // Existing routes
     _server.on("/wifi_setup", [this]() { handleWifiSetup(); });
@@ -574,6 +744,7 @@ void WebService::handleCmd() {
         case 'p': _displayService->setInteractiveView(VIEW_POMODORO); break;
         case 'e': _displayService->setInteractiveView(VIEW_WEATHER); break;
         case 'm': _displayService->setInteractiveView(VIEW_CRYPTO); break;
+        case 'k': _displayService->setInteractiveView(VIEW_MARKET); break;
         case 'a': _displayService->animLogoReveal(); break;
     }
 }
@@ -728,6 +899,36 @@ void WebService::handlePrefs() {
         _preferenceService->setClaudeStatusEnabled(enabled);
         _displayService->setClaudeStatusEnabled(enabled);
     }
+    if (_server.hasArg("carousel")) {
+        const bool enabled = _server.arg("carousel") == "1" ||
+                             _server.arg("carousel") == "true";
+        _preferenceService->setCarouselEnabled(enabled);
+    }
+    if (_server.hasArg("carouselSpeed")) {
+        _preferenceService->setCarouselSpeedSeconds(
+            constrain(_server.arg("carouselSpeed").toInt(), 5, 60));
+    }
+    if (_server.hasArg("carouselFixed")) {
+        _preferenceService->setCarouselFixedView(
+            static_cast<uint8_t>(_server.arg("carouselFixed").toInt()));
+    }
+    if (_server.hasArg("carouselOrder")) {
+        const String value = _server.arg("carouselOrder");
+        uint8_t order[3] = {};
+        uint8_t index = 0;
+        int start = 0;
+        while (index < 3 && start >= 0) {
+            const int comma = value.indexOf(',', start);
+            const String part = value.substring(start,
+                comma < 0 ? value.length() : comma);
+            order[index++] = static_cast<uint8_t>(part.toInt());
+            start = comma < 0 ? -1 : comma + 1;
+        }
+        if (index != 3 || !_preferenceService->setCarouselOrder(order)) {
+            _server.send(400, "application/json", "{\"error\":\"invalid carousel order\"}");
+            return;
+        }
+    }
     if (_server.hasArg("night")) {
         _preferenceService->setNightDimEnabled(_server.arg("night") == "1" ||
                                                _server.arg("night") == "true");
@@ -747,6 +948,7 @@ void WebService::handlePrefs() {
     }
 
     _displayService->setBrightnessPercent(_preferenceService->getBrightnessPercent());
+    _displayService->reloadIdleDisplayPreferences();
 
     String json = _preferenceService->getJson();
     json.remove(json.length() - 1);
@@ -764,6 +966,7 @@ void WebService::handleState() {
     j += ",\"brightness\":"; j += _displayService->getBrightnessPercent();
     j += ",\"speed\":";  j += _displayService->getAnimSpeed();
     j += ",\"claudeStatus\":"; j += _displayService->isClaudeStatusEnabled() ? "true" : "false";
+    j += ",\"carousel\":"; j += _displayService->isCarouselEnabled() ? "true" : "false";
     j += ",\"serial\":"; j += _wifiService->isSerialMode() ? "true" : "false";
     j += "}";
     _server.send(200, "application/json", j);
@@ -838,6 +1041,88 @@ void WebService::handleCryptoRefresh() {
     }
     _cryptoService->requestRefresh();
     _server.send(202, "application/json", "{\"ok\":true}");
+}
+
+void WebService::handleMarketConfig() {
+    if (!_marketService) {
+        _server.send(503, "application/json", "{\"error\":\"market unavailable\"}");
+        return;
+    }
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json", _marketService->getJson());
+}
+
+void WebService::handleMarketUpdate() {
+    if (!_marketService) {
+        _server.send(503, "application/json", "{\"error\":\"market unavailable\"}");
+        return;
+    }
+
+    JsonDocument doc;
+    const DeserializationError error = deserializeJson(doc, _server.arg("plain"));
+    JsonArray list = doc["assets"].as<JsonArray>();
+    if (error || list.isNull() || list.size() == 0 ||
+        list.size() > MarketService::MAX_ASSETS) {
+        _server.send(400, "application/json", "{\"error\":\"choose 1 to 5 stocks\"}");
+        return;
+    }
+
+    MarketAsset assets[MarketService::MAX_ASSETS] = {};
+    uint8_t count = 0;
+    for (JsonObject item : list) {
+        const char* secid = item["secid"] | "";
+        const char* code = item["code"] | "";
+        const char* label = item["label"] | code;
+        const char* name = item["name"] | code;
+        if (secid[0] == '\0' || code[0] == '\0') {
+            _server.send(400, "application/json", "{\"error\":\"invalid stock\"}");
+            return;
+        }
+        for (uint8_t previous = 0; previous < count; previous++) {
+            if (strcmp(assets[previous].secid, secid) == 0) {
+                _server.send(409, "application/json", "{\"error\":\"duplicate stock\"}");
+                return;
+            }
+        }
+        strlcpy(assets[count].secid, secid, sizeof(assets[count].secid));
+        strlcpy(assets[count].code, code, sizeof(assets[count].code));
+        strlcpy(assets[count].label, label, sizeof(assets[count].label));
+        strlcpy(assets[count].name, name, sizeof(assets[count].name));
+        count++;
+    }
+
+    if (!_marketService->setAssets(assets, count)) {
+        _server.send(400, "application/json",
+                     "{\"error\":\"invalid market configuration\"}");
+        return;
+    }
+    if (_displayService->getInteractiveView() == VIEW_MARKET) {
+        _displayService->redrawCurrentView();
+    }
+    handleMarketConfig();
+}
+
+void WebService::handleMarketRefresh() {
+    if (!_marketService) {
+        _server.send(503, "application/json", "{\"error\":\"market unavailable\"}");
+        return;
+    }
+    _marketService->requestRefresh();
+    _server.send(202, "application/json", "{\"ok\":true}");
+}
+
+void WebService::handleMarketSearch() {
+    if (!_marketService) {
+        _server.send(503, "application/json", "{\"error\":\"market unavailable\"}");
+        return;
+    }
+    const String query = _server.hasArg("q") ? _server.arg("q") : "";
+    if (query.isEmpty() || query.length() > 48) {
+        _server.send(400, "application/json", "{\"error\":\"invalid query\"}");
+        return;
+    }
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json", _marketService->searchJson(query));
 }
 
 // ── Existing handlers ──────────────────────────────────────────

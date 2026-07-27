@@ -43,6 +43,7 @@
 #define VIEW_POMODORO   7
 #define VIEW_WEATHER    8
 #define VIEW_CRYPTO     9
+#define VIEW_MARKET     10
 
 // 终端配置
 #define TERM_COLS      15

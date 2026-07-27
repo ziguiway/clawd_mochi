@@ -6,8 +6,9 @@ AppStateMachine::AppStateMachine()
     : _cc(&_sm)
     , _weather(&_wifi)
     , _crypto(&_wifi)
-    , _display(&_tft, &_cc, &_wifi, &_time, &_prefs, &_weather, &_crypto)
-    , _web(&_cc, &_wifi, &_time, &_display, &_prefs, &_crypto)
+    , _market(&_wifi)
+    , _display(&_tft, &_cc, &_wifi, &_time, &_prefs, &_weather, &_crypto, &_market)
+    , _web(&_cc, &_wifi, &_time, &_display, &_prefs, &_crypto, &_market)
     , _serial(&_wifi, &_cc, &_time)
     , _bootButton(&_tft, &_wifi)
     , _currentId(BOOT)
@@ -30,6 +31,7 @@ void AppStateMachine::init() {
     _prefs.init();
     _weather.init();
     _crypto.init();
+    _market.init();
     _tft.init();
     _tft.clear(COLOR_BLACK);
     _time.init();

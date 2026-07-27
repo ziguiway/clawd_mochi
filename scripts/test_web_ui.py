@@ -10,8 +10,8 @@
 运行:
     uv run scripts/test_web_ui.py
 
-测试范围只覆盖 Crypto 配置的主流程：
-打开页面 -> 联想搜索 -> 添加币种 -> 自动保存到设备。
+测试范围只覆盖 Crypto / Market 配置的正向主流程：
+打开页面 -> 联想搜索 -> 添加行情项目 -> 自动保存到设备。
 """
 
 from __future__ import annotations
@@ -20,6 +20,7 @@ import argparse
 import json
 import threading
 import urllib.request
+import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -71,6 +72,48 @@ INITIAL_ASSETS = [
     },
 ]
 
+INITIAL_MARKET_ASSETS = [
+    {
+        "secid": "1.000001",
+        "code": "000001",
+        "label": "SSE",
+        "name": "上证指数",
+        "price": 3858.25,
+        "change": 1.15,
+    },
+    {
+        "secid": "0.399001",
+        "code": "399001",
+        "label": "SZSE",
+        "name": "深证成指",
+        "price": 14148.73,
+        "change": 2.72,
+    },
+    {
+        "secid": "0.399006",
+        "code": "399006",
+        "label": "CYB",
+        "name": "创业板指",
+        "price": 3590.79,
+        "change": 3.16,
+    },
+]
+
+MARKET_SEARCH_RESULTS = [
+    {
+        "secid": "1.600519",
+        "code": "600519",
+        "label": "600519",
+        "name": "贵州茅台",
+    },
+    {
+        "secid": "0.000858",
+        "code": "000858",
+        "label": "000858",
+        "name": "五粮液",
+    },
+]
+
 
 def extract_index_html() -> str:
     source = WEB_SOURCE.read_text(encoding="utf-8")
@@ -84,7 +127,21 @@ def extract_index_html() -> str:
 class FirmwareStubHandler(BaseHTTPRequestHandler):
     html = extract_index_html()
     assets: list[dict[str, Any]] = [dict(item) for item in INITIAL_ASSETS]
+    market_assets: list[dict[str, Any]] = [
+        dict(item) for item in INITIAL_MARKET_ASSETS
+    ]
     config_post_count = 0
+    market_post_count = 0
+    prefs: dict[str, Any] = {
+        "bg": "#aa4818",
+        "speed": 1,
+        "claudeStatus": True,
+        "carousel": False,
+        "carouselSpeed": 12,
+        "carouselOrder": [8, 9, 10],
+        "carouselFixed": 8,
+    }
+    prefs_update_count = 0
 
     def log_message(self, _format: str, *_args: object) -> None:
         return
@@ -98,7 +155,8 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self) -> None:
-        path = self.path.split("?", 1)[0]
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
         if path == "/":
             body = self.html.encode()
             self.send_response(200)
@@ -114,10 +172,39 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
                     "assets": self.assets,
                 }
             )
-        elif path == "/prefs":
+        elif path == "/market/config":
             self.send_json(
-                {"bg": "#aa4818", "speed": 1, "claudeStatus": True}
+                {
+                    "loading": False,
+                    "updatedAgeSec": 5,
+                    "assets": self.market_assets,
+                }
             )
+        elif path == "/market/search":
+            self.send_json({"results": MARKET_SEARCH_RESULTS})
+        elif path == "/prefs":
+            args = urllib.parse.parse_qs(parsed.query)
+            if args:
+                if "carousel" in args:
+                    self.__class__.prefs["carousel"] = args["carousel"][0] in {
+                        "1",
+                        "true",
+                    }
+                if "carouselSpeed" in args:
+                    self.__class__.prefs["carouselSpeed"] = int(
+                        args["carouselSpeed"][0]
+                    )
+                if "carouselFixed" in args:
+                    self.__class__.prefs["carouselFixed"] = int(
+                        args["carouselFixed"][0]
+                    )
+                if "carouselOrder" in args:
+                    self.__class__.prefs["carouselOrder"] = [
+                        int(value)
+                        for value in args["carouselOrder"][0].split(",")
+                    ]
+                self.__class__.prefs_update_count += 1
+            self.send_json(self.prefs)
         elif path == "/state":
             self.send_json({"busy": False, "brightness": 100})
         elif path == "/wifi/status":
@@ -144,19 +231,25 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = self.path.split("?", 1)[0]
-        if path != "/crypto/config":
+        if path not in {"/crypto/config", "/market/config"}:
             self.send_json({"ok": True})
             return
 
         length = int(self.headers.get("Content-Length", "0"))
         payload = json.loads(self.rfile.read(length) or b"{}")
-        self.__class__.assets = payload.get("assets", [])
-        self.__class__.config_post_count += 1
+        if path == "/crypto/config":
+            self.__class__.assets = payload.get("assets", [])
+            self.__class__.config_post_count += 1
+            assets = self.assets
+        else:
+            self.__class__.market_assets = payload.get("assets", [])
+            self.__class__.market_post_count += 1
+            assets = self.market_assets
         self.send_json(
             {
                 "loading": False,
                 "updatedAgeSec": 0,
-                "assets": self.assets,
+                "assets": assets,
             }
         )
 
@@ -189,6 +282,9 @@ def assert_suggestion(page: Page, query: str, expected: set[str]) -> None:
 
 def run_positive_flow(page: Page, *, stub_mode: bool) -> None:
     page.goto("/", wait_until="domcontentloaded")
+    assert not page.locator("#mwrap").is_visible(), (
+        "未选择 Crypto 时不应显示加密货币设置"
+    )
 
     crypto_button = page.locator('button[data-v="9"]')
     crypto_button.click()
@@ -212,7 +308,9 @@ def run_positive_flow(page: Page, *, stub_mode: bool) -> None:
     page.locator("#mSelected .mselrow").filter(has_text="OKB").wait_for(
         state="visible"
     )
-    page.get_by_text("SAVED TO DEVICE", exact=False).wait_for(state="visible")
+    page.locator("#mAuto").get_by_text(
+        "SAVED TO DEVICE", exact=False
+    ).wait_for(state="visible")
     if stub_mode:
         assert FirmwareStubHandler.config_post_count == 1, (
             "添加 OKB 后没有且仅有一次自动保存"
@@ -220,9 +318,105 @@ def run_positive_flow(page: Page, *, stub_mode: bool) -> None:
     print("PASS  添加 OKB 并自动保存")
 
 
+def run_carousel_flow(page: Page, *, stub_mode: bool) -> None:
+    page.goto("/", wait_until="domcontentloaded")
+    panel_button = page.locator("#carouselPanelBtn")
+    panel_button.click()
+    page.locator("#carouselWrap.open").wait_for(state="visible")
+    assert page.locator("#carouselPanelState").text_content() == "close"
+    print("PASS  展开信息轮播设置")
+    toggle = page.locator("#carouselToggle")
+    toggle.click()
+    page.get_by_text("carousel on", exact=False).wait_for(state="visible")
+    assert page.locator("#carouselFixed").is_disabled()
+    print("PASS  开启信息轮播")
+
+    speed = page.locator("#carouselSpeed")
+    assert not speed.is_disabled(), "开启轮播后速度滑块仍被禁用"
+    box = speed.bounding_box()
+    assert box is not None, "未找到轮播速度滑块"
+    speed.click(
+        position={"x": box["width"] * (18 - 5) / (60 - 5), "y": box["height"] / 2}
+    )
+    page.wait_for_timeout(400)
+    actual_speed = page.locator("#carouselSpeedV").text_content()
+    selected_speed = int(speed.input_value())
+    assert selected_speed != 12 and actual_speed == f"{selected_speed}s", (
+        f"轮播滑块未正确更新，显示为 {actual_speed!r}，"
+        f"输入值为 {selected_speed!r}"
+    )
+    print(f"PASS  设置轮播间隔为 {selected_speed} 秒")
+
+    weather_handle = page.get_by_role("button", name="Drag Weather")
+    weather_box = weather_handle.bounding_box()
+    crypto_row = page.locator("#carouselOrder .ritem").nth(1).bounding_box()
+    assert weather_box is not None and crypto_row is not None, "未找到轮播拖拽项目"
+    weather_handle.hover()
+    page.mouse.move(weather_box["x"] + weather_box["width"] / 2, weather_box["y"] + weather_box["height"] / 2)
+    page.mouse.down()
+    page.mouse.move(weather_box["x"] + weather_box["width"] / 2, crypto_row["y"] + crypto_row["height"] * 0.8, steps=8)
+    page.mouse.up()
+    page.wait_for_timeout(150)
+    assert page.locator("#carouselOrder .rname").first.text_content() == "Crypto"
+    print("PASS  拖拽调整轮播顺序为 Crypto 优先")
+
+    toggle.click()
+    page.get_by_text("carousel off", exact=False).wait_for(state="visible")
+    fixed = page.locator("#carouselFixed")
+    assert not fixed.is_disabled()
+    fixed.select_option("10")
+    page.wait_for_timeout(150)
+    if stub_mode:
+        assert FirmwareStubHandler.prefs_update_count >= 4, (
+            "轮播设置没有完整保存到设备"
+        )
+        assert FirmwareStubHandler.prefs["carousel"] is False
+        assert FirmwareStubHandler.prefs["carouselFixed"] == 10
+    print("PASS  关闭轮播并固定显示 Market")
+
+
+def assert_stock_suggestion(
+    page: Page, query: str, expected_code: str, expected_name: str
+) -> None:
+    search = page.locator("#sSearch")
+    search.fill(query)
+    result = page.locator("#sResults .mresult").filter(
+        has_text=expected_code
+    ).filter(has_text=expected_name)
+    result.wait_for(state="visible")
+    print(f"PASS  股票搜索 {query!r}: {expected_code} {expected_name}")
+
+
+def run_market_flow(page: Page, *, stub_mode: bool) -> None:
+    market_button = page.locator('button[data-v="10"]')
+    market_button.click()
+    page.locator("#swrap.open").wait_for(state="visible")
+    page.locator("#sSelected .mselrow").first.wait_for(state="visible")
+    assert page.locator("#sSelected .mselrow").count() == 3
+    print("PASS  打开 Market 并显示三大指数")
+
+    assert_stock_suggestion(page, "600519", "600519", "贵州茅台")
+    assert_stock_suggestion(page, "茅台", "600519", "贵州茅台")
+
+    page.locator("#sSearch").fill("600519")
+    result = page.locator("#sResults .mresult").filter(has_text="600519")
+    result.get_by_role("button", name="ADD").click()
+    page.locator("#sSelected .mselrow").filter(
+        has_text="600519"
+    ).wait_for(state="visible")
+    page.locator("#sAuto").get_by_text(
+        "SAVED TO DEVICE", exact=False
+    ).wait_for(state="visible")
+    if stub_mode:
+        assert FirmwareStubHandler.market_post_count == 1, (
+            "添加贵州茅台后没有且仅有一次自动保存"
+        )
+    print("PASS  添加贵州茅台并自动保存")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="运行 Clawd Mochi Crypto Web UI 正向自动化测试"
+        description="运行 Clawd Mochi Crypto / Market Web UI 正向自动化测试"
     )
     parser.add_argument(
         "--live-directory",
@@ -240,6 +434,18 @@ def get_device_config(base_url: str) -> dict[str, Any]:
     with urllib.request.urlopen(
         f"{base_url}crypto/config", timeout=10
     ) as response:
+        return json.load(response)
+
+
+def get_device_market_config(base_url: str) -> dict[str, Any]:
+    with urllib.request.urlopen(
+        f"{base_url}market/config", timeout=10
+    ) as response:
+        return json.load(response)
+
+
+def get_device_prefs(base_url: str) -> dict[str, Any]:
+    with urllib.request.urlopen(f"{base_url}prefs", timeout=10) as response:
         return json.load(response)
 
 
@@ -265,6 +471,42 @@ def restore_device_config(
         pass
 
 
+def restore_device_market_config(
+    base_url: str, original_assets: list[dict[str, Any]]
+) -> None:
+    assets = [
+        {
+            "secid": asset["secid"],
+            "code": asset["code"],
+            "label": asset.get("label", asset["code"]),
+            "name": asset["name"],
+        }
+        for asset in original_assets
+    ]
+    request = urllib.request.Request(
+        f"{base_url}market/config",
+        data=json.dumps({"assets": assets}, ensure_ascii=False).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=10):
+        pass
+
+
+def restore_device_carousel_prefs(base_url: str, prefs: dict[str, Any]) -> None:
+    order = prefs.get("carouselOrder", [8, 9, 10])
+    query = urllib.parse.urlencode(
+        {
+            "carousel": "1" if prefs.get("carousel", False) else "0",
+            "carouselSpeed": int(prefs.get("carouselSpeed", 12)),
+            "carouselFixed": int(prefs.get("carouselFixed", 8)),
+            "carouselOrder": ",".join(str(value) for value in order),
+        }
+    )
+    with urllib.request.urlopen(f"{base_url}prefs?{query}", timeout=10):
+        pass
+
+
 def main() -> int:
     args = parse_args()
     if not EDGE_PATH.exists():
@@ -274,12 +516,32 @@ def main() -> int:
 
     server: ThreadingHTTPServer | None = None
     original_device_assets: list[dict[str, Any]] | None = None
+    original_device_market_assets: list[dict[str, Any]] | None = None
+    original_device_prefs: dict[str, Any] | None = None
     if args.device_url:
         base_url = args.device_url.rstrip("/") + "/"
         original_device_assets = get_device_config(base_url)["assets"]
+        original_device_market_assets = get_device_market_config(base_url)[
+            "assets"
+        ]
+        original_device_prefs = get_device_prefs(base_url)
     else:
         FirmwareStubHandler.assets = [dict(item) for item in INITIAL_ASSETS]
+        FirmwareStubHandler.market_assets = [
+            dict(item) for item in INITIAL_MARKET_ASSETS
+        ]
         FirmwareStubHandler.config_post_count = 0
+        FirmwareStubHandler.market_post_count = 0
+        FirmwareStubHandler.prefs = {
+            "bg": "#aa4818",
+            "speed": 1,
+            "claudeStatus": True,
+            "carousel": False,
+            "carouselSpeed": 12,
+            "carouselOrder": [8, 9, 10],
+            "carouselFixed": 8,
+        }
+        FirmwareStubHandler.prefs_update_count = 0
         server = ThreadingHTTPServer(("127.0.0.1", 0), FirmwareStubHandler)
         server_thread = threading.Thread(
             target=server.serve_forever, daemon=True
@@ -325,6 +587,8 @@ def main() -> int:
                 print("INFO  使用真实 CoinLore 资产目录")
             try:
                 run_positive_flow(page, stub_mode=not bool(args.device_url))
+                run_carousel_flow(page, stub_mode=not bool(args.device_url))
+                run_market_flow(page, stub_mode=not bool(args.device_url))
             except Exception:
                 screenshot = Path("/tmp/clawd_mochi_ui_failure.png")
                 page.screenshot(path=str(screenshot), full_page=True)
@@ -337,11 +601,19 @@ def main() -> int:
         if original_device_assets is not None:
             restore_device_config(base_url, original_device_assets)
             print("INFO  已恢复设备原有币种配置")
+        if original_device_market_assets is not None:
+            restore_device_market_config(
+                base_url, original_device_market_assets
+            )
+            print("INFO  已恢复设备原有股票配置")
+        if original_device_prefs is not None:
+            restore_device_carousel_prefs(base_url, original_device_prefs)
+            print("INFO  已恢复设备原有轮播设置")
         if server is not None:
             server.shutdown()
             server.server_close()
 
-    print("PASS  Crypto Web UI 正向流程全部通过")
+    print("PASS  Crypto / Market Web UI 正向流程全部通过")
     return 0
 
 

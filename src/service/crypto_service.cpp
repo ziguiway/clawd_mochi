@@ -6,6 +6,7 @@
 #include <ctype.h>
 
 #include "../utils/logger.h"
+#include "../utils/network_request_gate.h"
 
 CryptoService::CryptoService(WifiConfigService* wifiService)
     : _wifiService(wifiService)
@@ -15,6 +16,7 @@ CryptoService::CryptoService(WifiConfigService* wifiService)
     , _lastAttemptMs(0)
     , _lastSuccessMs(0)
     , _version(0)
+    , _refreshTask(nullptr)
 {
     memset(_assets, 0, sizeof(_assets));
 }
@@ -42,19 +44,39 @@ void CryptoService::update() {
         now - _lastAttemptMs >= REFRESH_INTERVAL_MS;
     if (!_refreshRequested && !retryDue && !refreshDue) return;
 
+    if (!NetworkRequestGate::tryAcquire()) return;
+
     _loading = true;
     _refreshRequested = false;
     _lastAttemptMs = now;
     _version++;
+    if (xTaskCreate(refreshTaskEntry, "CryptoNet", 7168, this, 1,
+                    &_refreshTask) != pdPASS) {
+        _refreshTask = nullptr;
+        _loading = false;
+        _refreshRequested = true;
+        NetworkRequestGate::release();
+        LOG_WARN("Crypto", "后台请求任务创建失败");
+    }
+}
 
+void CryptoService::refreshTaskEntry(void* parameter) {
+    CryptoService* service = static_cast<CryptoService*>(parameter);
+    service->runRefresh();
+    service->_loading = false;
+    service->_refreshTask = nullptr;
+    service->_version++;
+    NetworkRequestGate::release();
+    vTaskDelete(nullptr);
+}
+
+void CryptoService::runRefresh() {
     if (fetchQuotes()) {
         _lastSuccessMs = millis();
     } else {
         LOG_WARN("Crypto", "行情更新失败，将在 2 分钟后重试");
     }
 
-    _loading = false;
-    _version++;
 }
 
 bool CryptoService::hasAnyValidQuote() const {
