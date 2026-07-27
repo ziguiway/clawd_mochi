@@ -14,10 +14,12 @@
 DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
                                WifiConfigService* wifiService, TimeService* timeService,
                                PreferenceService* preferenceService,
-                               WeatherService* weatherService)
+                               WeatherService* weatherService,
+                               CryptoService* cryptoService)
     : _tft(tft), _ccService(ccService), _wifiService(wifiService), _timeService(timeService)
     , _preferenceService(preferenceService)
     , _weatherService(weatherService)
+    , _cryptoService(cryptoService)
     , _ccView(tft), _eyesView(tft)
     , _currentMode(DisplayMode::SETUP), _lastRefreshMs(0)
     , _interactiveView(InteractiveView::EYES_NORMAL), _interactiveActive(false)
@@ -30,6 +32,7 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _pomodoroDurationSec(25UL * 60UL), _pomodoroRemainingAtPauseSec(25UL * 60UL)
     , _pomodoroStartedMs(0), _lastClockRenderSec(0)
     , _lastWeatherVersion(0)
+    , _lastCryptoVersion(0)
     , _lastNightDimCheckMs(0), _lastAppliedBrightnessPercent(255)
     , _timeViewDirty(true), _timeViewLayoutDrawn(false)
     , _lastTimeText{0}, _lastSubText{0}, _lastHintText{0}
@@ -402,6 +405,101 @@ void DisplayService::drawWeatherView() {
     _tft->drawText(highLowX, 220, highLow, COLOR_WHITE, COLOR_DARKBG, FONT_SMALL);
 }
 
+void DisplayService::formatCryptoPrice(float price, char* output, size_t size) {
+    if (!output || size == 0) return;
+    if (price >= 1000000.0f) {
+        snprintf(output, size, "$%.2fM", price / 1000000.0f);
+    } else if (price >= 100000.0f) {
+        snprintf(output, size, "$%.0fK", price / 1000.0f);
+    } else if (price >= 10000.0f) {
+        snprintf(output, size, "$%.1fK", price / 1000.0f);
+    } else if (price >= 1000.0f) {
+        snprintf(output, size, "$%.0f", price);
+    } else if (price >= 100.0f) {
+        snprintf(output, size, "$%.1f", price);
+    } else if (price >= 1.0f) {
+        snprintf(output, size, "$%.2f", price);
+    } else if (price >= 0.01f) {
+        snprintf(output, size, "$%.4f", price);
+    } else {
+        snprintf(output, size, "$%.6f", price);
+    }
+}
+
+void DisplayService::drawCryptoView() {
+    constexpr uint16_t CRYPTO_HEADER_DIVIDER = 0xFF9B;  // 暖白 #FFF0D8
+    constexpr uint16_t CRYPTO_ROW_DIVIDER = 0xC203;     // 深橙 #C74318
+    _tft->fillScreen(COLOR_ORANGE);
+
+    auto drawBold = [this](int16_t x, int16_t y, const char* text, uint8_t size) {
+        _tft->drawText(x, y, text, COLOR_WHITE, COLOR_ORANGE, size);
+        Adafruit_ST7789& screen = _tft->getTft();
+        screen.setTextSize(size);
+        screen.setTextColor(COLOR_WHITE);
+        screen.setCursor(x + 1, y);
+        screen.print(text);
+    };
+
+    drawBold(8, 8, "CRYPTO", FONT_MEDIUM);
+    if (_timeService && _timeService->isSynced() && _cryptoService &&
+        _cryptoService->getLastSuccessMs() != 0) {
+        const unsigned long ageSec =
+            (millis() - _cryptoService->getLastSuccessMs()) / 1000UL;
+        const time_t updatedEpoch =
+            static_cast<time_t>(_timeService->getEpoch() - ageSec);
+        const struct tm* updated = localtime(&updatedEpoch);
+        char updatedText[16];
+        snprintf(updatedText, sizeof(updatedText), "UPDATED %02d:%02d",
+                 updated->tm_hour, updated->tm_min);
+        const int16_t updatedX = CFG_DISPLAY_WIDTH -
+            _tft->getTextWidth(updatedText, FONT_SMALL) - 8;
+        drawBold(updatedX, 12, updatedText, FONT_SMALL);
+    }
+    _tft->fillRect(0, 30, CFG_DISPLAY_WIDTH, 2, CRYPTO_HEADER_DIVIDER);
+
+    if (!_cryptoService || _cryptoService->getAssetCount() == 0) {
+        const char* emptyText = "NO ASSETS";
+        const int16_t emptyX = (CFG_DISPLAY_WIDTH -
+            _tft->getTextWidth(emptyText, FONT_MEDIUM)) / 2;
+        drawBold(emptyX, 116, emptyText, FONT_MEDIUM);
+        return;
+    }
+
+    const uint8_t count = _cryptoService->getAssetCount();
+    const int16_t listTop = 33;
+    const int16_t listHeight = CFG_DISPLAY_HEIGHT - listTop;
+    for (uint8_t i = 0; i < count; i++) {
+        const int16_t rowTop = listTop + (listHeight * i) / count;
+        const int16_t rowBottom = listTop + (listHeight * (i + 1)) / count;
+        const int16_t rowHeight = rowBottom - rowTop;
+        const CryptoAsset& asset = _cryptoService->getAsset(i);
+
+        if (i > 0) {
+            _tft->fillRect(0, rowTop, CFG_DISPLAY_WIDTH, 1,
+                           CRYPTO_ROW_DIVIDER);
+        }
+        const int16_t centeredOffset = (rowHeight - 16) / 2;
+        const int16_t textY = rowTop + (centeredOffset > 3 ? centeredOffset : 3);
+        const uint8_t symbolSize = strlen(asset.symbol) <= 4 ? FONT_MEDIUM : FONT_SMALL;
+        drawBold(8, textY + (symbolSize == FONT_SMALL ? 4 : 0),
+                 asset.symbol, symbolSize);
+
+        char price[14] = "--";
+        if (asset.priceValid) formatCryptoPrice(asset.price, price, sizeof(price));
+        const uint8_t priceSize = strlen(price) <= 8 ? FONT_MEDIUM : FONT_SMALL;
+        drawBold(66, textY + (priceSize == FONT_SMALL ? 4 : 0),
+                 price, priceSize);
+
+        char change[12] = "--";
+        if (asset.changeValid) {
+            snprintf(change, sizeof(change), "%+.1f%%", asset.change24h);
+        }
+        const int16_t changeX = CFG_DISPLAY_WIDTH -
+            _tft->getTextWidth(change, FONT_MEDIUM) - 8;
+        drawBold(changeX, textY, change, FONT_MEDIUM);
+    }
+}
+
 // ── Terminal ───────────────────────────────────────────────────
 void DisplayService::termClear() {
     for (uint8_t i = 0; i < TERM_ROWS; i++) _termLines[i] = "";
@@ -636,6 +734,10 @@ void DisplayService::setInteractiveView(uint8_t view) {
             if (_weatherService) _weatherService->requestRefresh();
             drawWeatherView();
             break;
+        case InteractiveView::CRYPTO:
+            if (_cryptoService) _cryptoService->requestRefresh();
+            drawCryptoView();
+            break;
     }
 }
 
@@ -650,6 +752,7 @@ void DisplayService::redrawCurrentView() {
         case InteractiveView::CLOCK:       drawClockView(); break;
         case InteractiveView::POMODORO:    drawPomodoroView(); break;
         case InteractiveView::WEATHER:     drawWeatherView(); break;
+        case InteractiveView::CRYPTO:      drawCryptoView(); break;
     }
 }
 
@@ -836,6 +939,7 @@ void DisplayService::applyIdleDefaultView() {
 void DisplayService::update() {
     unsigned long now = millis();
     if (_weatherService) _weatherService->update();
+    if (_cryptoService) _cryptoService->update();
     if (now - _lastNightDimCheckMs > 30000UL) {
         _lastNightDimCheckMs = now;
         applyNightDimming();
@@ -846,6 +950,14 @@ void DisplayService::update() {
             if (version != _lastWeatherVersion) {
                 _lastWeatherVersion = version;
                 drawWeatherView();
+            }
+            return;
+        }
+        if (_interactiveView == InteractiveView::CRYPTO) {
+            const uint32_t version = _cryptoService ? _cryptoService->getVersion() : 0;
+            if (version != _lastCryptoVersion) {
+                _lastCryptoVersion = version;
+                drawCryptoView();
             }
             return;
         }

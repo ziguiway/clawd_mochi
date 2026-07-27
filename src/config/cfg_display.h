@@ -42,6 +42,7 @@
 #define VIEW_CLOCK      6
 #define VIEW_POMODORO   7
 #define VIEW_WEATHER    8
+#define VIEW_CRYPTO     9
 
 // 终端配置
 #define TERM_COLS      15

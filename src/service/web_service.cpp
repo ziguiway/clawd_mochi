@@ -1,6 +1,7 @@
 #include "web_service.h"
 #include "operation_mode_service.h"
 #include "../config/cfg_display.h"
+#include <ArduinoJson.h>
 
 // ── Original interactive HTML (PROGMEM) ────────────────────────
 static const char INDEX_HTML[] PROGMEM = R"rawhtml(
@@ -54,8 +55,7 @@ body{background:#1c1c20;font-family:'Courier New',monospace;color:#e8e4dc;
 .vbtn[data-v="2"].active{border-color:#4a8acd;background:#0c1628}
 .vbtn[data-v="3"].active{border-color:#38343a;background:#201c18}
 .vbtn[data-v="6"].active,.vbtn[data-v="7"].active{border-color:#f0a060;background:#22140a}
-.vbtn[data-v="8"]{grid-column:1/-1}
-.vbtn[data-v="8"].active{border-color:#f0a060;background:#22140a}
+.vbtn[data-v="8"].active,.vbtn[data-v="9"].active{border-color:#f0a060;background:#22140a}
 .speed-row{width:100%;max-width:390px;display:flex;align-items:center;gap:10px}
 .sl{font-size:10px;color:#6a6058;white-space:nowrap;min-width:36px}
 input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
@@ -92,6 +92,53 @@ input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
   color:#e8e0d6;font-family:'Courier New',monospace;font-size:11px;font-weight:bold;
   padding:11px 4px;cursor:pointer}
 .pbtn.hi{background:#c96a3e;border-color:#f0a060;color:#140c08}
+.mwrap{width:100%;max-width:390px;background:#151418;border:1.5px solid #3a3028;
+  border-radius:14px;padding:14px;display:none;flex-direction:column;gap:12px}
+.mwrap.open{display:flex}
+.mttl{font-size:19px;color:#f0ece4;font-weight:bold;letter-spacing:1px;
+  border-bottom:1px solid #c96a3e;padding-bottom:10px}
+.mpreview{width:240px;height:240px;max-width:100%;aspect-ratio:1;margin:0 auto;
+  background:#fb6b10;color:#fff;border:2px solid #080604;display:flex;
+  flex-direction:column;overflow:hidden;font-weight:900;text-shadow:.6px 0 currentColor}
+.mhead{height:33px;flex:none;border-bottom:2px solid #fff0d8;padding:7px 8px 0;
+  display:flex;justify-content:space-between;font-size:17px;letter-spacing:1px}
+.mtime{font-size:9px;padding-top:4px;letter-spacing:0}
+.mrows{display:flex;flex:1;min-height:0;flex-direction:column}
+.mrow{flex:1;min-height:0;display:grid;grid-template-columns:54px 1fr 58px;
+  align-items:center;padding:0 7px;border-top:1px solid #c74318}
+.mrow:first-child{border-top:0}
+.msym,.mprice,.mchg{font-size:16px}.mchg{text-align:right}
+.mauto{display:flex;justify-content:space-between;align-items:center;font-size:11px;
+  color:#6f675f;letter-spacing:1px;padding:2px 1px}
+.mauto strong{color:#63c56a;font-weight:bold}
+.mlabel{font-size:10px;color:#8a8278;letter-spacing:1.5px;font-weight:bold}
+.mlabelrow{display:flex;align-items:center;justify-content:space-between}
+.msel{display:flex;flex-direction:column;gap:0;border:1px solid #4b372c;
+  border-radius:9px;overflow:hidden}
+.mselrow,.mresult{display:flex;align-items:center;gap:8px;background:#222126;
+  padding:10px}
+.mselrow{border-bottom:1px solid #4b372c;transition:transform .08s,opacity .08s}
+.mselrow:last-child{border-bottom:0}.mselrow.dragging{opacity:.75;background:#2d201a;z-index:3}
+.mdrag{width:28px;flex:none;background:transparent;border:0;color:#d8d3cb;
+  font:700 25px/1 'Courier New',monospace;cursor:grab;touch-action:none;padding:2px}
+.mdrag:active{cursor:grabbing}
+.mselname,.mresname{min-width:0;flex:1;display:flex;align-items:center;gap:12px}
+.mselname strong,.mresname strong{font-size:14px;color:#df6734}
+.mselname span,.mresname small{font-size:11px;color:#f0ece4;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mmini{background:#17161a;border:1px solid #494249;border-radius:6px;color:#bdb6ae;
+  font:700 18px 'Courier New',monospace;width:38px;height:38px;cursor:pointer}
+.mmini.remove{color:#e96d38;border-color:#9b4b2a}
+.msearch{width:100%;background:#0e0e11;border:1.5px solid #494249;border-radius:9px;
+  color:#eee8df;font:700 13px 'Courier New',monospace;padding:11px;outline:none}
+.msearch:focus{border-color:#c96a3e}
+.mresults{display:flex;flex-direction:column;gap:6px;max-height:230px;overflow:auto}
+.mresult{border:1px solid #39353b;border-radius:9px}
+.madd{background:#c96a3e;border:0;border-radius:7px;color:#140b06;
+  font:700 10px 'Courier New',monospace;padding:8px 10px;cursor:pointer}
+.madd:disabled{opacity:.35}
+.minfo{border:1px solid #6d3a25;border-radius:8px;color:#bbb4ac;font-size:10px;
+  line-height:1.45;padding:10px 12px}
 .cwrap{width:100%;max-width:390px;background:#222028;border:1.5px solid #38343a;
   border-radius:12px;padding:12px;flex-direction:column;gap:10px;display:none}
 .cwrap.open{display:flex}
@@ -185,6 +232,11 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <span class="nm">Weather</span>
     <span class="ht">automatic IP location</span>
   </button>
+  <button class="vbtn" data-v="9" onclick="setView(9)">
+    <span class="ic">$ BTC</span>
+    <span class="nm">Crypto</span>
+    <span class="ht">1-5 live assets</span>
+  </button>
 </div>
 <div class="pwrap" id="pwrap">
   <div class="pstat"><span id="pPhase">FOCUS</span><strong id="pTime">25:00</strong></div>
@@ -206,6 +258,23 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
       <input class="pnum" id="breakMin" type="number" min="1" max="60" value="5" onchange="configTimer()">
     </div>
   </div>
+</div>
+<div class="mwrap" id="mwrap">
+  <div class="mttl">// crypto display</div>
+  <div class="mlabel">LIVE PREVIEW (240x240)</div>
+  <div class="mpreview">
+    <div class="mhead"><span>CRYPTO</span><span class="mtime" id="mTime">UPDATED --:--</span></div>
+    <div class="mrows" id="mPreview"></div>
+  </div>
+  <div class="mlabel">DISPLAYED <span id="mCount">0 / 5</span></div>
+  <div class="msel" id="mSelected"></div>
+  <div class="mlabel">SEARCH COINS OR SYMBOLS</div>
+  <input class="msearch" id="mSearch" type="search" placeholder="BTC, Ethereum, Solana..."
+         autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  <div class="mlabelrow"><span class="mlabel">SEARCH RESULTS</span><span class="mlabel" id="mResultCount"></span></div>
+  <div class="mresults" id="mResults"></div>
+  <div class="minfo">Remove an item above to enable Add.<br>Max 5 assets shown on device.</div>
+  <div class="mauto"><strong id="mAuto">● SAVED TO DEVICE</strong><span>AUTO-SAVED</span></div>
 </div>
 <div class="sec">// speed</div>
 <div class="speed-row">
@@ -246,6 +315,7 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
 <script>
 let activeView=0,termOpen=false,canvasOpen=false,blOn=true,claudeStatusOn=true,isBusy=false,drawing=false;
 let lastX=0,lastY=0,tt;
+let marketSelected=[],marketDirectory=[],marketLoaded=false,marketSaving=false,marketSaveQueued=false,marketUpdatedAt=null,marketDrag=null;
 const spdLabels=['','slow','normal','fast'];
 function toast(msg,ok=true){const el=document.getElementById('toast');el.textContent=msg;el.style.borderColor=ok?'#28b878':'#c96a3e';el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),1300);}
 function setBusy(b){isBusy=b;document.getElementById('busy').classList.toggle('show',b);const locked=b||termOpen;document.querySelectorAll('.vbtn').forEach(el=>{el.disabled=canvasOpen?parseInt(el.dataset.v)!==3:locked;});document.querySelectorAll('.cbtn').forEach(el=>{if(el.id!=='blBtn'&&el.id!=='ccStatusBtn')el.disabled=locked;});}
@@ -253,7 +323,7 @@ async function req(path){try{const r=await fetch(path);return r.ok;}catch(e){toa
 async function waitNotBusy(){for(let i=0;i<100;i++){try{const r=await fetch('/state');const j=await r.json();if(!j.busy)return;}catch(e){}await new Promise(r=>setTimeout(r,150));}}
 async function onBgChange(hex){if(canvasOpen){await req('/draw/clear?bg='+encodeURIComponent(hex));await req('/prefs?bg='+encodeURIComponent(hex));}else{await req('/redraw?bg='+encodeURIComponent(hex));}redrawCanvas(hex);}
 async function setSpeed(v){document.getElementById('spdV').textContent=spdLabels[v];await req('/speed?v='+v);}
-async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
+async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e',9:'m'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);document.getElementById('mwrap').classList.toggle('open',v===9);if(v===9){await loadMarketConfig();loadMarketDirectory();toast('crypto open');return;}if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
 function updateBlButton(){const b=document.getElementById('blBtn');b.textContent=blOn?'☀ display on':'○ display off';b.classList.toggle('on',blOn);b.classList.toggle('dim',!blOn);}
 function updateClaudeStatusButton(){const b=document.getElementById('ccStatusBtn');b.textContent=claudeStatusOn?'◆ claude status on':'◇ claude status off';b.classList.toggle('on',claudeStatusOn);b.classList.toggle('dim',!claudeStatusOn);}
 async function toggleBL(){blOn=!blOn;const v=blOn?100:0;document.getElementById('bright').value=v;document.getElementById('brightV').textContent=v+'%';await req('/backlight?on='+(blOn?1:0));updateBlButton();}
@@ -266,6 +336,105 @@ async function startTimer(phase){await fetch('/timer/start?phase='+phase);docume
 async function pauseTimer(){await fetch('/timer/pause');await pollTimer();toast('timer toggled');}
 async function resetTimer(){await fetch('/timer/reset');await pollTimer();toast('timer reset');}
 async function configTimer(){const f=document.getElementById('focusMin').value||25,b=document.getElementById('breakMin').value||5;await fetch('/timer/config?focus='+encodeURIComponent(f)+'&break='+encodeURIComponent(b));await pollTimer();}
+function marketPrice(v){if(v==null)return'--';if(v>=1000000)return'$'+(v/1000000).toFixed(2)+'M';if(v>=100000)return'$'+Math.round(v/1000)+'K';if(v>=10000)return'$'+(v/1000).toFixed(1)+'K';if(v>=1000)return'$'+Math.round(v);if(v>=100)return'$'+v.toFixed(1);if(v>=1)return'$'+v.toFixed(2);if(v>=.01)return'$'+v.toFixed(4);return'$'+v.toFixed(6);}
+function marketChange(v){return v==null?'--':(v>=0?'+':'')+Number(v).toFixed(1)+'%';}
+function marketTime(){if(!marketUpdatedAt)return'UPDATED --:--';return'UPDATED '+marketUpdatedAt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false});}
+function renderMarket(){
+  document.getElementById('mCount').textContent=marketSelected.length+' / 5';
+  document.getElementById('mTime').textContent=marketTime();
+  const preview=document.getElementById('mPreview');preview.innerHTML='';
+  const selected=document.getElementById('mSelected');selected.innerHTML='';
+  marketSelected.forEach((a,i)=>{
+    const row=document.createElement('div');row.className='mrow';
+    ['msym','mprice','mchg'].forEach((cls,n)=>{const s=document.createElement('span');s.className=cls;s.textContent=n===0?a.symbol:(n===1?marketPrice(a.price):marketChange(a.change));row.appendChild(s);});
+    preview.appendChild(row);
+    const item=document.createElement('div');item.className='mselrow';item.dataset.index=i;
+    const handle=document.createElement('button');handle.className='mdrag';handle.type='button';handle.textContent='⠿';handle.setAttribute('aria-label','Drag '+a.symbol);
+    handle.addEventListener('pointerdown',e=>startMarketDrag(e,i,item));item.appendChild(handle);
+    const name=document.createElement('div');name.className='mselname';
+    const strong=document.createElement('strong');strong.textContent=a.symbol;
+    const label=document.createElement('span');label.textContent=a.name+(a.gold?' (troy oz)':'');
+    name.append(strong,label);item.appendChild(name);
+    const remove=document.createElement('button');remove.className='mmini remove';remove.textContent='×';remove.setAttribute('aria-label','Remove '+a.symbol);remove.onclick=()=>removeMarket(i);item.appendChild(remove);
+    selected.appendChild(item);
+  });
+  renderMarketResults();
+}
+async function loadMarketConfig(){
+  try{const r=await fetch('/crypto/config',{cache:'no-store'});const j=await r.json();marketSelected=Array.isArray(j.assets)?j.assets:[];marketUpdatedAt=typeof j.updatedAgeSec==='number'?new Date(Date.now()-j.updatedAgeSec*1000):null;renderMarket();}
+  catch(e){toast('market config unavailable',false);}
+}
+async function loadMarketDirectory(){
+  if(marketLoaded)return;
+  const out=document.getElementById('mResults');out.textContent='loading public asset directory...';
+  try{
+    const r=await fetch('https://api.coinlore.net/api/assets/');
+    const j=await r.json();const list=Array.isArray(j)?j:(j.data||j.assets||[]);
+    marketDirectory=list.map(a=>({id:String(a.id),symbol:String(a.symbol||'').toUpperCase(),name:String(a.name||a.nameid||''),rank:Number(a.rank)||999999,gold:false}));
+    marketLoaded=true;renderMarketResults();
+  }catch(e){out.textContent='asset search needs internet access';}
+}
+function renderMarketResults(){
+  const out=document.getElementById('mResults');if(!marketLoaded){return;}
+  const count=document.getElementById('mResultCount');const q=document.getElementById('mSearch').value.trim().toLowerCase();out.innerHTML='';
+  if(!q){count.textContent='';out.textContent='type a symbol or asset name';return;}
+  const terms=q.split(/[\s,;|/]+/).filter(Boolean),compact=q.replace(/[^a-z0-9]/g,'');
+  const selectedIds=new Set(marketSelected.map(a=>(a.gold?'gold:':'coin:')+a.id));
+  function matchScore(a){
+    const symbol=a.symbol.toLowerCase(),name=a.name.toLowerCase();
+    let best=999;
+    terms.forEach(term=>{
+      if(symbol===term)best=Math.min(best,0);
+      else if(symbol.startsWith(term))best=Math.min(best,10);
+      else if(name.split(/[\s-]+/).some(word=>word.startsWith(term)))best=Math.min(best,20);
+      else if(name.startsWith(term))best=Math.min(best,25);
+      else if(symbol.includes(term))best=Math.min(best,30);
+      else if(name.includes(term))best=Math.min(best,40);
+    });
+    if(symbol.length>=2&&compact.includes(symbol))best=Math.min(best,50);
+    return best;
+  }
+  const matches=marketDirectory.map(a=>({a,score:matchScore(a)})).filter(x=>x.score<999)
+    .sort((x,y)=>x.score-y.score||x.a.rank-y.a.rank||x.a.symbol.localeCompare(y.a.symbol))
+    .slice(0,10).map(x=>x.a);
+  count.textContent=matches.length+' result'+(matches.length===1?'':'s');
+  if(!matches.length){out.textContent='no matching assets';return;}
+  matches.forEach(a=>{
+    const row=document.createElement('div');row.className='mresult';
+    const name=document.createElement('div');name.className='mresname';
+    const strong=document.createElement('strong');strong.textContent=a.symbol;
+    const small=document.createElement('small');small.textContent=a.name+(a.gold?' · spot gold':' · CoinLore #'+a.id);
+    name.append(strong,small);row.appendChild(name);
+    const add=document.createElement('button');add.className='madd';add.textContent=selectedIds.has((a.gold?'gold:':'coin:')+a.id)?'ADDED':'ADD';
+    add.disabled=marketSelected.length>=5||selectedIds.has((a.gold?'gold:':'coin:')+a.id);add.onclick=()=>addMarket(a);row.appendChild(add);out.appendChild(row);
+  });
+}
+async function saveMarket(){
+  if(marketSaving){marketSaveQueued=true;return;}marketSaving=true;document.getElementById('mAuto').textContent='● SAVING...';
+  try{const r=await fetch('/crypto/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({assets:marketSelected.map(a=>({id:a.id,symbol:a.symbol,name:a.name,gold:!!a.gold}))})});if(!r.ok)throw new Error();const j=await r.json();marketSelected=j.assets||marketSelected;document.getElementById('mAuto').textContent='● SAVED TO DEVICE';renderMarket();}
+  catch(e){document.getElementById('mAuto').textContent='● SAVE FAILED';toast('save failed',false);}
+  marketSaving=false;if(marketSaveQueued){marketSaveQueued=false;saveMarket();}
+}
+function addMarket(a){if(marketSelected.length>=5)return;marketSelected.push({...a,price:null,change:null});renderMarket();saveMarket();}
+function removeMarket(i){if(marketSelected.length<=1){toast('keep at least one asset',false);return;}marketSelected.splice(i,1);renderMarket();saveMarket();}
+function startMarketDrag(e,index,row){
+  if(e.button!==undefined&&e.button!==0)return;e.preventDefault();
+  const rows=[...document.querySelectorAll('#mSelected .mselrow')],box=document.getElementById('mSelected').getBoundingClientRect();
+  marketDrag={index,target:index,row,startY:e.clientY,box,rowH:box.height/rows.length};
+  row.classList.add('dragging');e.currentTarget.setPointerCapture(e.pointerId);
+  document.addEventListener('pointermove',moveMarketDrag,{passive:false});document.addEventListener('pointerup',endMarketDrag,{once:true});
+}
+function moveMarketDrag(e){
+  if(!marketDrag)return;e.preventDefault();const delta=e.clientY-marketDrag.startY;
+  marketDrag.row.style.transform='translateY('+delta+'px)';
+  marketDrag.target=Math.max(0,Math.min(marketSelected.length-1,Math.floor((e.clientY-marketDrag.box.top)/marketDrag.rowH)));
+}
+function endMarketDrag(){
+  document.removeEventListener('pointermove',moveMarketDrag);
+  if(!marketDrag)return;const from=marketDrag.index,to=marketDrag.target;marketDrag.row.classList.remove('dragging');marketDrag.row.style.transform='';
+  marketDrag=null;if(from===to)return;const asset=marketSelected.splice(from,1)[0];marketSelected.splice(to,0,asset);renderMarket();saveMarket();
+}
+document.getElementById('mSearch').addEventListener('input',renderMarketResults);
 async function useSerialMode(){if(!confirm('Switch Claude status input to USB serial? Local Web control stays available.'))return;await req('/serial_mode');toast('serial mode active');}
 async function loadWifiList(){const btn=document.getElementById('wscanBtn');btn.disabled=true;btn.textContent='scanning...';document.getElementById('wstatus').textContent='scanning...';document.getElementById('wlist').style.display='none';document.getElementById('wform').style.display='none';try{const r=await fetch('/wifi/scan');const nets=await r.json();const list=document.getElementById('wlist');list.innerHTML='';if(nets.length===0){document.getElementById('wstatus').textContent='no networks found';}else{nets.sort((a,b)=>b.rssi-a.rssi);nets.forEach(n=>{const btn=document.createElement('button');btn.className='cbtn';btn.style.textAlign='left';btn.style.padding='10px 12px';const sig=n.rssi>-50?'&#128267;':(n.rssi>-70?'&#128266;':'&#128268;');btn.innerHTML='<span style="color:#c96a3e">'+sig+'</span> '+n.ssid+(n.encrypted?' <span style="color:#5a5048">&#128274;</span>':'')+' <span style="color:#5a5048;font-size:9px">'+n.rssi+'dBm</span>';btn.onclick=()=>{document.getElementById('wssid').value=n.ssid;document.getElementById('wpass').focus();};list.appendChild(btn);});document.getElementById('wstatus').textContent='select network or type SSID:';document.getElementById('wlist').style.display='flex';document.getElementById('wform').style.display='flex';}}catch(e){document.getElementById('wstatus').textContent='scan failed';}btn.disabled=false;btn.textContent='🔍 scan networks';}
 function wifiStatusHtml(j){const ap='http://'+(j.apIp||'192.168.4.1');const mdns=j.mdns||'http://clawd-mochi.local';const line='font-size:10px;color:#8a8278;margin-top:3px';if(j.connected){const lan='http://'+(j.lanIp||j.ip);return '<span style="color:#28b878">connected: '+j.ssid+'</span><div style="'+line+'">LAN: '+lan+'</div><div style="'+line+'">Name: '+mdns+'</div><div style="'+line+'">AP: '+ap+' ('+(j.apSsid||'ClaWD-Mochi')+')</div>';}if(j.configured&&j.savedSsid){return '<span style="color:#c96a3e">saved: '+j.savedSsid+'</span><div style="'+line+'">not connected - AP still works: '+ap+'</div>';}return 'not connected - scan to setup<div style="'+line+'">AP: '+ap+' ('+(j.apSsid||'ClaWD-Mochi')+')</div>';}
@@ -286,7 +455,7 @@ async function endDraw(e){if(!drawing)return;drawing=false;if(!canvasOpen||strok
 cvs.addEventListener('mousedown',startDraw);cvs.addEventListener('mousemove',moveDraw);cvs.addEventListener('mouseup',endDraw);cvs.addEventListener('mouseleave',endDraw);
 cvs.addEventListener('touchstart',startDraw,{passive:false});cvs.addEventListener('touchmove',moveDraw,{passive:false});cvs.addEventListener('touchend',endDraw);
 async function clearAll(){const bg=document.getElementById('bgCol').value;redrawCanvas(bg);await req('/draw/clear?bg='+encodeURIComponent(bg));toast('cleared');}
-(async()=>{await loadPrefs();try{const r=await fetch('/state');const j=await r.json();const bv=typeof j.brightness==='number'?j.brightness:(j.bl===false?0:100);document.getElementById('bright').value=bv;document.getElementById('brightV').textContent=bv+'%';blOn=bv>0;updateBlButton();}catch(e){}pollWifiStatus();pollTimer();setInterval(pollTimer,1000);})();
+(async()=>{await loadPrefs();try{const r=await fetch('/state');const j=await r.json();const bv=typeof j.brightness==='number'?j.brightness:(j.bl===false?0:100);document.getElementById('bright').value=bv;document.getElementById('brightV').textContent=bv+'%';blOn=bv>0;updateBlButton();}catch(e){}pollWifiStatus();pollTimer();setInterval(pollTimer,1000);setInterval(()=>{if(activeView===9&&!marketSaving&&!marketDrag)loadMarketConfig();},30000);})();
 </script>
 </body>
 </html>
@@ -295,12 +464,14 @@ async function clearAll(){const bg=document.getElementById('bgCol').value;redraw
 // ── Constructor ────────────────────────────────────────────────
 WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiService,
                        TimeService* timeService, DisplayService* displayService,
-                       PreferenceService* preferenceService)
+                       PreferenceService* preferenceService,
+                       CryptoService* cryptoService)
     : _server(CFG_WIFI_WEB_PORT)
     , _started(false)
     , _ccService(ccService), _wifiService(wifiService)
     , _timeService(timeService), _displayService(displayService)
     , _preferenceService(preferenceService)
+    , _cryptoService(cryptoService)
 {
 }
 
@@ -338,6 +509,9 @@ void WebService::setupRoutes() {
     _server.on("/prefs",       HTTP_GET, [this]() { handlePrefs(); });
     _server.on("/state",       HTTP_GET, [this]() { handleState(); });
     _server.on("/serial_mode", HTTP_GET, [this]() { handleSerialMode(); });
+    _server.on("/crypto/config", HTTP_GET, [this]() { handleCryptoConfig(); });
+    _server.on("/crypto/config", HTTP_POST, [this]() { handleCryptoUpdate(); });
+    _server.on("/crypto/refresh", HTTP_POST, [this]() { handleCryptoRefresh(); });
 
     // Existing routes
     _server.on("/wifi_setup", [this]() { handleWifiSetup(); });
@@ -399,6 +573,7 @@ void WebService::handleCmd() {
         case 'c': _displayService->setInteractiveView(VIEW_CLOCK); break;
         case 'p': _displayService->setInteractiveView(VIEW_POMODORO); break;
         case 'e': _displayService->setInteractiveView(VIEW_WEATHER); break;
+        case 'm': _displayService->setInteractiveView(VIEW_CRYPTO); break;
         case 'a': _displayService->animLogoReveal(); break;
     }
 }
@@ -597,6 +772,72 @@ void WebService::handleState() {
 void WebService::handleSerialMode() {
     _wifiService->skipProvisioning();
     _server.send(200, "application/json", "{\"ok\":true,\"mode\":\"serial\"}");
+}
+
+void WebService::handleCryptoConfig() {
+    if (!_cryptoService) {
+        _server.send(503, "application/json", "{\"error\":\"crypto unavailable\"}");
+        return;
+    }
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json", _cryptoService->getJson());
+}
+
+void WebService::handleCryptoUpdate() {
+    if (!_cryptoService) {
+        _server.send(503, "application/json", "{\"error\":\"crypto unavailable\"}");
+        return;
+    }
+
+    JsonDocument doc;
+    const DeserializationError error = deserializeJson(doc, _server.arg("plain"));
+    JsonArray list = doc["assets"].as<JsonArray>();
+    if (error || list.isNull() || list.size() == 0 ||
+        list.size() > CryptoService::MAX_ASSETS) {
+        _server.send(400, "application/json", "{\"error\":\"choose 1 to 5 assets\"}");
+        return;
+    }
+
+    CryptoAsset assets[CryptoService::MAX_ASSETS] = {};
+    uint8_t count = 0;
+    for (JsonObject item : list) {
+        const char* id = item["id"] | "";
+        const char* symbol = item["symbol"] | "";
+        const char* name = item["name"] | symbol;
+        if (id[0] == '\0' || symbol[0] == '\0') {
+            _server.send(400, "application/json", "{\"error\":\"invalid asset\"}");
+            return;
+        }
+        for (uint8_t previous = 0; previous < count; previous++) {
+            if (strcmp(assets[previous].id, id) == 0) {
+                _server.send(409, "application/json", "{\"error\":\"duplicate asset\"}");
+                return;
+            }
+        }
+        strlcpy(assets[count].id, id, sizeof(assets[count].id));
+        strlcpy(assets[count].symbol, symbol, sizeof(assets[count].symbol));
+        strlcpy(assets[count].name, name, sizeof(assets[count].name));
+        assets[count].isGold = item["gold"] | false;
+        count++;
+    }
+
+    if (!_cryptoService->setAssets(assets, count)) {
+        _server.send(400, "application/json", "{\"error\":\"invalid asset configuration\"}");
+        return;
+    }
+    if (_displayService->getInteractiveView() == VIEW_CRYPTO) {
+        _displayService->redrawCurrentView();
+    }
+    handleCryptoConfig();
+}
+
+void WebService::handleCryptoRefresh() {
+    if (!_cryptoService) {
+        _server.send(503, "application/json", "{\"error\":\"crypto unavailable\"}");
+        return;
+    }
+    _cryptoService->requestRefresh();
+    _server.send(202, "application/json", "{\"ok\":true}");
 }
 
 // ── Existing handlers ──────────────────────────────────────────

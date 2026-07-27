@@ -17,6 +17,7 @@
 #include "../service/wifi_config_service.h"
 #include "../service/preference_service.h"
 #include "../service/weather_service.h"
+#include "../service/crypto_service.h"
 #include "../service/web_service.h"
 #include "../service/display_service.h"
 #include "../service/serial_command_service.h"
@@ -64,6 +65,7 @@ private:
     WifiConfigService    _wifi;
     PreferenceService    _prefs;
     WeatherService       _weather;
+    CryptoService        _crypto;
     DisplayService       _display;
     WebService           _web;
     SerialCommandService _serial;

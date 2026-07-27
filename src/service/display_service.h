@@ -9,6 +9,7 @@
 #include "time_service.h"
 #include "preference_service.h"
 #include "weather_service.h"
+#include "crypto_service.h"
 #include "../config/cfg_display.h"
 
 enum class DisplayMode {
@@ -28,7 +29,8 @@ enum class InteractiveView {
     WORKING,
     CLOCK,
     POMODORO,
-    WEATHER
+    WEATHER,
+    CRYPTO
 };
 
 enum class PomodoroPhase {
@@ -41,7 +43,8 @@ public:
     DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
                    WifiConfigService* wifiService, TimeService* timeService,
                    PreferenceService* preferenceService,
-                   WeatherService* weatherService);
+                   WeatherService* weatherService,
+                   CryptoService* cryptoService);
     void init();
     void update();
 
@@ -125,6 +128,7 @@ private:
     TimeService* _timeService;
     PreferenceService* _preferenceService;
     WeatherService* _weatherService;
+    CryptoService* _cryptoService;
     ClaudeCodeView _ccView;
     EyesView _eyesView;
     DisplayMode _currentMode;
@@ -151,6 +155,7 @@ private:
     unsigned long _pomodoroStartedMs;
     unsigned long _lastClockRenderSec;
     uint32_t _lastWeatherVersion;
+    uint32_t _lastCryptoVersion;
     unsigned long _lastNightDimCheckMs;
     uint8_t _lastAppliedBrightnessPercent;
 
@@ -177,6 +182,8 @@ private:
     void drawPomodoroView();
     void drawWeatherView();
     void drawWeatherIcon(int weatherCode, int16_t x, int16_t y);
+    void drawCryptoView();
+    void formatCryptoPrice(float price, char* output, size_t size);
     void renderTimeScreen(const char* mark, const char* timeText, const char* subText,
                           const char* modeText, const char* hintText,
                           uint16_t progressPermille, bool lightProgress);

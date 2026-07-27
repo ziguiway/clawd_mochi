@@ -23,7 +23,18 @@ pio device monitor
 
 # Combined: build, upload, and monitor
 pio run --target upload && pio device monitor
+
+# Positive Web UI regression (stable mocked market directory)
+uv run scripts/test_web_ui.py
+
+# Positive Web UI regression against the live CoinLore directory
+uv run scripts/test_web_ui.py --live-directory
 ```
+
+After changing the embedded Web controller, run the mocked positive UI
+regression. When changing Crypto search or its directory integration, run both
+the mocked and live-directory variants. These tests intentionally cover the
+happy path only.
 
 ## Architecture
 

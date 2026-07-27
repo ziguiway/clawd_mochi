@@ -10,13 +10,15 @@
 #include "time_service.h"
 #include "display_service.h"
 #include "preference_service.h"
+#include "crypto_service.h"
 #include "../utils/logger.h"
 
 class WebService {
 public:
     WebService(ClaudeCodeService* ccService, WifiConfigService* wifiService,
                TimeService* timeService, DisplayService* displayService,
-               PreferenceService* preferenceService);
+               PreferenceService* preferenceService,
+               CryptoService* cryptoService);
     void init();
     void update();
 
@@ -28,6 +30,7 @@ private:
     TimeService* _timeService;
     DisplayService* _displayService;
     PreferenceService* _preferenceService;
+    CryptoService* _cryptoService;
 
     void setupRoutes();
 
@@ -50,6 +53,9 @@ private:
     void handlePrefs();
     void handleState();
     void handleSerialMode();
+    void handleCryptoConfig();
+    void handleCryptoUpdate();
+    void handleCryptoRefresh();
 
     // Existing routes
     void handleWifiSetup();
