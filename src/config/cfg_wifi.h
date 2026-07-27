@@ -27,5 +27,11 @@
 // 重连间隔 (ms)
 #define CFG_WIFI_RECONNECT_INTERVAL_MS    30000
 
+// 最大连续重试次数,超过后回到 AP 配网模式等待用户重新配置
+#define CFG_WIFI_MAX_RETRIES              5
+
+// 重试打满后的慢速重试间隔 (ms),路由器恢复后可自愈
+#define CFG_WIFI_SLOW_RETRY_INTERVAL_MS   300000
+
 // Web 服务器端口
 #define CFG_WIFI_WEB_PORT                 80

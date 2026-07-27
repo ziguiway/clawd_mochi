@@ -1182,6 +1182,7 @@ void DisplayService::updateProvisioning() {
     static WifiConfigService::ProvisioningMode lastMode = WifiConfigService::ProvisioningMode::NONE;
     static int lastDotCount = -1;
     static int lastRetrySec = -1;
+    static char lastPhase[16] = "";
     auto mode = _wifiService->getProvisioningMode();
 
     // 模式切换(或从其它显示模式回来)时整屏重绘静态内容;
@@ -1191,6 +1192,7 @@ void DisplayService::updateProvisioning() {
         lastMode = mode;
         lastDotCount = -1;
         lastRetrySec = -1;
+        lastPhase[0] = '\0';
 
         // 与其他视图一致的橙底白字(背景跟随偏好设置)
         _tft->fillScreen(_animBgColor);
@@ -1208,7 +1210,10 @@ void DisplayService::updateProvisioning() {
         if (mode == WifiConfigService::ProvisioningMode::AP_FALLBACK) {
             _tft->getTft().setTextColor(COLOR_WHITE);
             _tft->getTft().setTextSize(1);
-            const char* subtitle = "Keep this page open";
+            // 重试打满回到配网页时,提示用户重新配置
+            const char* subtitle = _wifiService->isRetryExhausted()
+                ? "Too many attempts, set up again"
+                : "Keep this page open";
             int16_t subX = (CFG_DISPLAY_WIDTH - (int)strlen(subtitle) * 6) / 2;
             _tft->getTft().setCursor(subX, 46);
             _tft->getTft().print(subtitle);
@@ -1242,7 +1247,7 @@ void DisplayService::updateProvisioning() {
             _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - (int)strlen(url) * 6) / 2, 190);
             _tft->getTft().print(url);
         } else if (mode == WifiConfigService::ProvisioningMode::CONNECTING) {
-            // 副标题 + 目标 SSID + "Connecting" 文本(三点动画走动态刷新)
+            // 副标题 + 目标 SSID(阶段文案与三点动画走动态刷新)
             _tft->getTft().setTextColor(COLOR_WHITE);
             _tft->getTft().setTextSize(1);
             const char* subtitle = "Joining network";
@@ -1256,11 +1261,6 @@ void DisplayService::updateProvisioning() {
             int16_t ssidX = (CFG_DISPLAY_WIDTH - (int)ssid.length() * 12) / 2;
             _tft->getTft().setCursor(ssidX, 98);
             _tft->getTft().print(ssid);
-
-            // 按 "Connecting..." 全宽居中,三点追加在固定位置
-            int16_t connX = (CFG_DISPLAY_WIDTH - 13 * 12) / 2;
-            _tft->getTft().setCursor(connX, 136);
-            _tft->getTft().print("Connecting");
         } else if (mode == WifiConfigService::ProvisioningMode::RETRY_WAIT) {
             // 连接失败:白色圆圈叉图标 + 失败信息 + SSID,重试倒计时走动态刷新
             const int16_t cx = CFG_DISPLAY_WIDTH / 2;
@@ -1274,7 +1274,8 @@ void DisplayService::updateProvisioning() {
 
             _tft->getTft().setTextColor(COLOR_WHITE);
             _tft->getTft().setTextSize(2);
-            const char* fail = "Connection failed";
+            // 失败原因: Wrong password / Network not found / Connection failed
+            const char* fail = _wifiService->getLastError();
             int16_t failX = (CFG_DISPLAY_WIDTH - (int)strlen(fail) * 12) / 2;
             _tft->getTft().setCursor(failX, 104);
             _tft->getTft().print(fail);
@@ -1286,10 +1287,13 @@ void DisplayService::updateProvisioning() {
             _tft->getTft().setCursor(ssidX, 132);
             _tft->getTft().print(ssid);
 
-            const char* hint = "Check password / signal";
-            int16_t hintX = (CFG_DISPLAY_WIDTH - (int)strlen(hint) * 6) / 2;
+            // 已失败次数 / 最大重试次数
+            char attempt[24];
+            snprintf(attempt, sizeof(attempt), "Attempt %d of %d",
+                     _wifiService->getRetryCount(), CFG_WIFI_MAX_RETRIES);
+            int16_t hintX = (CFG_DISPLAY_WIDTH - (int)strlen(attempt) * 6) / 2;
             _tft->getTft().setCursor(hintX, 148);
-            _tft->getTft().print(hint);
+            _tft->getTft().print(attempt);
         } else if (mode == WifiConfigService::ProvisioningMode::CONNECTED) {
             // 白色圆圈勾图标 + 连接信息
             const int16_t cx = CFG_DISPLAY_WIDTH / 2;
@@ -1327,11 +1331,25 @@ void DisplayService::updateProvisioning() {
 
     // 动态元素:局部擦除重绘,仅在内容变化时执行
     if (mode == WifiConfigService::ProvisioningMode::CONNECTING) {
-        // "..." 三点循环动画(每 400ms 变一次)
+        // 阶段文案(Connecting / Obtaining IP),随 WiFi 事件推进
+        const char* phase = _wifiService->getConnectPhaseText();
+        int phaseLen = (int)strlen(phase);
+        int16_t blockX = (CFG_DISPLAY_WIDTH - (phaseLen + 3) * 12) / 2;
+        if (strcmp(phase, lastPhase) != 0) {
+            // 阶段切换:整行擦除重排
+            strlcpy(lastPhase, phase, sizeof(lastPhase));
+            lastDotCount = -1;
+            _tft->fillRect(20, 136, CFG_DISPLAY_WIDTH - 40, 16, _animBgColor);
+            _tft->getTft().setTextColor(COLOR_WHITE);
+            _tft->getTft().setTextSize(2);
+            _tft->getTft().setCursor(blockX, 136);
+            _tft->getTft().print(phase);
+        }
+        // "..." 三点循环动画(每 400ms 变一次),跟在阶段文案后
         int dots = (int)((millis() / 400) % 4);
         if (dots != lastDotCount) {
             lastDotCount = dots;
-            int16_t dotX = (CFG_DISPLAY_WIDTH - 13 * 12) / 2 + 10 * 12;
+            int16_t dotX = blockX + phaseLen * 12;
             _tft->fillRect(dotX, 136, 3 * 12, 16, _animBgColor);
             _tft->getTft().setTextColor(COLOR_WHITE);
             _tft->getTft().setTextSize(2);

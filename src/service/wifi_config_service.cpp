@@ -9,12 +9,15 @@ WifiConfigService::WifiConfigService()
     : _configured(false), _connected(false), _connecting(false)
     , _apStarted(false), _mdnsStarted(false), _connectStartTime(0)
     , _lastReconnectMs(0)
+    , _connectPhase(ConnectPhase::ASSOCIATING), _lastDisconnectReason(0)
+    , _lastError("Connection failed"), _retryCount(0), _retryExhausted(false)
     , _provMode(ProvisioningMode::NONE), _provModeStartMs(0)
 {
 }
 
 void WifiConfigService::init() {
     ensureAccessPoint();
+    WiFi.onEvent(onWifiEvent);
     loadCredentials();
     if (_configured) {
         LOG_INFO("WiFi", "已有凭据,连接: %s", _ssid.c_str());
@@ -22,6 +25,41 @@ void WifiConfigService::init() {
     } else {
         startAPMode();
     }
+}
+
+// WiFi 事件回调:推进连接阶段,记录断开原因码
+void WifiConfigService::onWifiEvent(arduino_event_id_t event, arduino_event_info_t info) {
+    WifiConfigService* self = _instance;
+    if (!self) return;
+    switch (event) {
+        case ARDUINO_EVENT_WIFI_STA_CONNECTED:
+            // 认证已通过,进入 DHCP 阶段
+            self->_connectPhase = ConnectPhase::OBTAINING_IP;
+            break;
+        case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+            self->_lastDisconnectReason = info.wifi_sta_disconnected.reason;
+            break;
+        default:
+            break;
+    }
+}
+
+// 断开原因码 → 用户可读的失败提示(与手机一致的分类)
+static const char* mapDisconnectReason(uint8_t reason) {
+    switch (reason) {
+        case WIFI_REASON_NO_AP_FOUND:
+            return "Network not found";
+        case WIFI_REASON_AUTH_FAIL:
+        case WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT:
+        case WIFI_REASON_HANDSHAKE_TIMEOUT:
+            return "Wrong password";
+        default:
+            return "Connection failed";
+    }
+}
+
+const char* WifiConfigService::getConnectPhaseText() const {
+    return _connectPhase == ConnectPhase::OBTAINING_IP ? "Obtaining IP" : "Connecting";
 }
 
 void WifiConfigService::setProvisioningMode(ProvisioningMode mode) {
@@ -87,17 +125,29 @@ void WifiConfigService::update() {
         if (WiFi.status() == WL_CONNECTED) {
             _connected = true;
             _connecting = false;
+            _retryCount = 0;
+            _retryExhausted = false;
+            _lastError = "Connection failed";
             startMDNS();
             setProvisioningMode(ProvisioningMode::CONNECTED);
             LOG_INFO("WiFi", "已连接: %s IP: %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
         } else if (millis() - _connectStartTime > CFG_WIFI_CONNECT_TIMEOUT_MS) {
-            LOG_WARN("WiFi", "连接超时,等待自动重试");
             _connecting = false;
-            if (_configured) {
-                // 进入重试等待态,屏幕显示倒计时,避免空白
-                setProvisioningMode(ProvisioningMode::RETRY_WAIT);
-            } else {
+            _lastError = mapDisconnectReason(_lastDisconnectReason);
+            LOG_WARN("WiFi", "连接超时: %s (reason=%d)", _lastError, _lastDisconnectReason);
+            if (!_configured) {
                 startAPMode();
+            } else {
+                if (_retryCount < 255) _retryCount++;
+                if (_retryCount >= CFG_WIFI_MAX_RETRIES) {
+                    // 打满最大重试次数:回 AP 配网模式,等用户重新配置
+                    _retryExhausted = true;
+                    LOG_WARN("WiFi", "已达最大重试次数 %d,回到配网模式", CFG_WIFI_MAX_RETRIES);
+                    startAPMode();
+                } else {
+                    // 进入重试等待态,屏幕显示倒计时,避免空白
+                    setProvisioningMode(ProvisioningMode::RETRY_WAIT);
+                }
             }
         }
         return;
@@ -117,6 +167,13 @@ void WifiConfigService::update() {
         if (millis() - _lastReconnectMs > CFG_WIFI_RECONNECT_INTERVAL_MS) {
             connectToWifi(_ssid.c_str(), _password.c_str());
         }
+    }
+
+    // 重试打满后:保留 5 分钟一次的慢速重试,路由器恢复后可自愈
+    if (_retryExhausted && _configured && !_connected && !_connecting
+        && millis() - _lastReconnectMs > CFG_WIFI_SLOW_RETRY_INTERVAL_MS) {
+        LOG_INFO("WiFi", "慢速重试连接...");
+        connectToWifi(_ssid.c_str(), _password.c_str());
     }
 }
 
@@ -159,6 +216,8 @@ bool WifiConfigService::connectToWifi(const char* ssid, const char* password) {
     _connecting = true;
     _connectStartTime = millis();
     _lastReconnectMs = _connectStartTime;
+    _connectPhase = ConnectPhase::ASSOCIATING;
+    _lastDisconnectReason = 0;
     setProvisioningMode(ProvisioningMode::CONNECTING);
     return true;
 }
@@ -227,6 +286,9 @@ void WifiConfigService::handleConnectRequest(WebServer& server) {
         String ssid = server.arg("ssid");
         String password = server.arg("password");
         saveCredentials(ssid.c_str(), password.c_str());
+        // 用户手动提交新凭据:重置重试计数,重新进入快速重试循环
+        _retryCount = 0;
+        _retryExhausted = false;
         connectToWifi(ssid.c_str(), password.c_str());
         server.send(200, "application/json", "{\"status\":\"connecting\"}");
     } else {

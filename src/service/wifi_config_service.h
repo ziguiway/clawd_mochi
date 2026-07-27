@@ -34,6 +34,12 @@ public:
     const char* getProvisioningMessage() const;
     unsigned long getRetryRemainingMs() const;  // RETRY_WAIT 时距下次自动重连的毫秒数
 
+    // 连接过程细节(供屏幕显示)
+    const char* getConnectPhaseText() const;  // 连接阶段: "Connecting" / "Obtaining IP"
+    const char* getLastError() const { return _lastError; }  // 最近一次失败原因
+    uint8_t getRetryCount() const { return _retryCount; }    // 已连续失败次数
+    bool isRetryExhausted() const { return _retryExhausted; } // 已打满最大重试次数
+
     void skipProvisioning();      // 切换到串口模式
     bool isSerialMode() const;
 
@@ -62,11 +68,20 @@ private:
     unsigned long _connectStartTime;
     unsigned long _lastReconnectMs;  // 上次发起连接的时间戳,决定 30s 自动重连节奏
 
+    // 连接阶段(由 WiFi 事件推进): 关联+认证 → 获取 IP
+    enum class ConnectPhase : uint8_t { ASSOCIATING, OBTAINING_IP };
+    ConnectPhase _connectPhase;
+    uint8_t _lastDisconnectReason;  // 最近一次 STA_DISCONNECTED 事件的原因码
+    const char* _lastError;         // 映射后的失败提示文案
+    uint8_t _retryCount;            // 连续失败次数
+    bool _retryExhausted;           // 连续失败达到 CFG_WIFI_MAX_RETRIES
+
     ProvisioningMode _provMode;
     unsigned long _provModeStartMs;
 
     static WifiConfigService* _instance;
 
+    static void onWifiEvent(arduino_event_id_t event, arduino_event_info_t info);
     void setProvisioningMode(ProvisioningMode mode);
     void loadCredentials();
     void ensureAccessPoint();
