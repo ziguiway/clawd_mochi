@@ -9,6 +9,7 @@ class DisplayService;
 class SerialCommandService;
 class OperationModeService;
 class BootButtonService;
+class PreferenceService;
 
 // 应用上下文接口:状态类通过此接口访问共享服务
 // AppStateMachine 实现此接口,打破循环依赖
@@ -24,4 +25,5 @@ public:
     virtual SerialCommandService* serial()     = 0;
     virtual OperationModeService* opMode()     = 0;
     virtual BootButtonService*    bootButton() = 0;
+    virtual PreferenceService*    prefs()      = 0;
 };

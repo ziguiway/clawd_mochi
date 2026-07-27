@@ -12,12 +12,12 @@ namespace {
 void ModeSelectState::onEnter() {
     _startMs = millis();
     TftDisplay* tft = _ctx->tft();
-    tft->clear(COLOR_DARKBG);
-    tft->fillRect(0, 0, CFG_DISPLAY_WIDTH, 3, COLOR_ORANGE);
-    tft->fillRect(0, CFG_DISPLAY_HEIGHT - 3, CFG_DISPLAY_WIDTH, 3, COLOR_ORANGE);
-    tft->drawTextCentered(70, "Clawd Mochi", COLOR_ORANGE, COLOR_DARKBG, FONT_MEDIUM);
-    tft->drawTextCentered(120, "WiFi mode", COLOR_WHITE, COLOR_DARKBG, FONT_SMALL);
-    tft->drawTextCentered(140, "connecting...", COLOR_GRAY, COLOR_DARKBG, FONT_SMALL);
+    // 与后续配网界面一致的橙底白字(背景跟随偏好设置)
+    uint16_t bg = _ctx->display()->hexToRgb565(_ctx->prefs()->getDefaultBgHex());
+    tft->clear(bg);
+    tft->drawTextCentered(70, "Clawd Mochi", COLOR_WHITE, bg, FONT_MEDIUM);
+    tft->drawTextCentered(120, "WiFi mode", COLOR_WHITE, bg, FONT_SMALL);
+    tft->drawTextCentered(140, "connecting...", COLOR_WHITE, bg, FONT_SMALL);
 }
 
 void ModeSelectState::onUpdate() {

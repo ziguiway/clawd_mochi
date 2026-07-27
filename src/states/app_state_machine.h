@@ -56,6 +56,7 @@ public:
     SerialCommandService* serial()      override { return &_serial; }
     OperationModeService* opMode()      override { return &_opMode; }
     BootButtonService*    bootButton()  override { return &_bootButton; }
+    PreferenceService*    prefs()       override { return &_prefs; }
 
 private:
     // 服务实例

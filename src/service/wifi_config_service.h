@@ -13,6 +13,7 @@ public:
         NONE,           // 已配置且连接,或不需要配网
         AP_FALLBACK,    // AP+Web 配网模式(无凭据时进入)
         CONNECTING,     // 已收到凭据,正在连接
+        RETRY_WAIT,     // 连接超时,等待自动重试(屏幕显示倒计时)
         CONNECTED       // 刚连接成功(短暂时态,用于显示)
     };
 
@@ -31,6 +32,7 @@ public:
 
     ProvisioningMode getProvisioningMode() const { return _provMode; }
     const char* getProvisioningMessage() const;
+    unsigned long getRetryRemainingMs() const;  // RETRY_WAIT 时距下次自动重连的毫秒数
 
     void skipProvisioning();      // 切换到串口模式
     bool isSerialMode() const;
@@ -58,6 +60,7 @@ private:
     bool _apStarted;
     bool _mdnsStarted;
     unsigned long _connectStartTime;
+    unsigned long _lastReconnectMs;  // 上次发起连接的时间戳,决定 30s 自动重连节奏
 
     ProvisioningMode _provMode;
     unsigned long _provModeStartMs;

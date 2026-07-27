@@ -8,6 +8,7 @@ WifiConfigService* WifiConfigService::_instance = nullptr;
 WifiConfigService::WifiConfigService()
     : _configured(false), _connected(false), _connecting(false)
     , _apStarted(false), _mdnsStarted(false), _connectStartTime(0)
+    , _lastReconnectMs(0)
     , _provMode(ProvisioningMode::NONE), _provModeStartMs(0)
 {
 }
@@ -34,6 +35,7 @@ const char* WifiConfigService::getProvisioningMessage() const {
     switch (_provMode) {
         case ProvisioningMode::AP_FALLBACK: return "AP: 192.168.4.1";
         case ProvisioningMode::CONNECTING:  return "Connecting...";
+        case ProvisioningMode::RETRY_WAIT:  return "Retry soon";
         case ProvisioningMode::CONNECTED:   return "Connected";
         default:                            return "";
     }
@@ -89,10 +91,11 @@ void WifiConfigService::update() {
             setProvisioningMode(ProvisioningMode::CONNECTED);
             LOG_INFO("WiFi", "已连接: %s IP: %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
         } else if (millis() - _connectStartTime > CFG_WIFI_CONNECT_TIMEOUT_MS) {
-            LOG_WARN("WiFi", "连接超时");
+            LOG_WARN("WiFi", "连接超时,等待自动重试");
             _connecting = false;
             if (_configured) {
-                setProvisioningMode(ProvisioningMode::NONE);
+                // 进入重试等待态,屏幕显示倒计时,避免空白
+                setProvisioningMode(ProvisioningMode::RETRY_WAIT);
             } else {
                 startAPMode();
             }
@@ -108,12 +111,10 @@ void WifiConfigService::update() {
         return;
     }
 
-    // 常态:已配置但掉线,定时重连
+    // 常态:已配置但掉线,定时重连(时间戳在 connectToWifi 里统一记录)
     if (_configured && !_connected && !_connecting
         && _provMode != ProvisioningMode::AP_FALLBACK) {
-        static unsigned long lastReconnect = 0;
-        if (millis() - lastReconnect > CFG_WIFI_RECONNECT_INTERVAL_MS) {
-            lastReconnect = millis();
+        if (millis() - _lastReconnectMs > CFG_WIFI_RECONNECT_INTERVAL_MS) {
             connectToWifi(_ssid.c_str(), _password.c_str());
         }
     }
@@ -157,6 +158,7 @@ bool WifiConfigService::connectToWifi(const char* ssid, const char* password) {
     WiFi.begin(ssid, password);
     _connecting = true;
     _connectStartTime = millis();
+    _lastReconnectMs = _connectStartTime;
     setProvisioningMode(ProvisioningMode::CONNECTING);
     return true;
 }
@@ -184,6 +186,11 @@ void WifiConfigService::reset() {
 
 bool WifiConfigService::isConfigured() { return _configured; }
 bool WifiConfigService::isConnected() { return _connected; }
+unsigned long WifiConfigService::getRetryRemainingMs() const {
+    unsigned long elapsed = millis() - _lastReconnectMs;
+    if (elapsed >= CFG_WIFI_RECONNECT_INTERVAL_MS) return 0;
+    return CFG_WIFI_RECONNECT_INTERVAL_MS - elapsed;
+}
 bool WifiConfigService::isSerialMode() const {
     auto* opMode = OperationModeService::current();
     return opMode && opMode->isSerial();
