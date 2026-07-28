@@ -318,6 +318,25 @@ def run_positive_flow(page: Page, *, stub_mode: bool) -> None:
     print("PASS  添加 OKB 并自动保存")
 
 
+def run_wifi_status_flow(page: Page) -> None:
+    rendered = page.evaluate(
+        """() => wifiStatusHtml({
+            connected: false,
+            configured: true,
+            savedSsid: 'UI-TEST',
+            apIp: '192.168.4.1',
+            lastError: 'Wrong password',
+            retryCount: 2,
+            retryExhausted: false,
+            phase: 'Connecting'
+        })"""
+    )
+    assert "Wrong password" in rendered and "retry 2" in rendered, (
+        "WiFi 重试状态没有显示设备返回的具体失败原因和次数"
+    )
+    print("PASS  WiFi 显示具体连接失败原因")
+
+
 def run_carousel_flow(page: Page, *, stub_mode: bool) -> None:
     page.goto("/", wait_until="domcontentloaded")
     panel_button = page.locator("#carouselPanelBtn")
@@ -587,6 +606,7 @@ def main() -> int:
                 print("INFO  使用真实 CoinLore 资产目录")
             try:
                 run_positive_flow(page, stub_mode=not bool(args.device_url))
+                run_wifi_status_flow(page)
                 run_carousel_flow(page, stub_mode=not bool(args.device_url))
                 run_market_flow(page, stub_mode=not bool(args.device_url))
             except Exception:

@@ -26,7 +26,9 @@ void ProvisioningState::onUpdate() {
     _ctx->serial()->update();
     _ctx->display()->updateProvisioning();
 
-    if (_ctx->wifi()->isConnected()) {
+    // 等 CONNECTED 成功屏 3 秒展示窗放完(provMode 回到 NONE)再进主界面
+    if (_ctx->wifi()->isConnected()
+        && _ctx->wifi()->getProvisioningMode() != WifiConfigService::ProvisioningMode::CONNECTED) {
         static_cast<AppStateMachine*>(_ctx)->transitionTo(AppStateMachine::LAN_IDLE);
         return;
     }

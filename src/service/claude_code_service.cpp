@@ -10,6 +10,7 @@ ClaudeCodeService::ClaudeCodeService(StateMachine* sm)
     , _taskElapsedMs(0)
     , _taskActive(false)
     , _sleepStartMs(0)
+    , _lastStatusEventMs(0)
     , _initialized(false)
 {
     _hookName[0] = '\0';
@@ -66,6 +67,10 @@ void ClaudeCodeService::update() {
             LOG_INFO("ClaudeCode", "休眠结束，回到空闲");
             setStatus(Status::IDLE);
         }
+    } else if (isActiveStatus(_status)
+               && now - _lastStatusEventMs >= CFG_CLAUDE_CODE_ACTIVE_TIMEOUT_MS) {
+        LOG_WARN("ClaudeCode", "活跃状态超时，回到空闲");
+        setStatus(Status::IDLE);
     }
 
     static unsigned long lastDiscovery = 0;
@@ -171,6 +176,7 @@ ClaudeCodeService::Status ClaudeCodeService::mapEventToStatus(const char* event)
 void ClaudeCodeService::setStatus(Status status, const char* hookName,
                                    const char* toolName, const char* detail,
                                    const char* model) {
+    _lastStatusEventMs = millis();
     updateTaskClock(status);
     if (status == Status::SLEEPING && _status != Status::SLEEPING) {
         _sleepStartMs = millis();
@@ -186,6 +192,13 @@ void ClaudeCodeService::setStatus(Status status, const char* hookName,
     if (detail && detail[0])     strncpy(_detail, detail, CFG_CLAUDE_CODE_DETAIL_MAX_LEN - 1);
     if (model && model[0])       strncpy(_model, model, CFG_CLAUDE_CODE_MODEL_MAX_LEN - 1);
     LOG_INFO("ClaudeCode", "状态: %s hook=%s tool=%s", statusToText(status), _hookName, _toolName);
+}
+
+bool ClaudeCodeService::isActiveStatus(Status status) const {
+    return status == Status::THINKING ||
+           status == Status::WORKING ||
+           status == Status::PERMISSION ||
+           status == Status::SWEEPING;
 }
 
 void ClaudeCodeService::updateTaskClock(Status status) {

@@ -34,7 +34,30 @@ async function connectWifi() {
     if (!ssid) { if (msg) { msg.textContent = 'Select a network first.'; msg.className = 'status-msg error'; } return; }
     if (msg) { msg.textContent = 'Connecting...'; msg.className = 'status-msg info'; }
     const data = await fetch('/wifi/connect', { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: `ssid=${encodeURIComponent(ssid)}&password=${encodeURIComponent(pw)}` }).then(r=>r.json()).catch(()=>null);
-    if (data && data.status === 'connecting') { if (msg) { msg.textContent = 'Joining network. The AP controller stays available at http://192.168.4.1.'; msg.className = 'status-msg success'; } setTimeout(()=>{ window.location.href='/'; }, 5000); }
-    else { if (msg) { msg.textContent = 'Connection failed. Check the password and try again.'; msg.className = 'status-msg error'; } }
+    if (!data || data.status !== 'connecting') {
+        if (msg) { msg.textContent = 'Could not start the connection. Try again.'; msg.className = 'status-msg error'; }
+        return;
+    }
+    for (let i = 0; i < 30; i++) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const status = await fetchJson('/wifi/status');
+        if (!status) continue;
+        if (status.connected) {
+            if (msg) { msg.textContent = 'Connected. Opening the controller...'; msg.className = 'status-msg success'; }
+            setTimeout(() => { window.location.href = '/'; }, 1000);
+            return;
+        }
+        if (msg) {
+            const failed = status.retryCount > 0 || status.retryExhausted;
+            msg.textContent = failed
+                ? `${status.lastError || 'Connection failed'} (retry ${status.retryCount || 0}). You can update the password now.`
+                : `${status.phase || 'Connecting'}...`;
+            msg.className = failed ? 'status-msg error' : 'status-msg info';
+        }
+    }
+    if (msg) {
+        msg.textContent = 'Still retrying. You can update the password now.';
+        msg.className = 'status-msg error';
+    }
 }
 document.addEventListener('DOMContentLoaded', scanWifi);

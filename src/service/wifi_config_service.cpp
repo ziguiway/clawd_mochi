@@ -306,6 +306,10 @@ void WifiConfigService::handleStatusRequest(WebServer& server) {
     json += ",\"mdnsActive\":" + String(_mdnsStarted ? "true" : "false");
     json += ",\"configured\":" + String(_configured ? "true" : "false");
     json += ",\"savedSsid\":\"" + _ssid + "\"";
+    json += ",\"lastError\":\"" + String(_lastError) + "\"";
+    json += ",\"retryCount\":" + String(_retryCount);
+    json += ",\"retryExhausted\":" + String(_retryExhausted ? "true" : "false");
+    json += ",\"phase\":\"" + String(getConnectPhaseText()) + "\"";
     json += ",\"rssi\":" + String(WiFi.RSSI()) + "}";
     server.send(200, "application/json", json);
 }

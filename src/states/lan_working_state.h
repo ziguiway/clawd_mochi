@@ -9,4 +9,6 @@ public:
 
 private:
     unsigned long _settledSinceMs = 0;
+    unsigned long _wifiLostSinceMs = 0;
+    bool _wifiLost = false;
 };

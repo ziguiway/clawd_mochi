@@ -10,6 +10,9 @@
 // SLEEPING 持续时间 (ms)
 #define CFG_CLAUDE_CODE_SLEEP_DURATION_MS 10000
 
+// 活跃状态长时间没有新事件时回到 IDLE,避免丢包后永久冻结
+#define CFG_CLAUDE_CODE_ACTIVE_TIMEOUT_MS  300000
+
 // 缓冲区大小
 #define CFG_CLAUDE_CODE_RX_BUF_SIZE       128
 

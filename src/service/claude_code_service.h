@@ -52,12 +52,14 @@ private:
     unsigned long _taskElapsedMs;
     bool _taskActive;
     unsigned long _sleepStartMs;
+    unsigned long _lastStatusEventMs;
     bool _initialized;
 
     void setStatus(Status status, const char* hookName = nullptr,
                    const char* toolName = nullptr, const char* detail = nullptr,
                    const char* model = nullptr);
     void updateTaskClock(Status status);
+    bool isActiveStatus(Status status) const;
     Status mapEventToStatus(const char* event);
     const char* statusToText(Status status) const;
 };
