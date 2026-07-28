@@ -25,13 +25,16 @@ public:
     bool getClaudeStatusEnabled() const { return _claudeStatusEnabled; }
     void setClaudeStatusEnabled(bool enabled);
 
-    // 空闲信息轮播（天气 / Crypto / Market）
+    uint8_t getDisplayTheme() const { return _displayTheme; }
+    void setDisplayTheme(uint8_t theme);
+
+    // 空闲信息轮播（天气 / Crypto / Market / 时间）
     bool getCarouselEnabled() const { return _carouselEnabled; }
     void setCarouselEnabled(bool enabled);
     uint8_t getCarouselSpeedSeconds() const { return _carouselSpeedSeconds; }
     void setCarouselSpeedSeconds(uint8_t seconds);
     uint8_t getCarouselView(uint8_t index) const;
-    bool setCarouselOrder(const uint8_t order[3]);
+    bool setCarouselOrder(const uint8_t order[CAROUSEL_VIEW_COUNT]);
     uint8_t getCarouselFixedView() const { return _carouselFixedView; }
     void setCarouselFixedView(uint8_t view);
 
@@ -55,9 +58,12 @@ private:
     uint8_t _startupView = 0;
     uint8_t _brightnessPercent = 100;
     bool _claudeStatusEnabled = true;
+    uint8_t _displayTheme = THEME_ORANGE_WHITE;
     bool _carouselEnabled = false;
     uint8_t _carouselSpeedSeconds = 12;
-    uint8_t _carouselOrder[3] = {VIEW_WEATHER, VIEW_CRYPTO, VIEW_MARKET};
+    uint8_t _carouselOrder[CAROUSEL_VIEW_COUNT] = {
+        VIEW_WEATHER, VIEW_CRYPTO, VIEW_MARKET, VIEW_CLOCK
+    };
     uint8_t _carouselFixedView = VIEW_WEATHER;
     bool _nightDimEnabled = false;
     uint8_t _nightStartHour = 22;

@@ -117,6 +117,9 @@ public:
     void setClaudeStatusEnabled(bool enabled) { _claudeStatusEnabled = enabled; }
     bool isClaudeStatusEnabled() const { return _claudeStatusEnabled; }
 
+    void setDisplayTheme(uint8_t theme);
+    uint8_t getDisplayTheme() const { return _displayTheme; }
+
     // 配网流程绘制(供 ProvisioningState 调用)
     void updateProvisioning();
 
@@ -150,11 +153,13 @@ private:
     uint16_t _drawBgColor;
     uint8_t _brightnessPercent;
     bool _claudeStatusEnabled;
+    uint8_t _displayTheme;
+    uint16_t _themeForeground;
 
     // 空闲时的信息轮播。Claude Code 进入 INFO 后只暂停，不丢失当前位置。
     bool _carouselEnabled;
     uint8_t _carouselSpeedSeconds;
-    uint8_t _carouselOrder[3];
+    uint8_t _carouselOrder[CAROUSEL_VIEW_COUNT];
     uint8_t _carouselFixedView;
     uint8_t _carouselIndex;
     unsigned long _carouselPageStartedMs;

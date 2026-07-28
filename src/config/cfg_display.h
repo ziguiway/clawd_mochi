@@ -44,6 +44,11 @@
 #define VIEW_WEATHER    8
 #define VIEW_CRYPTO     9
 #define VIEW_MARKET     10
+#define CAROUSEL_VIEW_COUNT 4
+
+// 系统显示主题
+#define THEME_ORANGE_BLACK 0
+#define THEME_ORANGE_WHITE 1
 
 // 终端配置
 #define TERM_COLS      15

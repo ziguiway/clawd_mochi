@@ -13,6 +13,7 @@ static const char INDEX_HTML[] PROGMEM = R"rawhtml(
 <title>Clawd Mochi</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--device-fg:#fff}
 body{background:#1c1c20;font-family:'Courier New',monospace;color:#e8e4dc;
   display:flex;flex-direction:column;align-items:center;
   padding:20px 14px 52px;gap:14px;min-height:100vh}
@@ -34,6 +35,16 @@ body{background:#1c1c20;font-family:'Courier New',monospace;color:#e8e4dc;
 .bicon{font-size:18px;color:#c96a3e;line-height:1;width:20px;text-align:center}
 .bright input[type=range]{height:30px;accent-color:#f0a060}
 .bval{font-size:12px;color:#c96a3e;font-weight:bold;min-width:40px;text-align:right}
+.theme-switch{width:100%;max-width:390px;display:grid;grid-template-columns:1fr 1fr;
+  gap:8px}
+.theme-btn{display:flex;align-items:center;justify-content:center;gap:8px}
+.theme-chip{display:grid;grid-template-columns:1fr 1fr;width:24px;height:16px;
+  border:1px solid #6a625c;border-radius:3px;overflow:hidden;flex:none}
+.theme-chip span:first-child{background:#fb6b10}
+.theme-chip.white span:last-child{background:#fff}
+.theme-chip.black span:last-child{background:#050505}
+.theme-btn[aria-pressed="true"]{border-color:#c96a3e;color:#f0ece4;
+  background:#201408}
 .cbtn{flex:1;background:#252428;border:1.5px solid #38343a;border-radius:10px;
   color:#b8b4ac;font-family:'Courier New',monospace;font-size:11px;font-weight:bold;
   padding:12px 4px;cursor:pointer;text-align:center;transition:all .12s}
@@ -98,14 +109,14 @@ input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
 .mttl{font-size:19px;color:#f0ece4;font-weight:bold;letter-spacing:1px;
   border-bottom:1px solid #c96a3e;padding-bottom:10px}
 .mpreview{width:240px;height:240px;max-width:100%;aspect-ratio:1;margin:0 auto;
-  background:#fb6b10;color:#fff;border:2px solid #080604;display:flex;
+  background:#fb6b10;color:var(--device-fg);border:2px solid var(--device-fg);display:flex;
   flex-direction:column;overflow:hidden;font-weight:900;text-shadow:.6px 0 currentColor}
-.mhead{height:33px;flex:none;border-bottom:2px solid #fff0d8;padding:7px 8px 0;
+.mhead{height:33px;flex:none;border-bottom:2px solid var(--device-fg);padding:7px 8px 0;
   display:flex;justify-content:space-between;font-size:17px;letter-spacing:1px}
 .mtime{font-size:9px;padding-top:4px;letter-spacing:0}
 .mrows{display:flex;flex:1;min-height:0;flex-direction:column}
 .mrow{flex:1;min-height:0;display:grid;grid-template-columns:54px 1fr 58px;
-  align-items:center;padding:0 7px;border-top:1px solid #c74318}
+  align-items:center;padding:0 7px;border-top:1px solid var(--device-fg)}
 .mrow:first-child{border-top:0}
 .msym,.mprice,.mchg{font-size:16px}.mchg{text-align:right}
 .mauto{display:flex;justify-content:space-between;align-items:center;font-size:11px;
@@ -196,6 +207,17 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
   <input type="range" id="bright" min="0" max="100" value="100" step="1" oninput="setBrightness(this.value)">
   <span class="bval" id="brightV">100%</span>
 </div>
+<div class="sec">// system theme</div>
+<div class="theme-switch" id="themeSwitch">
+  <button class="cbtn theme-btn" data-theme="1" aria-pressed="true" onclick="setDisplayTheme(1)">
+    <span class="theme-chip white"><span></span><span></span></span>
+    <span>orange / white</span>
+  </button>
+  <button class="cbtn theme-btn" data-theme="0" aria-pressed="false" onclick="setDisplayTheme(0)">
+    <span class="theme-chip black"><span></span><span></span></span>
+    <span>orange / black</span>
+  </button>
+</div>
 <div class="sec">// wifi setup</div>
 <div id="wwrap" style="width:100%;max-width:390px;display:flex;flex-direction:column;gap:10px">
   <div id="wstatus" style="font-size:11px;color:#8a8278;text-align:center;padding:4px">checking...</div>
@@ -266,7 +288,7 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
 <button class="cbtn idle-open" id="carouselPanelBtn" onclick="toggleCarouselPanel()"><span>↻ idle display settings</span><span id="carouselPanelState">open</span></button>
 <div class="rwrap" id="carouselWrap">
   <div class="rhead"><span class="rttl">INFO CAROUSEL</span><button class="cbtn rtoggle" id="carouselToggle" onclick="toggleCarousel()">○ carousel off</button></div>
-  <div class="rrow"><span class="mlabel">FIXED PAGE</span><select class="rselect" id="carouselFixed" onchange="setCarouselFixed(this.value)"><option value="8">Weather</option><option value="9">Crypto</option><option value="10">Market</option></select></div>
+  <div class="rrow"><span class="mlabel">FIXED PAGE</span><select class="rselect" id="carouselFixed" onchange="setCarouselFixed(this.value)"><option value="6">Clock</option><option value="8">Weather</option><option value="9">Crypto</option><option value="10">Market</option></select></div>
   <div class="rrow"><span class="mlabel">INTERVAL</span><input class="rrange" id="carouselSpeed" type="range" min="5" max="60" step="1" oninput="setCarouselSpeed(this.value)"><span class="rtime" id="carouselSpeedV">12s</span></div>
   <div class="mlabel">ROTATION ORDER</div>
   <div class="rorder" id="carouselOrder"></div>
@@ -364,11 +386,11 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
 </div>
 <div class="toast" id="toast"></div>
 <script>
-let activeView=0,termOpen=false,canvasOpen=false,blOn=true,claudeStatusOn=true,isBusy=false,drawing=false;
+let activeView=0,termOpen=false,canvasOpen=false,blOn=true,claudeStatusOn=true,displayTheme=1,isBusy=false,drawing=false;
 let lastX=0,lastY=0,tt;
 let marketSelected=[],marketDirectory=[],marketLoaded=false,marketSaving=false,marketSaveQueued=false,marketUpdatedAt=null,marketDrag=null;
 let stockSelected=[],stockSaving=false,stockSaveQueued=false,stockUpdatedAt=null,stockDrag=null,stockSearchTimer=null,stockSearchSeq=0;
-let carouselConfig={enabled:false,speed:12,order:[8,9,10],fixed:8},carouselSpeedTimer=null,carouselPanelOpen=false,carouselDrag=null;
+let carouselConfig={enabled:false,speed:12,order:[8,9,10,6],fixed:8},carouselSpeedTimer=null,carouselPanelOpen=false,carouselDrag=null;
 const spdLabels=['','slow','normal','fast'];
 function toast(msg,ok=true){const el=document.getElementById('toast');el.textContent=msg;el.style.borderColor=ok?'#28b878':'#c96a3e';el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),1300);}
 function setBusy(b){isBusy=b;document.getElementById('busy').classList.toggle('show',b);const locked=b||termOpen;document.querySelectorAll('.vbtn').forEach(el=>{el.disabled=canvasOpen?parseInt(el.dataset.v)!==3:locked;});document.querySelectorAll('.cbtn').forEach(el=>{if(el.id!=='blBtn'&&el.id!=='ccStatusBtn')el.disabled=locked;});}
@@ -379,11 +401,11 @@ async function setSpeed(v){document.getElementById('spdV').textContent=spdLabels
 async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e',9:'m',10:'k'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);document.getElementById('mwrap').classList.toggle('open',v===9);document.getElementById('swrap').classList.toggle('open',v===10);if(v===9){await loadMarketConfig();loadMarketDirectory();toast('crypto open');return;}if(v===10){await loadStockConfig();toast('market open');return;}if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
 function updateBlButton(){const b=document.getElementById('blBtn');b.textContent=blOn?'☀ display on':'○ display off';b.classList.toggle('on',blOn);b.classList.toggle('dim',!blOn);}
 function updateClaudeStatusButton(){const b=document.getElementById('ccStatusBtn');b.textContent=claudeStatusOn?'◆ claude status on':'◇ claude status off';b.classList.toggle('on',claudeStatusOn);b.classList.toggle('dim',!claudeStatusOn);}
-function carouselName(v){return({8:'Weather',9:'Crypto',10:'Market'})[v]||'Weather';}
+function carouselName(v){return({6:'Clock',8:'Weather',9:'Crypto',10:'Market'})[v]||'Weather';}
 function applyCarouselPrefs(p){
   carouselConfig.enabled=p.carousel===true;carouselConfig.speed=Math.max(5,Math.min(60,Number(p.carouselSpeed)||12));
-  carouselConfig.order=Array.isArray(p.carouselOrder)&&p.carouselOrder.length===3?p.carouselOrder.map(Number):[8,9,10];
-  carouselConfig.fixed=[8,9,10].includes(Number(p.carouselFixed))?Number(p.carouselFixed):8;renderCarousel();
+  carouselConfig.order=Array.isArray(p.carouselOrder)&&p.carouselOrder.length===4?p.carouselOrder.map(Number):[8,9,10,6];
+  carouselConfig.fixed=[6,8,9,10].includes(Number(p.carouselFixed))?Number(p.carouselFixed):8;renderCarousel();
 }
 function renderCarousel(){
   const enabled=carouselConfig.enabled,toggle=document.getElementById('carouselToggle'),fixed=document.getElementById('carouselFixed'),speed=document.getElementById('carouselSpeed');
@@ -418,8 +440,10 @@ function moveCarouselDrag(e){if(!carouselDrag)return;e.preventDefault();const de
 function endCarouselDrag(){document.removeEventListener('pointermove',moveCarouselDrag);if(!carouselDrag)return;const from=carouselDrag.index,to=carouselDrag.target;carouselDrag.row.classList.remove('dragging');carouselDrag.row.style.transform='';carouselDrag=null;if(from===to)return;const view=carouselConfig.order.splice(from,1)[0];carouselConfig.order.splice(to,0,view);renderCarousel();saveCarousel();}
 async function toggleBL(){blOn=!blOn;const v=blOn?100:0;document.getElementById('bright').value=v;document.getElementById('brightV').textContent=v+'%';await req('/backlight?on='+(blOn?1:0));updateBlButton();}
 async function toggleClaudeStatus(){const next=!claudeStatusOn;if(!await req('/prefs?claudeStatus='+(next?'1':'0')))return;claudeStatusOn=next;updateClaudeStatusButton();toast(claudeStatusOn?'Claude status on':'Claude status off');}
+function applyDisplayTheme(theme){displayTheme=Number(theme)===0?0:1;document.documentElement.style.setProperty('--device-fg',displayTheme===1?'#fff':'#050505');document.querySelectorAll('.theme-btn').forEach(btn=>btn.setAttribute('aria-pressed',String(Number(btn.dataset.theme)===displayTheme)));}
+async function setDisplayTheme(theme){try{const r=await fetch('/prefs?theme='+encodeURIComponent(theme),{cache:'no-store'});if(!r.ok)throw new Error();const p=await r.json();applyDisplayTheme(p.theme);toast(displayTheme===1?'orange / white theme':'orange / black theme');}catch(e){toast('theme save failed',false);}}
 async function setBrightness(v){v=parseInt(v||0);document.getElementById('brightV').textContent=v+'%';blOn=v>0;updateBlButton();await req('/brightness?v='+v);}
-async function loadPrefs(){try{const r=await fetch('/prefs');const p=await r.json();document.getElementById('bgCol').value=p.bg||'#aa4818';document.getElementById('spd').value=p.speed||1;document.getElementById('spdV').textContent=spdLabels[p.speed||1];claudeStatusOn=p.claudeStatus!==false;updateClaudeStatusButton();applyCarouselPrefs(p);redrawCanvas(p.bg||'#aa4818');}catch(e){renderCarousel();}}
+async function loadPrefs(){try{const r=await fetch('/prefs');const p=await r.json();document.getElementById('bgCol').value=p.bg||'#aa4818';document.getElementById('spd').value=p.speed||1;document.getElementById('spdV').textContent=spdLabels[p.speed||1];claudeStatusOn=p.claudeStatus!==false;updateClaudeStatusButton();applyDisplayTheme(p.theme);applyCarouselPrefs(p);redrawCanvas(p.bg||'#aa4818');}catch(e){applyDisplayTheme(1);renderCarousel();}}
 function fmtSec(s){s=Math.max(0,parseInt(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
 async function pollTimer(){try{const r=await fetch('/timer/status');const j=await r.json();document.getElementById('pPhase').textContent=(j.phase==='break'?'BREAK':'FOCUS')+(j.paused?' / PAUSED':'');document.getElementById('pTime').textContent=fmtSec(j.remaining);document.getElementById('focusMin').value=j.focus;document.getElementById('breakMin').value=j.break;}catch(e){}}
 async function startTimer(phase){await fetch('/timer/start?phase='+phase);document.getElementById('pwrap').classList.add('open');await pollTimer();toast(phase==='break'?'break started':'focus started');}
@@ -899,6 +923,11 @@ void WebService::handlePrefs() {
         _preferenceService->setClaudeStatusEnabled(enabled);
         _displayService->setClaudeStatusEnabled(enabled);
     }
+    if (_server.hasArg("theme")) {
+        const uint8_t theme = static_cast<uint8_t>(_server.arg("theme").toInt());
+        _preferenceService->setDisplayTheme(theme);
+        _displayService->setDisplayTheme(_preferenceService->getDisplayTheme());
+    }
     if (_server.hasArg("carousel")) {
         const bool enabled = _server.arg("carousel") == "1" ||
                              _server.arg("carousel") == "true";
@@ -914,17 +943,18 @@ void WebService::handlePrefs() {
     }
     if (_server.hasArg("carouselOrder")) {
         const String value = _server.arg("carouselOrder");
-        uint8_t order[3] = {};
+        uint8_t order[CAROUSEL_VIEW_COUNT] = {};
         uint8_t index = 0;
         int start = 0;
-        while (index < 3 && start >= 0) {
+        while (index < CAROUSEL_VIEW_COUNT && start >= 0) {
             const int comma = value.indexOf(',', start);
             const String part = value.substring(start,
                 comma < 0 ? value.length() : comma);
             order[index++] = static_cast<uint8_t>(part.toInt());
             start = comma < 0 ? -1 : comma + 1;
         }
-        if (index != 3 || !_preferenceService->setCarouselOrder(order)) {
+        if (index != CAROUSEL_VIEW_COUNT ||
+            !_preferenceService->setCarouselOrder(order)) {
             _server.send(400, "application/json", "{\"error\":\"invalid carousel order\"}");
             return;
         }
@@ -966,6 +996,7 @@ void WebService::handleState() {
     j += ",\"brightness\":"; j += _displayService->getBrightnessPercent();
     j += ",\"speed\":";  j += _displayService->getAnimSpeed();
     j += ",\"claudeStatus\":"; j += _displayService->isClaudeStatusEnabled() ? "true" : "false";
+    j += ",\"theme\":"; j += _displayService->getDisplayTheme();
     j += ",\"carousel\":"; j += _displayService->isCarouselEnabled() ? "true" : "false";
     j += ",\"serial\":"; j += _wifiService->isSerialMode() ? "true" : "false";
     j += "}";

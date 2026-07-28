@@ -9,9 +9,11 @@ public:
     explicit EyesView(TftDisplay* tft);
     void init();
     void update();
+    void setForegroundColor(uint16_t color) { _foregroundColor = color; }
 
 private:
     TftDisplay* _tft;
+    uint16_t _foregroundColor;
     unsigned long _lastFrameMs;
     int _blinkCounter;
     int _lookOffset;

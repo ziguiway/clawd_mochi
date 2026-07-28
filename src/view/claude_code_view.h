@@ -10,12 +10,14 @@ public:
     explicit ClaudeCodeView(TftDisplay* tft);
 
     void reset();
+    void setForegroundColor(uint16_t color);
     void render(ClaudeCodeService::Status status, const char* hookName,
                 const char* toolName, const char* detail,
                 const char* model, unsigned long elapsedMs);
 
 private:
     TftDisplay* _tft;
+    uint16_t _foregroundColor;
     bool _layoutDrawn;
     ClaudeCodeService::Status _lastStatus;
     char _lastHook[32];

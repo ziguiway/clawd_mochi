@@ -11,6 +11,11 @@ void PreferenceService::init() {
     if (!isStartupViewAllowed(_startupView)) _startupView = VIEW_EYES_NORMAL;
     _brightnessPercent = constrain(_prefs.getUChar("bright", _brightnessPercent), 0, 100);
     _claudeStatusEnabled = _prefs.getBool("ccstatus", _claudeStatusEnabled);
+    _displayTheme = _prefs.getUChar("theme", _displayTheme);
+    if (_displayTheme != THEME_ORANGE_BLACK &&
+        _displayTheme != THEME_ORANGE_WHITE) {
+        _displayTheme = THEME_ORANGE_WHITE;
+    }
     _carouselEnabled = _prefs.getBool("carousel", _carouselEnabled);
     _carouselSpeedSeconds = constrain(
         _prefs.getUChar("cspeed", _carouselSpeedSeconds), 5, 60);
@@ -18,17 +23,21 @@ void PreferenceService::init() {
     if (!isCarouselView(_carouselFixedView)) _carouselFixedView = VIEW_WEATHER;
     const String storedOrder = _prefs.getString("corder", "");
     if (!storedOrder.isEmpty()) {
-        uint8_t order[3] = {};
+        uint8_t order[CAROUSEL_VIEW_COUNT] = {};
         uint8_t index = 0;
         int start = 0;
-        while (index < 3 && start >= 0) {
+        while (index < CAROUSEL_VIEW_COUNT && start >= 0) {
             const int comma = storedOrder.indexOf(',', start);
             const String part = storedOrder.substring(start,
                 comma < 0 ? storedOrder.length() : comma);
             order[index++] = static_cast<uint8_t>(part.toInt());
             start = comma < 0 ? -1 : comma + 1;
         }
-        if (index == 3) setCarouselOrder(order);
+        // 兼容旧版三页轮播配置，保留原顺序并把时钟追加到末尾。
+        if (index == CAROUSEL_VIEW_COUNT - 1) {
+            order[index++] = VIEW_CLOCK;
+        }
+        if (index == CAROUSEL_VIEW_COUNT) setCarouselOrder(order);
     }
     _nightDimEnabled = _prefs.getBool("night", _nightDimEnabled);
     _nightStartHour = constrain(_prefs.getUChar("nstart", _nightStartHour), 0, 23);
@@ -63,6 +72,12 @@ void PreferenceService::setClaudeStatusEnabled(bool enabled) {
     _prefs.putBool("ccstatus", _claudeStatusEnabled);
 }
 
+void PreferenceService::setDisplayTheme(uint8_t theme) {
+    if (theme != THEME_ORANGE_BLACK && theme != THEME_ORANGE_WHITE) return;
+    _displayTheme = theme;
+    _prefs.putUChar("theme", _displayTheme);
+}
+
 void PreferenceService::setCarouselEnabled(bool enabled) {
     _carouselEnabled = enabled;
     _prefs.putBool("carousel", _carouselEnabled);
@@ -74,22 +89,26 @@ void PreferenceService::setCarouselSpeedSeconds(uint8_t seconds) {
 }
 
 uint8_t PreferenceService::getCarouselView(uint8_t index) const {
-    return index < 3 ? _carouselOrder[index] : VIEW_WEATHER;
+    return index < CAROUSEL_VIEW_COUNT ? _carouselOrder[index] : VIEW_WEATHER;
 }
 
-bool PreferenceService::setCarouselOrder(const uint8_t order[3]) {
+bool PreferenceService::setCarouselOrder(
+    const uint8_t order[CAROUSEL_VIEW_COUNT]) {
     if (!order) return false;
-    bool seenWeather = false, seenCrypto = false, seenMarket = false;
-    for (uint8_t i = 0; i < 3; i++) {
-        if (order[i] == VIEW_WEATHER) seenWeather = true;
+    bool seenClock = false, seenWeather = false;
+    bool seenCrypto = false, seenMarket = false;
+    for (uint8_t i = 0; i < CAROUSEL_VIEW_COUNT; i++) {
+        if (order[i] == VIEW_CLOCK) seenClock = true;
+        else if (order[i] == VIEW_WEATHER) seenWeather = true;
         else if (order[i] == VIEW_CRYPTO) seenCrypto = true;
         else if (order[i] == VIEW_MARKET) seenMarket = true;
         else return false;
     }
-    if (!seenWeather || !seenCrypto || !seenMarket) return false;
+    if (!seenClock || !seenWeather || !seenCrypto || !seenMarket) return false;
     memcpy(_carouselOrder, order, sizeof(_carouselOrder));
     String serialized = String(_carouselOrder[0]) + "," + String(_carouselOrder[1]) +
-                        "," + String(_carouselOrder[2]);
+                        "," + String(_carouselOrder[2]) + "," +
+                        String(_carouselOrder[3]);
     _prefs.putString("corder", serialized);
     return true;
 }
@@ -134,10 +153,12 @@ String PreferenceService::getJson() const {
     json += ",\"startup\":" + String(_startupView);
     json += ",\"brightness\":" + String(_brightnessPercent);
     json += ",\"claudeStatus\":" + String(_claudeStatusEnabled ? "true" : "false");
+    json += ",\"theme\":" + String(_displayTheme);
     json += ",\"carousel\":" + String(_carouselEnabled ? "true" : "false");
     json += ",\"carouselSpeed\":" + String(_carouselSpeedSeconds);
     json += ",\"carouselOrder\":[" + String(_carouselOrder[0]) + "," +
-            String(_carouselOrder[1]) + "," + String(_carouselOrder[2]) + "]";
+            String(_carouselOrder[1]) + "," + String(_carouselOrder[2]) + "," +
+            String(_carouselOrder[3]) + "]";
     json += ",\"carouselFixed\":" + String(_carouselFixedView);
     json += ",\"nightDim\":" + String(_nightDimEnabled ? "true" : "false");
     json += ",\"nightStart\":" + String(_nightStartHour);
@@ -164,5 +185,6 @@ bool PreferenceService::isStartupViewAllowed(uint8_t view) const {
 }
 
 bool PreferenceService::isCarouselView(uint8_t view) const {
-    return view == VIEW_WEATHER || view == VIEW_CRYPTO || view == VIEW_MARKET;
+    return view == VIEW_CLOCK || view == VIEW_WEATHER ||
+           view == VIEW_CRYPTO || view == VIEW_MARKET;
 }

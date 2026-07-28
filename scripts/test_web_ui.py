@@ -136,9 +136,10 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
         "bg": "#aa4818",
         "speed": 1,
         "claudeStatus": True,
+        "theme": 1,
         "carousel": False,
         "carouselSpeed": 12,
-        "carouselOrder": [8, 9, 10],
+        "carouselOrder": [8, 9, 10, 6],
         "carouselFixed": 8,
     }
     prefs_update_count = 0
@@ -190,6 +191,8 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
                         "1",
                         "true",
                     }
+                if "theme" in args:
+                    self.__class__.prefs["theme"] = int(args["theme"][0])
                 if "carouselSpeed" in args:
                     self.__class__.prefs["carouselSpeed"] = int(
                         args["carouselSpeed"][0]
@@ -337,6 +340,35 @@ def run_wifi_status_flow(page: Page) -> None:
     print("PASS  WiFi 显示具体连接失败原因")
 
 
+def run_theme_flow(page: Page, *, stub_mode: bool) -> None:
+    page.goto("/", wait_until="domcontentloaded")
+    page.wait_for_function("() => document.querySelectorAll('.theme-btn').length === 2")
+    current = int(page.evaluate("displayTheme"))
+    target = 0 if current == 1 else 1
+    target_button = page.locator(f'.theme-btn[data-theme="{target}"]')
+    target_button.click()
+    page.wait_for_function(
+        "(theme) => displayTheme === theme",
+        arg=target,
+    )
+    assert target_button.get_attribute("aria-pressed") == "true"
+    expected_preview_color = "rgb(5, 5, 5)" if target == 0 else "rgb(255, 255, 255)"
+    assert page.locator(".mpreview").first.evaluate(
+        "(el) => getComputedStyle(el).color"
+    ) == expected_preview_color
+    if stub_mode:
+        assert FirmwareStubHandler.prefs["theme"] == target
+
+    original_button = page.locator(f'.theme-btn[data-theme="{current}"]')
+    original_button.click()
+    page.wait_for_function(
+        "(theme) => displayTheme === theme",
+        arg=current,
+    )
+    assert original_button.get_attribute("aria-pressed") == "true"
+    print("PASS  切换并持久化系统橙白 / 橙黑主题")
+
+
 def run_carousel_flow(page: Page, *, stub_mode: bool) -> None:
     page.goto("/", wait_until="domcontentloaded")
     panel_button = page.locator("#carouselPanelBtn")
@@ -348,6 +380,13 @@ def run_carousel_flow(page: Page, *, stub_mode: bool) -> None:
     toggle.click()
     page.get_by_text("carousel on", exact=False).wait_for(state="visible")
     assert page.locator("#carouselFixed").is_disabled()
+    assert page.locator("#carouselOrder .rname").all_text_contents() == [
+        "Weather",
+        "Crypto",
+        "Market",
+        "Clock",
+    ]
+    print("PASS  时间页面已加入轮播顺序")
     print("PASS  开启信息轮播")
 
     speed = page.locator("#carouselSpeed")
@@ -513,10 +552,11 @@ def restore_device_market_config(
 
 
 def restore_device_carousel_prefs(base_url: str, prefs: dict[str, Any]) -> None:
-    order = prefs.get("carouselOrder", [8, 9, 10])
+    order = prefs.get("carouselOrder", [8, 9, 10, 6])
     query = urllib.parse.urlencode(
         {
             "carousel": "1" if prefs.get("carousel", False) else "0",
+            "theme": int(prefs.get("theme", 1)),
             "carouselSpeed": int(prefs.get("carouselSpeed", 12)),
             "carouselFixed": int(prefs.get("carouselFixed", 8)),
             "carouselOrder": ",".join(str(value) for value in order),
@@ -555,9 +595,10 @@ def main() -> int:
             "bg": "#aa4818",
             "speed": 1,
             "claudeStatus": True,
+            "theme": 1,
             "carousel": False,
             "carouselSpeed": 12,
-            "carouselOrder": [8, 9, 10],
+            "carouselOrder": [8, 9, 10, 6],
             "carouselFixed": 8,
         }
         FirmwareStubHandler.prefs_update_count = 0
@@ -607,6 +648,7 @@ def main() -> int:
             try:
                 run_positive_flow(page, stub_mode=not bool(args.device_url))
                 run_wifi_status_flow(page)
+                run_theme_flow(page, stub_mode=not bool(args.device_url))
                 run_carousel_flow(page, stub_mode=not bool(args.device_url))
                 run_market_flow(page, stub_mode=not bool(args.device_url))
             except Exception:

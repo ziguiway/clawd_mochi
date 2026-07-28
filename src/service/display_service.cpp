@@ -29,8 +29,9 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _animBgColor(COLOR_ORANGE), _drawBgColor(COLOR_ORANGE)
     , _brightnessPercent(100)
     , _claudeStatusEnabled(true)
+    , _displayTheme(THEME_ORANGE_WHITE), _themeForeground(COLOR_WHITE)
     , _carouselEnabled(false), _carouselSpeedSeconds(12)
-    , _carouselOrder{VIEW_WEATHER, VIEW_CRYPTO, VIEW_MARKET}
+    , _carouselOrder{VIEW_WEATHER, VIEW_CRYPTO, VIEW_MARKET, VIEW_CLOCK}
     , _carouselFixedView(VIEW_WEATHER), _carouselIndex(0)
     , _carouselPageStartedMs(0), _carouselSuspended(false)
     , _focusMinutes(25), _breakMinutes(5), _pomodoroPhase(PomodoroPhase::FOCUS)
@@ -56,12 +57,26 @@ void DisplayService::init() {
         _drawBgColor = _animBgColor;
         _brightnessPercent = _preferenceService->getBrightnessPercent();
         _claudeStatusEnabled = _preferenceService->getClaudeStatusEnabled();
+        _displayTheme = _preferenceService->getDisplayTheme();
+        _themeForeground = _displayTheme == THEME_ORANGE_BLACK
+            ? COLOR_BLACK : COLOR_WHITE;
+        _eyesView.setForegroundColor(_themeForeground);
+        _ccView.setForegroundColor(_themeForeground);
         loadIdleDisplayPreferences();
     } else {
         _animBgColor = COLOR_ORANGE;
         _drawBgColor = COLOR_ORANGE;
     }
     applyNightDimming();
+}
+
+void DisplayService::setDisplayTheme(uint8_t theme) {
+    if (theme != THEME_ORANGE_BLACK && theme != THEME_ORANGE_WHITE) return;
+    _displayTheme = theme;
+    _themeForeground = theme == THEME_ORANGE_BLACK ? COLOR_BLACK : COLOR_WHITE;
+    _eyesView.setForegroundColor(_themeForeground);
+    _ccView.setForegroundColor(_themeForeground);
+    invalidateTimeView();
 }
 
 // ── Eye geometry ───────────────────────────────────────────────
@@ -91,11 +106,11 @@ void DisplayService::drawNormalEyes(int16_t ox, bool blink) {
     _tft->fillScreen(_animBgColor);
     const int16_t lx = eyeLX(ox), rx = eyeRX(ox), ey = eyeY();
     if (!blink) {
-        _tft->fillRect(lx, ey, EYE_W, EYE_H, COLOR_BLACK);
-        _tft->fillRect(rx, ey, EYE_W, EYE_H, COLOR_BLACK);
+        _tft->fillRect(lx, ey, EYE_W, EYE_H, _themeForeground);
+        _tft->fillRect(rx, ey, EYE_W, EYE_H, _themeForeground);
     } else {
-        _tft->fillRect(lx, ey + EYE_H / 2 - 3, EYE_W, 6, COLOR_BLACK);
-        _tft->fillRect(rx, ey + EYE_H / 2 - 3, EYE_W, 6, COLOR_BLACK);
+        _tft->fillRect(lx, ey + EYE_H / 2 - 3, EYE_W, 6, _themeForeground);
+        _tft->fillRect(rx, ey + EYE_H / 2 - 3, EYE_W, 6, _themeForeground);
     }
 }
 
@@ -120,11 +135,11 @@ void DisplayService::drawSquishEyes(bool closed) {
     const int16_t lcx   = lx + EYE_W / 2;
     const int16_t rcx   = rx + EYE_W / 2;
     if (!closed) {
-        drawChevron(lcx, cy, arm, reach, 10, true,  COLOR_BLACK);
-        drawChevron(rcx, cy, arm, reach, 10, false, COLOR_BLACK);
+        drawChevron(lcx, cy, arm, reach, 10, true,  _themeForeground);
+        drawChevron(rcx, cy, arm, reach, 10, false, _themeForeground);
     } else {
-        _tft->fillRect(lx, cy - 5, EYE_W, 10, COLOR_BLACK);
-        _tft->fillRect(rx, cy - 5, EYE_W, 10, COLOR_BLACK);
+        _tft->fillRect(lx, cy - 5, EYE_W, 10, _themeForeground);
+        _tft->fillRect(rx, cy - 5, EYE_W, 10, _themeForeground);
     }
 }
 
@@ -163,19 +178,22 @@ void DisplayService::renderTimeScreenLayout(const char* mark, const char* modeTe
     _tft->fillScreen(COLOR_ORANGE);
 
     // 顶部 mark + 下划线
-    _tft->getTft().setTextColor(COLOR_BLACK);
+    _tft->getTft().setTextColor(_themeForeground);
     _tft->getTft().setTextSize(1);
     _tft->getTft().setCursor(14, 14);
     _tft->getTft().print(mark);
-    _tft->fillRect(14, 31, 42, 4, COLOR_BLACK);
+    _tft->fillRect(14, 31, 42, 4, _themeForeground);
 
     // 进度条外框(静态)
-    _tft->drawRect(barX, barY, barW, barH, COLOR_BLACK);
+    _tft->drawRect(barX, barY, barW, barH, _themeForeground);
 
-    // 底部黑色信息条 + 静态 mode 文字
-    _tft->fillRect(0, captionY, CFG_DISPLAY_WIDTH, CFG_DISPLAY_HEIGHT - captionY, COLOR_BLACK);
+    // 轻量分隔线代替深色底栏，保持橙白主题完整。
+    _tft->fillRect(0, captionY, CFG_DISPLAY_WIDTH,
+                   CFG_DISPLAY_HEIGHT - captionY, COLOR_ORANGE);
+    _tft->fillRect(10, captionY, CFG_DISPLAY_WIDTH - 20, 3,
+                   _themeForeground);
     _tft->getTft().setTextSize(1);
-    _tft->getTft().setTextColor(COLOR_WHITE);
+    _tft->getTft().setTextColor(_themeForeground);
     _tft->getTft().setCursor(10, captionY + 8);
     _tft->getTft().print(modeText);
 
@@ -184,7 +202,8 @@ void DisplayService::renderTimeScreenLayout(const char* mark, const char* modeTe
 
 void DisplayService::renderTimeScreenDynamic(const char* timeText, const char* subText,
                                              const char* hintText,
-                                             uint16_t progressPermille, bool lightProgress) {
+                                             uint16_t progressPermille,
+                                             bool lightProgress) {
     progressPermille = constrain(progressPermille, 0, 1000);
     const int16_t captionY = 214;
     const int16_t barX = 20;
@@ -205,7 +224,7 @@ void DisplayService::renderTimeScreenDynamic(const char* timeText, const char* s
     if (timeChanged) {
         _tft->fillRect(0, 60, CFG_DISPLAY_WIDTH, 58, COLOR_ORANGE);
         _tft->getTft().setTextSize(6);
-        _tft->getTft().setTextColor(COLOR_BLACK);
+        _tft->getTft().setTextColor(_themeForeground);
         _tft->getTft().getTextBounds(timeText, 0, 0, &x1, &y1, &w, &h);
         _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - w) / 2, 72);
         _tft->getTft().print(timeText);
@@ -215,7 +234,7 @@ void DisplayService::renderTimeScreenDynamic(const char* timeText, const char* s
     if (subChanged) {
         _tft->fillRect(0, 124, CFG_DISPLAY_WIDTH, 28, COLOR_ORANGE);
         _tft->getTft().setTextSize(2);
-        _tft->getTft().setTextColor(COLOR_BLACK);
+        _tft->getTft().setTextColor(_themeForeground);
         _tft->getTft().getTextBounds(subText, 0, 0, &x1, &y1, &w, &h);
         _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - w) / 2, 132);
         _tft->getTft().print(subText);
@@ -223,19 +242,21 @@ void DisplayService::renderTimeScreenDynamic(const char* timeText, const char* s
 
     // 进度条填充
     if (progChanged) {
-        const uint16_t fillColor = lightProgress ? COLOR_WHITE : COLOR_BLACK;
         const int16_t fillW = (barW - 4) * progressPermille / 1000;
         _tft->fillRect(barX + 2, barY + 2, barW - 4, barH - 4, COLOR_ORANGE);
-        if (fillW > 0) _tft->fillRect(barX + 2, barY + 2, fillW, barH - 4, fillColor);
-        _tft->drawRect(barX, barY, barW, barH, COLOR_BLACK);
+        if (fillW > 0) {
+            _tft->fillRect(barX + 2, barY + 2, fillW, barH - 4,
+                           _themeForeground);
+        }
+        _tft->drawRect(barX, barY, barW, barH, _themeForeground);
     }
 
-    // 底部 hint(右对齐,橙色,需擦旧字)
+    // 底部 hint(右对齐,需擦旧字)
     if (hintChanged) {
-        // 擦除 hint 区域(右半边底部黑条)
-        _tft->fillRect(CFG_DISPLAY_WIDTH / 2, captionY + 6, CFG_DISPLAY_WIDTH / 2 - 4, 16, COLOR_BLACK);
+        _tft->fillRect(CFG_DISPLAY_WIDTH / 2, captionY + 6,
+                       CFG_DISPLAY_WIDTH / 2 - 4, 16, COLOR_ORANGE);
         _tft->getTft().setTextSize(1);
-        _tft->getTft().setTextColor(COLOR_ORANGE);
+        _tft->getTft().setTextColor(_themeForeground);
         _tft->getTft().getTextBounds(hintText, 0, 0, &x1, &y1, &w, &h);
         _tft->getTft().setCursor(CFG_DISPLAY_WIDTH - w - 10, captionY + 8);
         _tft->getTft().print(hintText);
@@ -264,7 +285,8 @@ void DisplayService::renderTimeScreen(const char* mark, const char* timeText, co
         _lastHintText[0] = '\0';
         _lastProgressPermille = 0xFFFF;
     }
-    renderTimeScreenDynamic(timeText, subText, hintText, progressPermille, lightProgress);
+    renderTimeScreenDynamic(timeText, subText, hintText, progressPermille,
+                            lightProgress);
 }
 
 void DisplayService::drawClockView() {
@@ -310,9 +332,9 @@ void DisplayService::drawWeatherIcon(int weatherCode, int16_t x, int16_t y) {
     const bool isStorm = weatherCode >= 95;
 
     if (isFog) {
-        _tft->fillRect(x + 10, y + 24, 76, 6, COLOR_WHITE);
-        _tft->fillRect(x,      y + 42, 86, 6, COLOR_WHITE);
-        _tft->fillRect(x + 14, y + 60, 76, 6, COLOR_WHITE);
+        _tft->fillRect(x + 10, y + 24, 76, 6, _themeForeground);
+        _tft->fillRect(x,      y + 42, 86, 6, _themeForeground);
+        _tft->fillRect(x + 14, y + 60, 76, 6, _themeForeground);
         return;
     }
 
@@ -321,35 +343,35 @@ void DisplayService::drawWeatherIcon(int weatherCode, int16_t x, int16_t y) {
     if (showSun) {
         const int16_t sunX = isClear ? x + 50 : x + 72;
         const int16_t sunY = isClear ? y + 42 : y + 22;
-        _tft->fillRect(sunX - 10, sunY - 15, 20, 30, COLOR_WHITE);
-        _tft->fillRect(sunX - 15, sunY - 10, 30, 20, COLOR_WHITE);
-        _tft->fillRect(sunX - 3,  sunY - 30, 6, 9, COLOR_WHITE);
-        _tft->fillRect(sunX - 3,  sunY + 21, 6, 9, COLOR_WHITE);
-        _tft->fillRect(sunX - 30, sunY - 3, 9, 6, COLOR_WHITE);
-        _tft->fillRect(sunX + 21, sunY - 3, 9, 6, COLOR_WHITE);
+        _tft->fillRect(sunX - 10, sunY - 15, 20, 30, _themeForeground);
+        _tft->fillRect(sunX - 15, sunY - 10, 30, 20, _themeForeground);
+        _tft->fillRect(sunX - 3,  sunY - 30, 6, 9, _themeForeground);
+        _tft->fillRect(sunX - 3,  sunY + 21, 6, 9, _themeForeground);
+        _tft->fillRect(sunX - 30, sunY - 3, 9, 6, _themeForeground);
+        _tft->fillRect(sunX + 21, sunY - 3, 9, 6, _themeForeground);
     }
 
     if (isClear) return;
 
     // 云朵改为连贯的实心阶梯剪影，避免空心轮廓在小屏上变形。
-    _tft->fillRect(x + 8,  y + 50, 84, 24, COLOR_WHITE);
-    _tft->fillRect(x + 18, y + 40, 64, 10, COLOR_WHITE);
-    _tft->fillRect(x + 30, y + 30, 38, 10, COLOR_WHITE);
-    _tft->fillRect(x + 40, y + 24, 20, 6, COLOR_WHITE);
+    _tft->fillRect(x + 8,  y + 50, 84, 24, _themeForeground);
+    _tft->fillRect(x + 18, y + 40, 64, 10, _themeForeground);
+    _tft->fillRect(x + 30, y + 30, 38, 10, _themeForeground);
+    _tft->fillRect(x + 40, y + 24, 20, 6, _themeForeground);
 
     if (isStorm) {
-        _tft->fillRect(x + 48, y + 78, 10, 8, COLOR_WHITE);
-        _tft->fillRect(x + 42, y + 86, 10, 8, COLOR_WHITE);
-        _tft->fillRect(x + 36, y + 94, 10, 6, COLOR_WHITE);
+        _tft->fillRect(x + 48, y + 78, 10, 8, _themeForeground);
+        _tft->fillRect(x + 42, y + 86, 10, 8, _themeForeground);
+        _tft->fillRect(x + 36, y + 94, 10, 6, _themeForeground);
     } else if (isRain) {
         // 三条错位雨滴，避免看起来像云朵的支脚。
-        _tft->fillRect(x + 24, y + 82, 6, 10, COLOR_WHITE);
-        _tft->fillRect(x + 45, y + 78, 6, 10, COLOR_WHITE);
-        _tft->fillRect(x + 66, y + 82, 6, 10, COLOR_WHITE);
+        _tft->fillRect(x + 24, y + 82, 6, 10, _themeForeground);
+        _tft->fillRect(x + 45, y + 78, 6, 10, _themeForeground);
+        _tft->fillRect(x + 66, y + 82, 6, 10, _themeForeground);
     } else if (isSnow) {
-        _tft->fillRect(x + 26, y + 84, 6, 6, COLOR_WHITE);
-        _tft->fillRect(x + 50, y + 90, 6, 6, COLOR_WHITE);
-        _tft->fillRect(x + 74, y + 84, 6, 6, COLOR_WHITE);
+        _tft->fillRect(x + 26, y + 84, 6, 6, _themeForeground);
+        _tft->fillRect(x + 50, y + 90, 6, 6, _themeForeground);
+        _tft->fillRect(x + 74, y + 84, 6, 6, _themeForeground);
     }
 }
 
@@ -357,14 +379,17 @@ void DisplayService::drawWeatherView() {
     _tft->fillScreen(COLOR_ORANGE);
 
     if (!_weatherService || !_weatherService->isValid()) {
-        _tft->drawTextCentered(82, "WEATHER", COLOR_WHITE, COLOR_ORANGE, FONT_LARGE);
+        _tft->drawTextCentered(82, "WEATHER", _themeForeground,
+                               COLOR_ORANGE, FONT_LARGE);
         const char* message = (_weatherService && _weatherService->isLoading())
             ? "LOCATING..."
             : "WAITING FOR NETWORK";
-        _tft->drawTextCentered(132, message, COLOR_WHITE, COLOR_ORANGE, FONT_SMALL);
-        _tft->fillRect(8, 198, CFG_DISPLAY_WIDTH - 16, 3, COLOR_WHITE);
+        _tft->drawTextCentered(132, message, _themeForeground,
+                               COLOR_ORANGE, FONT_SMALL);
+        _tft->fillRect(8, 198, CFG_DISPLAY_WIDTH - 16, 3,
+                       _themeForeground);
         _tft->drawTextCentered(216, "IP LOCATION + OPEN-METEO",
-                               COLOR_WHITE, COLOR_ORANGE, FONT_SMALL);
+                               _themeForeground, COLOR_ORANGE, FONT_SMALL);
         return;
     }
 
@@ -372,21 +397,22 @@ void DisplayService::drawWeatherView() {
     char temp[8];
     snprintf(temp, sizeof(temp), "%d", _weatherService->getTemperature());
     const uint8_t tempSize = strlen(temp) <= 2 ? 9 : 7;
-    _tft->drawText(8, 14, temp, COLOR_WHITE, COLOR_ORANGE, tempSize);
+    _tft->drawText(8, 14, temp, _themeForeground, COLOR_ORANGE, tempSize);
     const int16_t degreeX = 8 + strlen(temp) * 6 * tempSize + 6;
-    _tft->fillRect(degreeX, 18, 18, 18, COLOR_WHITE);
+    _tft->fillRect(degreeX, 18, 18, 18, _themeForeground);
     _tft->fillRect(degreeX + 5, 23, 8, 8, COLOR_ORANGE);
 
     drawWeatherIcon(_weatherService->getWeatherCode(), 128, 78);
 
     // 以细分隔线组织两列天气数据，不增加突兀的底色区块。
-    _tft->fillRect(8, 184, CFG_DISPLAY_WIDTH - 16, 3, COLOR_WHITE);
-    _tft->fillRect(CFG_DISPLAY_WIDTH / 2 - 1, 196, 3, 36, COLOR_WHITE);
+    _tft->fillRect(8, 184, CFG_DISPLAY_WIDTH - 16, 3, _themeForeground);
+    _tft->fillRect(CFG_DISPLAY_WIDTH / 2 - 1, 196, 3, 36,
+                   _themeForeground);
 
     char city[19];
     strncpy(city, _weatherService->getCity(), sizeof(city) - 1);
     city[sizeof(city) - 1] = '\0';
-    _tft->drawText(8, 198, city, COLOR_WHITE, COLOR_ORANGE, FONT_SMALL);
+    _tft->drawText(8, 198, city, _themeForeground, COLOR_ORANGE, FONT_SMALL);
 
     const char* weekdays[] = {"SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"};
     char date[12] = "--- --/--";
@@ -397,18 +423,21 @@ void DisplayService::drawWeatherView() {
                  weekdays[current->tm_wday], current->tm_mon + 1, current->tm_mday);
     }
     const int16_t dateX = CFG_DISPLAY_WIDTH - _tft->getTextWidth(date, FONT_SMALL) - 8;
-    _tft->drawText(dateX, 198, date, COLOR_WHITE, COLOR_ORANGE, FONT_SMALL);
+    _tft->drawText(dateX, 198, date, _themeForeground,
+                   COLOR_ORANGE, FONT_SMALL);
 
     char humidity[12];
     snprintf(humidity, sizeof(humidity), "HUM %d%%", _weatherService->getHumidity());
-    _tft->drawText(8, 220, humidity, COLOR_WHITE, COLOR_ORANGE, FONT_SMALL);
+    _tft->drawText(8, 220, humidity, _themeForeground,
+                   COLOR_ORANGE, FONT_SMALL);
 
     char highLow[18];
     snprintf(highLow, sizeof(highLow), "H%d / L%d",
              _weatherService->getHighTemperature(),
              _weatherService->getLowTemperature());
     const int16_t highLowX = CFG_DISPLAY_WIDTH - _tft->getTextWidth(highLow, FONT_SMALL) - 8;
-    _tft->drawText(highLowX, 220, highLow, COLOR_WHITE, COLOR_ORANGE, FONT_SMALL);
+    _tft->drawText(highLowX, 220, highLow, _themeForeground,
+                   COLOR_ORANGE, FONT_SMALL);
 }
 
 void DisplayService::formatCryptoPrice(float price, char* output, size_t size) {
@@ -433,15 +462,13 @@ void DisplayService::formatCryptoPrice(float price, char* output, size_t size) {
 }
 
 void DisplayService::drawCryptoView() {
-    constexpr uint16_t CRYPTO_HEADER_DIVIDER = 0xFF9B;  // 暖白 #FFF0D8
-    constexpr uint16_t CRYPTO_ROW_DIVIDER = 0xC203;     // 深橙 #C74318
     _tft->fillScreen(COLOR_ORANGE);
 
     auto drawBold = [this](int16_t x, int16_t y, const char* text, uint8_t size) {
-        _tft->drawText(x, y, text, COLOR_WHITE, COLOR_ORANGE, size);
+        _tft->drawText(x, y, text, _themeForeground, COLOR_ORANGE, size);
         Adafruit_ST7789& screen = _tft->getTft();
         screen.setTextSize(size);
-        screen.setTextColor(COLOR_WHITE);
+        screen.setTextColor(_themeForeground);
         screen.setCursor(x + 1, y);
         screen.print(text);
     };
@@ -461,7 +488,7 @@ void DisplayService::drawCryptoView() {
             _tft->getTextWidth(updatedText, FONT_SMALL) - 8;
         drawBold(updatedX, 12, updatedText, FONT_SMALL);
     }
-    _tft->fillRect(0, 30, CFG_DISPLAY_WIDTH, 2, CRYPTO_HEADER_DIVIDER);
+    _tft->fillRect(0, 30, CFG_DISPLAY_WIDTH, 2, _themeForeground);
 
     if (!_cryptoService || _cryptoService->getAssetCount() == 0) {
         const char* emptyText = "NO ASSETS";
@@ -482,7 +509,7 @@ void DisplayService::drawCryptoView() {
 
         if (i > 0) {
             _tft->fillRect(0, rowTop, CFG_DISPLAY_WIDTH, 1,
-                           CRYPTO_ROW_DIVIDER);
+                           _themeForeground);
         }
         const int16_t centeredOffset = (rowHeight - 16) / 2;
         const int16_t textY = rowTop + (centeredOffset > 3 ? centeredOffset : 3);
@@ -518,15 +545,13 @@ void DisplayService::formatMarketPrice(float price, char* output, size_t size) {
 }
 
 void DisplayService::drawMarketView() {
-    constexpr uint16_t MARKET_HEADER_DIVIDER = 0xFF9B;  // 暖白 #FFF0D8
-    constexpr uint16_t MARKET_ROW_DIVIDER = 0xC203;     // 深橙 #C74318
     _tft->fillScreen(COLOR_ORANGE);
 
     auto drawBold = [this](int16_t x, int16_t y, const char* text, uint8_t size) {
-        _tft->drawText(x, y, text, COLOR_WHITE, COLOR_ORANGE, size);
+        _tft->drawText(x, y, text, _themeForeground, COLOR_ORANGE, size);
         Adafruit_ST7789& screen = _tft->getTft();
         screen.setTextSize(size);
-        screen.setTextColor(COLOR_WHITE);
+        screen.setTextColor(_themeForeground);
         screen.setCursor(x + 1, y);
         screen.print(text);
     };
@@ -546,7 +571,7 @@ void DisplayService::drawMarketView() {
             _tft->getTextWidth(updatedText, FONT_SMALL) - 8;
         drawBold(updatedX, 12, updatedText, FONT_SMALL);
     }
-    _tft->fillRect(0, 30, CFG_DISPLAY_WIDTH, 2, MARKET_HEADER_DIVIDER);
+    _tft->fillRect(0, 30, CFG_DISPLAY_WIDTH, 2, _themeForeground);
 
     if (!_marketService || _marketService->getAssetCount() == 0) {
         const char* emptyText = "NO STOCKS";
@@ -567,7 +592,7 @@ void DisplayService::drawMarketView() {
 
         if (i > 0) {
             _tft->fillRect(0, rowTop, CFG_DISPLAY_WIDTH, 1,
-                           MARKET_ROW_DIVIDER);
+                           _themeForeground);
         }
         const int16_t centeredOffset = (rowHeight - 16) / 2;
         const int16_t textY = rowTop + (centeredOffset > 3 ? centeredOffset : 3);
@@ -723,10 +748,10 @@ void DisplayService::drawThinking(uint8_t dotCount) {
     _tft->fillScreen(_animBgColor);
     const int16_t lx = eyeLX(0), rx = eyeRX(0);
     const int16_t ey = eyeY(), cy = eyeCY();
-    _tft->fillRect(lx, ey, EYE_W, EYE_H, COLOR_BLACK);
-    _tft->fillRect(lx + EYE_W/2 - 3, cy - 3, 6, 6, COLOR_WHITE);
-    _tft->fillRect(rx, ey, EYE_W, EYE_H, COLOR_BLACK);
-    _tft->fillRect(rx + EYE_W - 10, ey + 6, 6, 6, COLOR_WHITE);
+    _tft->fillRect(lx, ey, EYE_W, EYE_H, _themeForeground);
+    _tft->fillRect(lx + EYE_W/2 - 3, cy - 3, 6, 6, _animBgColor);
+    _tft->fillRect(rx, ey, EYE_W, EYE_H, _themeForeground);
+    _tft->fillRect(rx + EYE_W - 10, ey + 6, 6, 6, _animBgColor);
     if (dotCount > 0) {
         int16_t dx = rx + EYE_W/2;
         int16_t dy = ey - 18;
@@ -749,10 +774,18 @@ void DisplayService::drawWorking(bool blinkLeft, bool blinkRight) {
     _tft->fillScreen(_animBgColor);
     const int16_t lx = eyeLX(0), rx = eyeRX(0);
     const int16_t ey = eyeY(), cy = eyeCY();
-    if (blinkLeft) _tft->fillRect(lx, cy - 5, EYE_W, 10, COLOR_BLACK);
-    else { _tft->fillRect(lx, ey, EYE_W, EYE_H, COLOR_BLACK); _tft->fillRect(lx + EYE_W/2 - 3, cy + 10, 6, 6, COLOR_WHITE); }
-    if (blinkRight) _tft->fillRect(rx, cy - 5, EYE_W, 10, COLOR_BLACK);
-    else { _tft->fillRect(rx, ey, EYE_W, EYE_H, COLOR_BLACK); _tft->fillRect(rx + EYE_W/2 - 3, cy + 10, 6, 6, COLOR_WHITE); }
+    if (blinkLeft) {
+        _tft->fillRect(lx, cy - 5, EYE_W, 10, _themeForeground);
+    } else {
+        _tft->fillRect(lx, ey, EYE_W, EYE_H, _themeForeground);
+        _tft->fillRect(lx + EYE_W/2 - 3, cy + 10, 6, 6, _animBgColor);
+    }
+    if (blinkRight) {
+        _tft->fillRect(rx, cy - 5, EYE_W, 10, _themeForeground);
+    } else {
+        _tft->fillRect(rx, ey, EYE_W, EYE_H, _themeForeground);
+        _tft->fillRect(rx + EYE_W/2 - 3, cy + 10, 6, 6, _animBgColor);
+    }
     _tft->fillRect(lx - 10, ey + EYE_H + 12, (rx - lx + EYE_W + 20), 3, COLOR_ORANGE);
 }
 
@@ -1036,7 +1069,8 @@ void DisplayService::applyIdleDefaultView() {
 }
 
 bool DisplayService::isCarouselView(uint8_t view) const {
-    return view == VIEW_WEATHER || view == VIEW_CRYPTO || view == VIEW_MARKET;
+    return view == VIEW_CLOCK || view == VIEW_WEATHER ||
+           view == VIEW_CRYPTO || view == VIEW_MARKET;
 }
 
 void DisplayService::loadIdleDisplayPreferences() {
@@ -1044,14 +1078,14 @@ void DisplayService::loadIdleDisplayPreferences() {
     _carouselEnabled = _preferenceService->getCarouselEnabled();
     _carouselSpeedSeconds = _preferenceService->getCarouselSpeedSeconds();
     _carouselFixedView = _preferenceService->getCarouselFixedView();
-    for (uint8_t i = 0; i < 3; i++) {
+    for (uint8_t i = 0; i < CAROUSEL_VIEW_COUNT; i++) {
         _carouselOrder[i] = _preferenceService->getCarouselView(i);
     }
-    if (_carouselIndex >= 3) _carouselIndex = 0;
+    if (_carouselIndex >= CAROUSEL_VIEW_COUNT) _carouselIndex = 0;
 }
 
 void DisplayService::syncCarouselIndexForView(uint8_t view) {
-    for (uint8_t i = 0; i < 3; i++) {
+    for (uint8_t i = 0; i < CAROUSEL_VIEW_COUNT; i++) {
         if (_carouselOrder[i] == view) {
             _carouselIndex = i;
             return;
@@ -1061,7 +1095,7 @@ void DisplayService::syncCarouselIndexForView(uint8_t view) {
 }
 
 void DisplayService::showCarouselCurrentView() {
-    _carouselIndex %= 3;
+    _carouselIndex %= CAROUSEL_VIEW_COUNT;
     _carouselSuspended = false;
     _carouselPageStartedMs = millis();
     setInteractiveView(_carouselOrder[_carouselIndex]);
@@ -1105,7 +1139,7 @@ void DisplayService::update() {
             isCarouselView(static_cast<uint8_t>(_interactiveView)) &&
             now - _carouselPageStartedMs >=
                 static_cast<unsigned long>(_carouselSpeedSeconds) * 1000UL) {
-            _carouselIndex = (_carouselIndex + 1) % 3;
+            _carouselIndex = (_carouselIndex + 1) % CAROUSEL_VIEW_COUNT;
             showCarouselCurrentView();
             return;
         }
@@ -1387,5 +1421,5 @@ void DisplayService::switchToInfoMode() {
     _carouselSuspended = _carouselEnabled;
     _currentMode = DisplayMode::INFO;
     _ccView.reset();
-    _tft->clear(COLOR_DARKBG);
+    _tft->clear(COLOR_ORANGE);
 }

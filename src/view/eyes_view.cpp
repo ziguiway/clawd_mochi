@@ -17,7 +17,8 @@ static int16_t eyeY(int16_t screenH) {
 }
 
 EyesView::EyesView(TftDisplay* tft)
-    : _tft(tft), _lastFrameMs(0), _blinkCounter(0)
+    : _tft(tft), _foregroundColor(COLOR_WHITE)
+    , _lastFrameMs(0), _blinkCounter(0)
     , _lookOffset(0), _lookDir(1), _isBlinking(false)
     , _prevLookOffset(0), _prevBlinking(false), _firstFrame(true)
 {
@@ -76,11 +77,11 @@ void EyesView::drawEyes() {
     int16_t ey = eyeY(h);
 
     if (_isBlinking) {
-        _tft->fillRect(lx, ey + EYE_H / 2 - 3, EYE_W, 6, COLOR_BLACK);
-        _tft->fillRect(rx, ey + EYE_H / 2 - 3, EYE_W, 6, COLOR_BLACK);
+        _tft->fillRect(lx, ey + EYE_H / 2 - 3, EYE_W, 6, _foregroundColor);
+        _tft->fillRect(rx, ey + EYE_H / 2 - 3, EYE_W, 6, _foregroundColor);
     } else {
-        _tft->fillRect(lx, ey, EYE_W, EYE_H, COLOR_BLACK);
-        _tft->fillRect(rx, ey, EYE_W, EYE_H, COLOR_BLACK);
+        _tft->fillRect(lx, ey, EYE_W, EYE_H, _foregroundColor);
+        _tft->fillRect(rx, ey, EYE_W, EYE_H, _foregroundColor);
     }
 }
 
