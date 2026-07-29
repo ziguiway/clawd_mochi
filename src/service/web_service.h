@@ -55,6 +55,11 @@ private:
     void handleTimerConfig();
     void handlePrefs();
     void handleState();
+    void handleExpressions();
+    void handleExpressionUpdate();
+    void handleProfile();
+    void handleProfileUpdate();
+    void handleProfileReset();
     void handleSerialMode();
     void handleCryptoConfig();
     void handleCryptoUpdate();
@@ -77,4 +82,5 @@ private:
 
     String getContentType(const String& path);
     String rgb565ToHex(uint16_t c);
+    void sendExpressionState(bool includeList);
 };

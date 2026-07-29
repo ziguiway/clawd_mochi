@@ -27,14 +27,14 @@ void LANWorkingState::onUpdate() {
     _ctx->serial()->update();
     _ctx->display()->update();
 
-    // WiFi 持续断开超过宽限期:回配网流程,避免面板定格在过期状态
+    // WiFi 持续断开超过宽限期:回空闲表情,后台继续重连。
     if (!_ctx->wifi()->isConnected()) {
         if (!_wifiLost) {
             _wifiLost = true;
             _wifiLostSinceMs = millis();
         }
         if (millis() - _wifiLostSinceMs >= WIFI_LOST_GRACE_MS) {
-            static_cast<AppStateMachine*>(_ctx)->transitionTo(AppStateMachine::PROVISIONING);
+            static_cast<AppStateMachine*>(_ctx)->transitionTo(AppStateMachine::LAN_IDLE);
             return;
         }
     } else {

@@ -5,5 +5,6 @@
 #include <WebServer.h>
 
 namespace BootAnimation {
-    void run(TftDisplay& tft, WebServer* server = nullptr);
+    void run(TftDisplay& tft, const String& line1 = "HELLO",
+             const String& line2 = "MOCHI", WebServer* server = nullptr);
 }

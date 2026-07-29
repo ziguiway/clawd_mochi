@@ -16,6 +16,7 @@ void ProvisioningState::onEnter() {
         _ctx->serial()->init();
         _ctx->display()->init();
     }
+    _ctx->display()->switchToExpressionMode();
 }
 
 void ProvisioningState::onUpdate() {
@@ -24,18 +25,11 @@ void ProvisioningState::onUpdate() {
     _ctx->time()->update();
     _ctx->cc()->update();
     _ctx->serial()->update();
-    _ctx->display()->updateProvisioning();
+    _ctx->display()->update();
 
-    // 等 CONNECTED 成功屏 3 秒展示窗放完(provMode 回到 NONE)再进主界面
-    if (_ctx->wifi()->isConnected()
-        && _ctx->wifi()->getProvisioningMode() != WifiConfigService::ProvisioningMode::CONNECTED) {
-        static_cast<AppStateMachine*>(_ctx)->transitionTo(AppStateMachine::LAN_IDLE);
-        return;
-    }
-    // 默认 LAN 模式:WiFi 未连上时停留在配网流程,不回退串口模式
+    // 配网和重连由 WifiConfigService 在后台完成，TFT 优先作为桌面摆件使用。
+    static_cast<AppStateMachine*>(_ctx)->transitionTo(AppStateMachine::LAN_IDLE);
 }
 
 void ProvisioningState::onExit() {
-    // 切换显示模式,避免配网画面残留
-    _ctx->display()->switchToExpressionMode();
 }

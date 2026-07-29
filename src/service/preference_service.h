@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <Preferences.h>
 #include "../config/cfg_display.h"
+#include "../view/expression_id.h"
 
 class TimeService;
 
@@ -51,6 +52,21 @@ public:
     bool isNightDimActive(TimeService* timeService) const;
     String getJson() const;
 
+    String getDeviceName() const { return _deviceName; }
+    String getBootLine1() const { return _bootLine1; }
+    String getBootLine2() const { return _bootLine2; }
+    ExpressionId getDefaultExpression() const { return _defaultExpression; }
+    ExpressionMode getExpressionMode() const { return _expressionMode; }
+    bool setDeviceName(const String& value);
+    bool setBootLine1(const String& value);
+    bool setBootLine2(const String& value);
+    bool setDefaultExpression(ExpressionId value);
+    bool setExpressionMode(ExpressionMode value);
+    void resetProfile();
+    String getProfileJson() const;
+    static bool isValidProfileText(const String& value, size_t maxLength,
+                                   bool allowEmpty);
+
 private:
     Preferences _prefs;
     String _defaultBgHex = "#aa4818";
@@ -69,6 +85,11 @@ private:
     uint8_t _nightStartHour = 22;
     uint8_t _nightEndHour = 7;
     uint8_t _nightBrightnessPercent = 25;
+    String _deviceName = "MOCHI";
+    String _bootLine1 = "HELLO";
+    String _bootLine2 = "MOCHI";
+    ExpressionId _defaultExpression = ExpressionId::NORMAL;
+    ExpressionMode _expressionMode = ExpressionMode::MANUAL;
 
     bool isValidHexColor(const String& hex) const;
     bool isStartupViewAllowed(uint8_t view) const;

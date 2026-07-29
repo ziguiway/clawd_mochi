@@ -27,7 +27,7 @@ void SerialCommandService::update() {
             }
         } else {
             _inputBuffer += c;
-            if (_inputBuffer.length() > 64) _inputBuffer = "";
+            if (_inputBuffer.length() > 128) _inputBuffer = "";
         }
     }
 }
@@ -57,6 +57,8 @@ void SerialCommandService::processCommand(const String& cmd) {
     else if (cmd.startsWith("log level ")) setLogLevel(cmd.substring(10));
     else if (cmd.startsWith("cc ")) handleClaudeCommand(cmd.substring(3));
     else if (cmd == "cc") handleClaudeCommand("");
+    else if (cmd.startsWith("wifi ")) handleWifiCommand(cmd.substring(5));
+    else if (cmd == "wifi") handleWifiCommand("");
     else if (cmd == "reset") resetFactory();
     else if (cmd == "restart" || cmd == "reboot") restart();
     else { Serial.println("未知命令: " + cmd); Serial.println("输入 'help' 查看可用命令"); }
@@ -73,6 +75,9 @@ void SerialCommandService::printHelp() {
     Serial.println("  log clear     - 清除日志");
     Serial.println("  log level N   - 设置日志级别 (debug/info/warn/error)");
     Serial.println("  cc <event>,<hook>,<tool>,<detail>,<model> - 注入 Claude 状态");
+    Serial.println("  wifi <ssid> <password> - 保存 WiFi 并立即连接");
+    Serial.println("  wifi status   - 显示 WiFi 连接状态");
+    Serial.println("  wifi clear    - 清除已保存的 WiFi 凭据");
     Serial.println("  reset         - 恢复出厂设置");
     Serial.println("  restart       - 重启设备\n");
 }
@@ -151,4 +156,39 @@ void SerialCommandService::handleClaudeCommand(const String& args) {
                              parts[3].length() ? parts[3].c_str() : nullptr,
                              parts[4].length() ? parts[4].c_str() : nullptr);
     Serial.println("ok");
+}
+
+void SerialCommandService::handleWifiCommand(const String& args) {
+    if (args == "status") {
+        printStatus();
+        return;
+    }
+    if (args == "clear") {
+        _wifiService->clearCredentials();
+        Serial.println("WiFi 凭据已清除");
+        return;
+    }
+
+    const int separator = args.indexOf(' ');
+    if (separator <= 0) {
+        Serial.println("usage: wifi <ssid> <password>");
+        return;
+    }
+    const String ssid = args.substring(0, separator);
+    const String password = args.substring(separator + 1);
+    if (ssid.isEmpty() || ssid.length() > 32) {
+        Serial.println("WiFi 设置失败: SSID 长度必须为 1-32");
+        return;
+    }
+    if (password.length() < 8 || password.length() > 63) {
+        Serial.println("WiFi 设置失败: 密码长度必须为 8-63");
+        return;
+    }
+
+    _wifiService->saveCredentials(ssid.c_str(), password.c_str());
+    if (!_wifiService->connectToWifi(ssid.c_str(), password.c_str())) {
+        Serial.println("WiFi 设置失败: 无法启动连接");
+        return;
+    }
+    Serial.println("WiFi 凭据已保存，正在连接...");
 }

@@ -2,10 +2,34 @@
 
 > 制定日期：2026-07-28
 > 计划启动：2026-07-29
+> 实际启动：2026-07-28
 > 计划开发完成：2026-09-03
 > 计划验证完成：2026-09-18
-> 当前状态：待确认后执行
+> 当前状态：执行中
 > 关联 PRD：[2026-07-28-desk-companion-prd.md](./2026-07-28-desk-companion-prd.md)
+
+## 当前执行状态
+
+| 阶段 | 状态 | 更新日期 | 说明 |
+|---|---|---|---|
+| 阶段 0：基线固定 | `DONE` | 2026-07-28 | 构建、LittleFS、Web 和设备基线已记录 |
+| 阶段 1：离线摆件模式 | `VERIFY` | 2026-07-28 | 代码及首次启动通过，等待持续运行和网络恢复验证 |
+| 阶段 2：统一表情与可选 AUTO | `VERIFY` | 2026-07-28 | 软件主路径完成，等待实机视觉、重复感和持续运行验证 |
+| 阶段 3：个性化配置 | `VERIFY` | 2026-07-29 | 配置、API、开机文本和 Web 主路径完成，等待重启与定制样机验收 |
+| 阶段 4：Web 首页与主题 | `DOING` | 2026-07-29 | 控制器迁移到 LittleFS 单一来源，Flash 已降至 88.7% |
+| 阶段 5：实机与小批量验证 | `TODO` | - | - |
+
+阶段 0 记录：
+[2026-07-28-desk-companion-baseline.md](./2026-07-28-desk-companion-baseline.md)
+
+阶段 1 报告：
+[2026-07-28-phase-1-offline-mode-report.md](./2026-07-28-phase-1-offline-mode-report.md)
+
+阶段 2 报告：
+[2026-07-28-phase-2-expression-report.md](./2026-07-28-phase-2-expression-report.md)
+
+阶段 3 报告：
+[2026-07-29-phase-3-personalization-report.md](./2026-07-29-phase-3-personalization-report.md)
 
 ## 1. 排期目标
 
@@ -13,7 +37,7 @@
 
 最终交付目标是：
 
-> 一台未配置 WiFi 的全新设备，接通电源后 5 秒内进入自主表情；用户可通过 Web 选择 8 种表情、恢复 AUTO 模式、设置昵称和开机短句，并在手机首屏完成常用操作。
+> 一台未配置 WiFi 的全新设备，接通电源后 5 秒内进入固定黑色 Normal 眼睛并自然眨眼；用户可通过 Web 选择 8 种表情、按需开启 AUTO、设置昵称和开机短句，并在手机首屏完成常用操作。
 
 计划不追求一次完成所有潜在功能。开发顺序固定为：
 
@@ -134,6 +158,7 @@ Web 首屏重排
 - `git diff --check` 通过。
 - 阶段规定的实机检查完成。
 - 新行为与 PRD 验收标准一致。
+- 阶段测试通过后立即创建一次 Git 提交；未通过测试不得标记阶段完成或提交阶段完成检查点。
 
 ---
 
@@ -160,7 +185,7 @@ Web 首屏重排
 
 | 参数 | 暂定值 |
 |---|---|
-| 默认模式 | `AUTO` |
+| 默认模式 | `Normal`（固定黑色眼睛，仅自然眨眼） |
 | 默认主题 | Classic Orange |
 | 默认昵称 | `MOCHI` |
 | 开机第一行 | `HELLO` |
@@ -259,7 +284,7 @@ Web 首屏重排
 
 ---
 
-## 7. 阶段 2：统一表情与 AUTO
+## 7. 阶段 2：统一表情与可选 AUTO
 
 **时间：2026-08-06 至 2026-08-17**
 **目标：完成 v1 最核心的“生命感”体验。**
@@ -331,8 +356,9 @@ EyesView / ExpressionView：只负责绘制与逐帧更新
 
 AUTO 调度必须满足：
 
-- Normal 是默认基础状态。
+- Normal 是开机默认基础状态，AUTO 仅由用户主动开启。
 - 眨眼属于 Normal 内部微动画，不算一次完整表情切换。
+- Normal 眼位固定，不进行左右移动；眼睛本体不受主题配色影响，始终为黑色。
 - Curiosity、Happy、Surprised 是短暂事件，结束后回 Normal。
 - Sleepy 可以持续更久，Sleeping 只在低频或夜间出现。
 - 同一事件不能连续两次。
@@ -424,6 +450,13 @@ Content-Type: application/json
 - 连续切换 100 次无明显残影。
 - 信息页、画板和开发者状态结束后能恢复正确表情模式。
 
+### 7.8 当前执行结果
+
+- E-01 至 E-11：`DONE`。
+- E-12：`VERIFY`，mocked 正向回归已覆盖列表、手动选择和 AUTO；非法输入由固件校验，尚无主机侧负向测试。
+- E-13：`VERIFY`，等待逐表情实机检查、10 分钟 AUTO 观察和连续切换检查。
+- AUTO 调度暂由 `DisplayService` 持有，当前逻辑规模较小，不单独增加服务对象；后续复杂度上升时再提取 `IdleBehaviorService`。
+
 ---
 
 ## 8. 阶段 3：个性化配置
@@ -441,7 +474,7 @@ v1 新增：
 | `bootLine1` | String | `HELLO` | 0–16 ASCII |
 | `bootLine2` | String | `MOCHI` | 0–16 ASCII |
 | `defaultExpression` | enum | `NORMAL` | 必须属于表情列表 |
-| `expressionMode` | enum | `AUTO` | AUTO/MANUAL |
+| `expressionMode` | enum | `MANUAL` | AUTO/MANUAL |
 
 ESP32 Preferences 的 key 使用短名称，避免超过 NVS key 长度限制。
 
@@ -508,6 +541,12 @@ Content-Type: application/json
 - 配置损坏时使用默认值启动。
 - 恢复默认只影响个性化设置，不意外清除 WiFi。
 - 完成一台定制样机不需要改代码或重新编译。
+
+### 8.6 当前执行结果
+
+- P-01 至 P-08：`DONE`，Profile 持久化、服务端校验、GET/POST/恢复默认 API、配置化开机短句、Web 表单和 mocked 正向回归已完成。
+- P-09：`VERIFY`，等待烧录后执行保存、重启、恢复默认和定制样机实机验收。
+- 恢复 Profile 默认值只移除 `devname`、`boot1`、`boot2`、`defexpr`、`exprmode`，不会清除 WiFi 或其他显示偏好。
 
 ---
 
@@ -598,6 +637,14 @@ AUTO / MANUAL 模式
 - 导入非法 JSON 不会改变现有配置。
 - Web 页面无明显横向溢出和控件遮挡。
 - Flash 降至 90% 以下，或形成经过验证的分区调整决定。
+
+### 9.7 当前执行结果
+
+- 控制器主页已从固件内嵌 HTML 迁移到 `data/controller.html`，根路由从 LittleFS 提供页面。
+- Flash 从阶段 3 的 93.2% 降至 88.7%，已满足低于 90% 的目标。
+- 增加串口 `wifi <ssid> <password>`、`wifi status` 和 `wifi clear`，可在不进入 Web 配网页面的情况下让样机加入测试局域网。
+- 实机 Web 回归支持同时断言 HTTP 持久日志与 USB 串口实时日志；当前只验证功能动作是否进入固件路径。
+- W-01 至 W-03 的现有首屏结构和表情主路径已通过实机回归；W-04 至 W-09 继续推进。
 
 ---
 

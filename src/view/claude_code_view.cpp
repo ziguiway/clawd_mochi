@@ -185,22 +185,22 @@ void ClaudeCodeView::drawStatusIcon(ClaudeCodeService::Status status, int x, int
         case ClaudeCodeService::Status::IDLE:
         case ClaudeCodeService::Status::WORKING:
             _tft->fillRect(FACE_EYE_X, FACE_EYE_Y, FACE_EYE_W, FACE_EYE_H,
-                           _foregroundColor);
+                           COLOR_EYES);
             _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP, FACE_EYE_Y,
-                           FACE_EYE_W, FACE_EYE_H, _foregroundColor);
+                           FACE_EYE_W, FACE_EYE_H, COLOR_EYES);
             break;
         case ClaudeCodeService::Status::THINKING:
             _tft->fillRect(FACE_EYE_X, FACE_EYE_Y, FACE_EYE_W, FACE_EYE_H,
-                           _foregroundColor);
+                           COLOR_EYES);
             _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP, FACE_EYE_Y,
-                           FACE_EYE_W, FACE_EYE_H, _foregroundColor);
+                           FACE_EYE_W, FACE_EYE_H, COLOR_EYES);
             drawThinkingDots(_thinkingFrame);
             break;
         case ClaudeCodeService::Status::PERMISSION:
             _tft->fillRect(FACE_EYE_X, FACE_EYE_Y, FACE_EYE_W, FACE_EYE_H,
-                           _foregroundColor);
+                           COLOR_EYES);
             _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP, FACE_EYE_Y,
-                           FACE_EYE_W, FACE_EYE_H, _foregroundColor);
+                           FACE_EYE_W, FACE_EYE_H, COLOR_EYES);
 
             // 右上角粗像素问号：表示正在等待用户授权。
             _tft->fillRect(214, 24, 16, 6, _foregroundColor);
@@ -218,25 +218,25 @@ void ClaudeCodeView::drawStatusIcon(ClaudeCodeService::Status status, int x, int
             for (int8_t t = -HALF_STROKE; t <= HALF_STROKE; t++) {
                 _tft->drawLine(leftX, FACE_EYE_Y + t,
                                leftX + FACE_EYE_W, FACE_EYE_Y + FACE_EYE_H + t,
-                               _foregroundColor);
+                               COLOR_EYES);
                 _tft->drawLine(leftX + FACE_EYE_W, FACE_EYE_Y + t,
                                leftX, FACE_EYE_Y + FACE_EYE_H + t,
-                               _foregroundColor);
+                               COLOR_EYES);
                 _tft->drawLine(rightX, FACE_EYE_Y + t,
                                rightX + FACE_EYE_W, FACE_EYE_Y + FACE_EYE_H + t,
-                               _foregroundColor);
+                               COLOR_EYES);
                 _tft->drawLine(rightX + FACE_EYE_W, FACE_EYE_Y + t,
                                rightX, FACE_EYE_Y + FACE_EYE_H + t,
-                               _foregroundColor);
+                               COLOR_EYES);
             }
             break;
         }
         case ClaudeCodeService::Status::SLEEPING: {
             const int16_t eyeY = FACE_EYE_Y + 34;
             _tft->fillRect(FACE_EYE_X - 2, eyeY, FACE_EYE_W + 4, 8,
-                           _foregroundColor);
+                           COLOR_EYES);
             _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP - 2,
-                           eyeY, FACE_EYE_W + 4, 8, _foregroundColor);
+                           eyeY, FACE_EYE_W + 4, 8, COLOR_EYES);
             _tft->drawText(176, 28, "Z", _foregroundColor,
                            COLOR_MOCHI_BG, FONT_MEDIUM);
             _tft->drawText(150, 50, "z", _foregroundColor,
@@ -249,24 +249,24 @@ void ClaudeCodeView::drawStatusIcon(ClaudeCodeService::Status status, int x, int
                 int16_t lcx = FACE_EYE_X + FACE_EYE_W / 2;
                 int16_t rcx = FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP + FACE_EYE_W / 2;
                 _tft->drawLine(lcx - FACE_EYE_W / 2, cy - FACE_EYE_H / 2 + t,
-                               lcx + FACE_EYE_W / 2, cy + t, _foregroundColor);
+                               lcx + FACE_EYE_W / 2, cy + t, COLOR_EYES);
                 _tft->drawLine(lcx + FACE_EYE_W / 2, cy + t,
                                lcx - FACE_EYE_W / 2, cy + FACE_EYE_H / 2 + t,
-                               _foregroundColor);
+                               COLOR_EYES);
                 _tft->drawLine(rcx + FACE_EYE_W / 2, cy - FACE_EYE_H / 2 + t,
-                               rcx - FACE_EYE_W / 2, cy + t, _foregroundColor);
+                               rcx - FACE_EYE_W / 2, cy + t, COLOR_EYES);
                 _tft->drawLine(rcx - FACE_EYE_W / 2, cy + t,
                                rcx + FACE_EYE_W / 2, cy + FACE_EYE_H / 2 + t,
-                               _foregroundColor);
+                               COLOR_EYES);
             }
             break;
         case ClaudeCodeService::Status::SWEEPING:
             // 压扁的横眼 + 右上角逐级收窄的压缩层。
             _tft->fillRect(FACE_EYE_X - 2, FACE_EYE_Y + FACE_EYE_H / 2 - 4,
-                           FACE_EYE_W + 4, 8, _foregroundColor);
+                           FACE_EYE_W + 4, 8, COLOR_EYES);
             _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP - 2,
                            FACE_EYE_Y + FACE_EYE_H / 2 - 4,
-                           FACE_EYE_W + 4, 8, _foregroundColor);
+                           FACE_EYE_W + 4, 8, COLOR_EYES);
             _tft->fillRect(212, 24, 24, 6, _foregroundColor);
             _tft->fillRect(218, 34, 18, 6, _foregroundColor);
             _tft->fillRect(224, 44, 12, 6, _foregroundColor);

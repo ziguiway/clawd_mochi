@@ -31,6 +31,7 @@
 #define COLOR_BLACK                 0x0000  // 黑色
 #define COLOR_MUTED                 0x528A  // 暗灰（次要文字）
 #define COLOR_TERM_GREEN            0x2E8B  // 终端绿色
+#define COLOR_EYES                  COLOR_BLACK  // 眼睛始终为黑色
 
 // 交互式视图模式
 #define VIEW_EYES_NORMAL  0

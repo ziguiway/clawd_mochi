@@ -59,6 +59,7 @@ static const char* mapDisconnectReason(uint8_t reason) {
 }
 
 const char* WifiConfigService::getConnectPhaseText() const {
+    if (_connected) return "Connected";
     return _connectPhase == ConnectPhase::OBTAINING_IP ? "Obtaining IP" : "Connecting";
 }
 
@@ -125,9 +126,9 @@ void WifiConfigService::update() {
         if (WiFi.status() == WL_CONNECTED) {
             _connected = true;
             _connecting = false;
+            _lastError = "";
             _retryCount = 0;
             _retryExhausted = false;
-            _lastError = "Connection failed";
             startMDNS();
             setProvisioningMode(ProvisioningMode::CONNECTED);
             LOG_INFO("WiFi", "已连接: %s IP: %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());

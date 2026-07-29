@@ -5,7 +5,8 @@
 
 void BootState::onEnter() {
     LOG_INFO("Boot", "启动动画");
-    BootAnimation::run(*_ctx->tft());
+    BootAnimation::run(*_ctx->tft(), _ctx->prefs()->getBootLine1(),
+                       _ctx->prefs()->getBootLine2());
 }
 
 void BootState::onUpdate() {

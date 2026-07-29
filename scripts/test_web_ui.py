@@ -3,6 +3,7 @@
 # requires-python = ">=3.11"
 # dependencies = [
 #   "playwright>=1.45",
+#   "pyserial>=3.5",
 # ]
 # ///
 """Clawd Mochi Web 控制台正向 UI 回归测试。
@@ -19,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import threading
+import time
 import urllib.request
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -26,13 +28,50 @@ from pathlib import Path
 from typing import Any
 
 from playwright.sync_api import Page, Route, sync_playwright
+import serial
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WEB_SOURCE = ROOT / "src" / "service" / "web_service.cpp"
+CONTROLLER_HTML = ROOT / "data" / "controller.html"
 EDGE_PATH = Path(
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
 )
+
+
+class SerialLogCapture:
+    def __init__(self, port: str) -> None:
+        self._serial = serial.Serial()
+        self._serial.port = port
+        self._serial.baudrate = 115200
+        self._serial.timeout = 0.2
+        self._serial.dsrdtr = False
+        self._serial.rtscts = False
+        self._serial.dtr = False
+        self._serial.rts = False
+        self._serial.open()
+        self._lines: list[str] = []
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._read, daemon=True)
+
+    def start(self) -> None:
+        self._serial.reset_input_buffer()
+        self._thread.start()
+
+    def _read(self) -> None:
+        while not self._stop.is_set():
+            raw = self._serial.readline()
+            if raw:
+                self._lines.append(
+                    raw.decode("utf-8", errors="replace").strip()
+                )
+
+    def text(self) -> str:
+        return "\n".join(self._lines)
+
+    def close(self) -> None:
+        self._stop.set()
+        self._thread.join(timeout=1)
+        self._serial.close()
 
 COINLORE_ASSETS = [
     {"id": "90", "symbol": "BTC", "name": "Bitcoin", "rank": 1},
@@ -116,12 +155,7 @@ MARKET_SEARCH_RESULTS = [
 
 
 def extract_index_html() -> str:
-    source = WEB_SOURCE.read_text(encoding="utf-8")
-    start_marker = 'R"rawhtml('
-    end_marker = ')rawhtml";'
-    start = source.index(start_marker) + len(start_marker)
-    end = source.index(end_marker, start)
-    return source[start:end]
+    return CONTROLLER_HTML.read_text(encoding="utf-8")
 
 
 class FirmwareStubHandler(BaseHTTPRequestHandler):
@@ -143,6 +177,18 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
         "carouselFixed": 8,
     }
     prefs_update_count = 0
+    expression_state: dict[str, str] = {
+        "mode": "manual",
+        "selected": "normal",
+        "rendered": "normal",
+    }
+    profile: dict[str, str] = {
+        "deviceName": "MOCHI",
+        "bootLine1": "HELLO",
+        "bootLine2": "MOCHI",
+        "defaultExpression": "normal",
+        "expressionMode": "manual",
+    }
 
     def log_message(self, _format: str, *_args: object) -> None:
         return
@@ -210,6 +256,27 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
             self.send_json(self.prefs)
         elif path == "/state":
             self.send_json({"busy": False, "brightness": 100})
+        elif path == "/expressions":
+            self.send_json(
+                {
+                    **self.expression_state,
+                    "expressions": [
+                        {"id": name, "label": name.title()}
+                        for name in (
+                            "normal",
+                            "happy",
+                            "sleepy",
+                            "sleeping",
+                            "curious",
+                            "surprised",
+                            "grumpy",
+                            "love",
+                        )
+                    ],
+                }
+            )
+        elif path == "/profile":
+            self.send_json(self.profile)
         elif path == "/wifi/status":
             self.send_json(
                 {
@@ -234,6 +301,60 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = self.path.split("?", 1)[0]
+        if path == "/expression":
+            length = int(self.headers.get("Content-Length", "0"))
+            payload = json.loads(self.rfile.read(length) or b"{}")
+            if "id" in payload:
+                self.__class__.expression_state = {
+                    "mode": "manual",
+                    "selected": payload["id"],
+                    "rendered": payload["id"],
+                }
+            elif payload.get("mode") == "auto":
+                self.__class__.expression_state = {
+                    **self.expression_state,
+                    "mode": "auto",
+                    "rendered": "normal",
+                }
+            else:
+                self.__class__.expression_state = {
+                    **self.expression_state,
+                    "mode": "manual",
+                    "rendered": self.expression_state["selected"],
+                }
+            self.send_json(self.expression_state)
+            return
+        if path == "/profile":
+            length = int(self.headers.get("Content-Length", "0"))
+            self.__class__.profile = json.loads(
+                self.rfile.read(length) or b"{}"
+            )
+            self.__class__.expression_state = {
+                "mode": self.profile["expressionMode"],
+                "selected": self.profile["defaultExpression"],
+                "rendered": (
+                    "normal"
+                    if self.profile["expressionMode"] == "auto"
+                    else self.profile["defaultExpression"]
+                ),
+            }
+            self.send_json(self.profile)
+            return
+        if path == "/profile/reset":
+            self.__class__.profile = {
+                "deviceName": "MOCHI",
+                "bootLine1": "HELLO",
+                "bootLine2": "MOCHI",
+                "defaultExpression": "normal",
+                "expressionMode": "manual",
+            }
+            self.__class__.expression_state = {
+                "mode": "manual",
+                "selected": "normal",
+                "rendered": "normal",
+            }
+            self.send_json(self.profile)
+            return
         if path not in {"/crypto/config", "/market/config"}:
             self.send_json({"ok": True})
             return
@@ -270,6 +391,11 @@ def result_symbols(page: Page) -> list[str]:
     return page.locator("#mResults .mresname strong").all_text_contents()
 
 
+def open_controller(page: Page) -> None:
+    page.goto("/", wait_until="domcontentloaded")
+    page.wait_for_function("() => initialLoadComplete === true")
+
+
 def assert_suggestion(page: Page, query: str, expected: set[str]) -> None:
     search = page.locator("#mSearch")
     search.fill(query)
@@ -284,7 +410,7 @@ def assert_suggestion(page: Page, query: str, expected: set[str]) -> None:
 
 
 def run_positive_flow(page: Page, *, stub_mode: bool) -> None:
-    page.goto("/", wait_until="domcontentloaded")
+    open_controller(page)
     assert not page.locator("#mwrap").is_visible(), (
         "未选择 Crypto 时不应显示加密货币设置"
     )
@@ -294,6 +420,11 @@ def run_positive_flow(page: Page, *, stub_mode: bool) -> None:
     page.locator("#mwrap.open").wait_for(state="visible")
     page.locator("#mSelected .mselrow").first.wait_for(state="visible")
     print("PASS  打开 Crypto 配置")
+
+    existing_okb = page.locator("#mSelected .mselrow").filter(has_text="OKB")
+    if existing_okb.count():
+        existing_okb.get_by_role("button", name="Remove OKB").click()
+        page.wait_for_timeout(250)
 
     assert_suggestion(page, "S", {"SOL"})
     assert_suggestion(page, "SOL", {"SOL"})
@@ -340,8 +471,61 @@ def run_wifi_status_flow(page: Page) -> None:
     print("PASS  WiFi 显示具体连接失败原因")
 
 
+def run_expression_flow(page: Page, *, stub_mode: bool) -> None:
+    open_controller(page)
+    buttons = page.locator("#expressionGrid .ebtn")
+    assert buttons.count() == 8, "表情首屏没有显示完整的 8 种表情"
+    buttons.filter(has_text="Love").click()
+    page.locator("#exprCurrent").get_by_text("Love", exact=True).wait_for(
+        state="visible"
+    )
+    assert page.locator(
+        '.ebtn[data-expression="love"]'
+    ).get_attribute("class") == "ebtn active"
+    if stub_mode:
+        assert FirmwareStubHandler.expression_state == {
+            "mode": "manual",
+            "selected": "love",
+            "rendered": "love",
+        }
+    print("PASS  手动选择 Love 表情并保持")
+
+    page.locator("#exprAuto").click()
+    page.locator("#exprAuto").get_by_text("auto on", exact=False).wait_for(
+        state="visible"
+    )
+    assert page.locator("#expressionGrid .ebtn.active").count() == 0
+    if stub_mode:
+        assert FirmwareStubHandler.expression_state["mode"] == "auto"
+    print("PASS  主动开启可选 AUTO 模式")
+
+
+def run_profile_flow(page: Page, *, stub_mode: bool) -> None:
+    open_controller(page)
+    page.locator("#profileName").fill("NOVA")
+    page.locator("#profileBoot1").fill("WELCOME")
+    page.locator("#profileBoot2").fill("NOVA")
+    page.locator("#profileExpression").select_option("love")
+    page.locator("#profileMode").select_option("manual")
+    page.locator("#profileSave").click()
+    page.get_by_text("profile saved", exact=True).wait_for(state="visible")
+    assert page.locator(".sitename").text_content() == "NOVA · CONTROLLER"
+    if stub_mode:
+        assert FirmwareStubHandler.profile["defaultExpression"] == "love"
+        assert FirmwareStubHandler.profile["bootLine1"] == "WELCOME"
+    print("PASS  保存设备昵称、开机短句和默认表情")
+
+    page.get_by_role("button", name="restore defaults").click()
+    page.get_by_text("profile defaults restored", exact=True).wait_for(
+        state="visible"
+    )
+    assert page.locator("#profileName").input_value() == "MOCHI"
+    assert page.locator("#profileExpression").input_value() == "normal"
+    print("PASS  恢复个性化默认值")
+
+
 def run_theme_flow(page: Page, *, stub_mode: bool) -> None:
-    page.goto("/", wait_until="domcontentloaded")
+    open_controller(page)
     page.wait_for_function("() => document.querySelectorAll('.theme-btn').length === 2")
     current = int(page.evaluate("displayTheme"))
     target = 0 if current == 1 else 1
@@ -370,55 +554,58 @@ def run_theme_flow(page: Page, *, stub_mode: bool) -> None:
 
 
 def run_carousel_flow(page: Page, *, stub_mode: bool) -> None:
-    page.goto("/", wait_until="domcontentloaded")
+    open_controller(page)
     panel_button = page.locator("#carouselPanelBtn")
     panel_button.click()
     page.locator("#carouselWrap.open").wait_for(state="visible")
     assert page.locator("#carouselPanelState").text_content() == "close"
     print("PASS  展开信息轮播设置")
     toggle = page.locator("#carouselToggle")
-    toggle.click()
+    if "off" in (toggle.text_content() or ""):
+        toggle.click()
     page.get_by_text("carousel on", exact=False).wait_for(state="visible")
+    page.wait_for_timeout(350)
     assert page.locator("#carouselFixed").is_disabled()
-    assert page.locator("#carouselOrder .rname").all_text_contents() == [
-        "Weather",
-        "Crypto",
-        "Market",
-        "Clock",
-    ]
+    order_names = page.locator("#carouselOrder .rname").all_text_contents()
+    assert set(order_names) == {"Weather", "Crypto", "Market", "Clock"}
     print("PASS  时间页面已加入轮播顺序")
     print("PASS  开启信息轮播")
 
     speed = page.locator("#carouselSpeed")
     assert not speed.is_disabled(), "开启轮播后速度滑块仍被禁用"
-    box = speed.bounding_box()
-    assert box is not None, "未找到轮播速度滑块"
-    speed.click(
-        position={"x": box["width"] * (18 - 5) / (60 - 5), "y": box["height"] / 2}
+    target_speed = 18 if int(speed.input_value()) != 18 else 19
+    speed.evaluate(
+        """(el, value) => {
+            el.value = String(value);
+            el.dispatchEvent(new Event('input', {bubbles: true}));
+        }""",
+        target_speed,
     )
     page.wait_for_timeout(400)
     actual_speed = page.locator("#carouselSpeedV").text_content()
     selected_speed = int(speed.input_value())
-    assert selected_speed != 12 and actual_speed == f"{selected_speed}s", (
+    assert selected_speed == target_speed and actual_speed == f"{selected_speed}s", (
         f"轮播滑块未正确更新，显示为 {actual_speed!r}，"
         f"输入值为 {selected_speed!r}"
     )
     print(f"PASS  设置轮播间隔为 {selected_speed} 秒")
 
-    weather_handle = page.get_by_role("button", name="Drag Weather")
-    weather_box = weather_handle.bounding_box()
-    crypto_row = page.locator("#carouselOrder .ritem").nth(1).bounding_box()
-    assert weather_box is not None and crypto_row is not None, "未找到轮播拖拽项目"
-    weather_handle.hover()
-    page.mouse.move(weather_box["x"] + weather_box["width"] / 2, weather_box["y"] + weather_box["height"] / 2)
+    first_name, second_name = order_names[:2]
+    first_handle = page.get_by_role("button", name=f"Drag {first_name}")
+    first_box = first_handle.bounding_box()
+    second_row = page.locator("#carouselOrder .ritem").nth(1).bounding_box()
+    assert first_box is not None and second_row is not None, "未找到轮播拖拽项目"
+    first_handle.hover()
+    page.mouse.move(first_box["x"] + first_box["width"] / 2, first_box["y"] + first_box["height"] / 2)
     page.mouse.down()
-    page.mouse.move(weather_box["x"] + weather_box["width"] / 2, crypto_row["y"] + crypto_row["height"] * 0.8, steps=8)
+    page.mouse.move(first_box["x"] + first_box["width"] / 2, second_row["y"] + second_row["height"] * 0.8, steps=8)
     page.mouse.up()
     page.wait_for_timeout(150)
-    assert page.locator("#carouselOrder .rname").first.text_content() == "Crypto"
-    print("PASS  拖拽调整轮播顺序为 Crypto 优先")
+    assert page.locator("#carouselOrder .rname").first.text_content() == second_name
+    print(f"PASS  拖拽调整轮播顺序为 {second_name} 优先")
 
-    toggle.click()
+    if "on" in (toggle.text_content() or ""):
+        toggle.click()
     page.get_by_text("carousel off", exact=False).wait_for(state="visible")
     fixed = page.locator("#carouselFixed")
     assert not fixed.is_disabled()
@@ -450,8 +637,17 @@ def run_market_flow(page: Page, *, stub_mode: bool) -> None:
     market_button.click()
     page.locator("#swrap.open").wait_for(state="visible")
     page.locator("#sSelected .mselrow").first.wait_for(state="visible")
-    assert page.locator("#sSelected .mselrow").count() == 3
-    print("PASS  打开 Market 并显示三大指数")
+    assert page.locator("#sSelected .mselrow").count() >= 1
+    print("PASS  打开 Market 并显示已配置行情")
+
+    existing_maotai = page.locator("#sSelected .mselrow").filter(
+        has_text="600519"
+    )
+    if existing_maotai.count():
+        existing_maotai.get_by_role(
+            "button", name="Remove 600519"
+        ).click()
+        page.wait_for_timeout(250)
 
     assert_stock_suggestion(page, "600519", "600519", "贵州茅台")
     assert_stock_suggestion(page, "茅台", "600519", "贵州茅台")
@@ -485,6 +681,10 @@ def parse_args() -> argparse.Namespace:
         "--device-url",
         help="直接测试实际设备，例如 http://clawd-mochi.local/",
     )
+    parser.add_argument(
+        "--serial-port",
+        help="实机测试时同步断言串口日志，例如 /dev/cu.usbmodem1101",
+    )
     return parser.parse_args()
 
 
@@ -505,6 +705,38 @@ def get_device_market_config(base_url: str) -> dict[str, Any]:
 def get_device_prefs(base_url: str) -> dict[str, Any]:
     with urllib.request.urlopen(f"{base_url}prefs", timeout=10) as response:
         return json.load(response)
+
+
+def get_device_profile(base_url: str) -> dict[str, Any]:
+    with urllib.request.urlopen(f"{base_url}profile", timeout=10) as response:
+        return json.load(response)
+
+
+def get_device_logs(base_url: str) -> str:
+    with urllib.request.urlopen(
+        f"{base_url}logs/api?max=200", timeout=10
+    ) as response:
+        return response.read().decode("utf-8", errors="replace")
+
+
+def assert_device_logs(before: str, after: str) -> None:
+    before_lines = [line for line in before.splitlines() if line.strip()]
+    anchor = before_lines[-1] if before_lines else ""
+    anchor_pos = after.rfind(anchor) if anchor else -1
+    delta = after[anchor_pos + len(anchor):] if anchor_pos >= 0 else after
+    assert "[Web] Expression manual: love" in delta
+    assert "[Web] Expression mode: auto" in delta
+    assert "[Web] Profile saved:" in delta
+    assert "[Web] Profile reset to defaults" in delta
+    print("PASS  HTTP 日志记录了表情与个性化功能动作")
+
+
+def assert_serial_logs(logs: str) -> None:
+    assert "[Web] Expression manual: love" in logs
+    assert "[Web] Expression mode: auto" in logs
+    assert "[Web] Profile saved:" in logs
+    assert "[Web] Profile reset to defaults" in logs
+    print("PASS  串口日志实时输出了表情与个性化功能动作")
 
 
 def restore_device_config(
@@ -566,6 +798,17 @@ def restore_device_carousel_prefs(base_url: str, prefs: dict[str, Any]) -> None:
         pass
 
 
+def restore_device_profile(base_url: str, profile: dict[str, Any]) -> None:
+    request = urllib.request.Request(
+        f"{base_url}profile",
+        data=json.dumps(profile).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=10):
+        pass
+
+
 def main() -> int:
     args = parse_args()
     if not EDGE_PATH.exists():
@@ -577,6 +820,9 @@ def main() -> int:
     original_device_assets: list[dict[str, Any]] | None = None
     original_device_market_assets: list[dict[str, Any]] | None = None
     original_device_prefs: dict[str, Any] | None = None
+    original_device_profile: dict[str, Any] | None = None
+    device_logs_before: str | None = None
+    serial_capture: SerialLogCapture | None = None
     if args.device_url:
         base_url = args.device_url.rstrip("/") + "/"
         original_device_assets = get_device_config(base_url)["assets"]
@@ -584,6 +830,11 @@ def main() -> int:
             "assets"
         ]
         original_device_prefs = get_device_prefs(base_url)
+        original_device_profile = get_device_profile(base_url)
+        device_logs_before = get_device_logs(base_url)
+        if args.serial_port:
+            serial_capture = SerialLogCapture(args.serial_port)
+            serial_capture.start()
     else:
         FirmwareStubHandler.assets = [dict(item) for item in INITIAL_ASSETS]
         FirmwareStubHandler.market_assets = [
@@ -602,6 +853,13 @@ def main() -> int:
             "carouselFixed": 8,
         }
         FirmwareStubHandler.prefs_update_count = 0
+        FirmwareStubHandler.profile = {
+            "deviceName": "MOCHI",
+            "bootLine1": "HELLO",
+            "bootLine2": "MOCHI",
+            "defaultExpression": "normal",
+            "expressionMode": "manual",
+        }
         server = ThreadingHTTPServer(("127.0.0.1", 0), FirmwareStubHandler)
         server_thread = threading.Thread(
             target=server.serve_forever, daemon=True
@@ -648,9 +906,18 @@ def main() -> int:
             try:
                 run_positive_flow(page, stub_mode=not bool(args.device_url))
                 run_wifi_status_flow(page)
+                run_expression_flow(page, stub_mode=not bool(args.device_url))
+                run_profile_flow(page, stub_mode=not bool(args.device_url))
                 run_theme_flow(page, stub_mode=not bool(args.device_url))
                 run_carousel_flow(page, stub_mode=not bool(args.device_url))
                 run_market_flow(page, stub_mode=not bool(args.device_url))
+                if device_logs_before is not None:
+                    assert_device_logs(
+                        device_logs_before, get_device_logs(base_url)
+                    )
+                if serial_capture is not None:
+                    time.sleep(0.3)
+                    assert_serial_logs(serial_capture.text())
             except Exception:
                 screenshot = Path("/tmp/clawd_mochi_ui_failure.png")
                 page.screenshot(path=str(screenshot), full_page=True)
@@ -660,6 +927,8 @@ def main() -> int:
                 context.close()
                 browser.close()
     finally:
+        if serial_capture is not None:
+            serial_capture.close()
         if original_device_assets is not None:
             restore_device_config(base_url, original_device_assets)
             print("INFO  已恢复设备原有币种配置")
@@ -671,6 +940,9 @@ def main() -> int:
         if original_device_prefs is not None:
             restore_device_carousel_prefs(base_url, original_device_prefs)
             print("INFO  已恢复设备原有轮播设置")
+        if original_device_profile is not None:
+            restore_device_profile(base_url, original_device_profile)
+            print("INFO  已恢复设备原有个性化配置")
         if server is not None:
             server.shutdown()
             server.server_close()

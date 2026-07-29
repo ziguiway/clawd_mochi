@@ -59,10 +59,19 @@ public:
     void setInteractiveView(uint8_t view);
     uint8_t getInteractiveView() const { return static_cast<uint8_t>(_interactiveView); }
 
+    void setExpression(ExpressionId expression);
+    void setExpressionMode(ExpressionMode mode);
+    ExpressionId getSelectedExpression() const { return _selectedExpression; }
+    ExpressionId getRenderedExpression() const { return _renderedExpression; }
+    ExpressionMode getExpressionMode() const { return _expressionMode; }
+
     void setAnimSpeed(uint8_t speed) { _animSpeed = constrain(speed, 1, 3); }
     uint8_t getAnimSpeed() const { return _animSpeed; }
 
-    void setAnimBgColor(uint16_t color) { _animBgColor = color; }
+    void setAnimBgColor(uint16_t color) {
+        _animBgColor = color;
+        _eyesView.setBackgroundColor(color);
+    }
     void setDrawBgColor(uint16_t color) { _drawBgColor = color; }
     uint16_t getAnimBgColor() const { return _animBgColor; }
     uint16_t getDrawBgColor() const { return _drawBgColor; }
@@ -81,10 +90,6 @@ public:
 
     // Logo animation
     void animLogoReveal();
-
-    // Eye animations
-    void animNormalEyes();
-    void animSquishEyes();
 
     void drawThinking(uint8_t dotCount = 0);
     void drawWorking(bool blinkLeft = false, bool blinkRight = false);
@@ -156,6 +161,15 @@ private:
     uint8_t _displayTheme;
     uint16_t _themeForeground;
 
+    // 表情模式。AUTO 只由用户主动开启，默认保持 MANUAL / Normal。
+    ExpressionMode _expressionMode;
+    ExpressionId _selectedExpression;
+    ExpressionId _renderedExpression;
+    ExpressionId _lastAutoExpression;
+    unsigned long _nextAutoEventMs;
+    unsigned long _autoReturnMs;
+    bool _expressionPreferred;
+
     // 空闲时的信息轮播。Claude Code 进入 INFO 后只暂停，不丢失当前位置。
     bool _carouselEnabled;
     uint8_t _carouselSpeedSeconds;
@@ -197,8 +211,6 @@ private:
     uint8_t _termCol;
 
     // Drawing helpers
-    void drawNormalEyes(int16_t ox = 0, bool blink = false);
-    void drawSquishEyes(bool closed = false);
     void drawCodeView();
     void drawClockView();
     void drawPomodoroView();
@@ -222,7 +234,9 @@ private:
     bool isCarouselView(uint8_t view) const;
     void syncCarouselIndexForView(uint8_t view);
     void applyNightDimming();
-    void drawChevron(int16_t cx, int16_t cy, int16_t arm, int16_t reach, uint8_t thk, bool rightFacing, uint16_t col);
+    void showExpression(ExpressionId expression);
+    void updateAutoExpression(unsigned long now);
+    void scheduleNextAutoEvent(unsigned long now);
 
     // Eye geometry
     int16_t eyeLX(int16_t ox);

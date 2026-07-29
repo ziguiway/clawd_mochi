@@ -43,6 +43,95 @@ void PreferenceService::init() {
     _nightStartHour = constrain(_prefs.getUChar("nstart", _nightStartHour), 0, 23);
     _nightEndHour = constrain(_prefs.getUChar("nend", _nightEndHour), 0, 23);
     _nightBrightnessPercent = constrain(_prefs.getUChar("nbright", _nightBrightnessPercent), 0, 100);
+
+    _deviceName = _prefs.getString("devname", _deviceName);
+    if (!isValidProfileText(_deviceName, 12, false)) _deviceName = "MOCHI";
+    _bootLine1 = _prefs.getString("boot1", _bootLine1);
+    if (!isValidProfileText(_bootLine1, 16, true)) _bootLine1 = "HELLO";
+    _bootLine2 = _prefs.getString("boot2", _bootLine2);
+    if (!isValidProfileText(_bootLine2, 16, true)) _bootLine2 = "MOCHI";
+    ExpressionId storedExpression;
+    if (!expressionIdFromName(_prefs.getString("defexpr", "normal"),
+                              storedExpression)) {
+        storedExpression = ExpressionId::NORMAL;
+    }
+    _defaultExpression = storedExpression;
+    _expressionMode = _prefs.getString("exprmode", "manual") == "auto"
+        ? ExpressionMode::AUTO : ExpressionMode::MANUAL;
+}
+
+bool PreferenceService::isValidProfileText(const String& value,
+                                           size_t maxLength,
+                                           bool allowEmpty) {
+    if ((!allowEmpty && value.isEmpty()) || value.length() > maxLength) return false;
+    for (size_t i = 0; i < value.length(); i++) {
+        const uint8_t c = static_cast<uint8_t>(value[i]);
+        if (c < 0x20 || c > 0x7E) return false;
+    }
+    return true;
+}
+
+bool PreferenceService::setDeviceName(const String& value) {
+    if (!isValidProfileText(value, 12, false)) return false;
+    _deviceName = value;
+    return _prefs.putString("devname", value) > 0;
+}
+
+bool PreferenceService::setBootLine1(const String& value) {
+    if (!isValidProfileText(value, 16, true)) return false;
+    _bootLine1 = value;
+    return _prefs.putString("boot1", value) > 0 || value.isEmpty();
+}
+
+bool PreferenceService::setBootLine2(const String& value) {
+    if (!isValidProfileText(value, 16, true)) return false;
+    _bootLine2 = value;
+    return _prefs.putString("boot2", value) > 0 || value.isEmpty();
+}
+
+bool PreferenceService::setDefaultExpression(ExpressionId value) {
+    if (static_cast<uint8_t>(value) >= EXPRESSION_COUNT) return false;
+    _defaultExpression = value;
+    return _prefs.putString("defexpr", expressionIdToName(value)) > 0;
+}
+
+bool PreferenceService::setExpressionMode(ExpressionMode value) {
+    _expressionMode = value;
+    return _prefs.putString("exprmode",
+        value == ExpressionMode::AUTO ? "auto" : "manual") > 0;
+}
+
+void PreferenceService::resetProfile() {
+    _deviceName = "MOCHI";
+    _bootLine1 = "HELLO";
+    _bootLine2 = "MOCHI";
+    _defaultExpression = ExpressionId::NORMAL;
+    _expressionMode = ExpressionMode::MANUAL;
+    _prefs.remove("devname");
+    _prefs.remove("boot1");
+    _prefs.remove("boot2");
+    _prefs.remove("defexpr");
+    _prefs.remove("exprmode");
+}
+
+String PreferenceService::getProfileJson() const {
+    auto escaped = [](const String& value) {
+        String result;
+        result.reserve(value.length() + 4);
+        for (size_t i = 0; i < value.length(); i++) {
+            if (value[i] == '"' || value[i] == '\\') result += '\\';
+            result += value[i];
+        }
+        return result;
+    };
+    String json = "{\"deviceName\":\"" + escaped(_deviceName);
+    json += "\",\"bootLine1\":\"" + escaped(_bootLine1);
+    json += "\",\"bootLine2\":\"" + escaped(_bootLine2);
+    json += "\",\"defaultExpression\":\"" +
+        String(expressionIdToName(_defaultExpression));
+    json += "\",\"expressionMode\":\"";
+    json += _expressionMode == ExpressionMode::AUTO ? "auto" : "manual";
+    return json + "\"}";
 }
 
 void PreferenceService::setDefaultBgHex(const String& hex) {

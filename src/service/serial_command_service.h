@@ -31,4 +31,5 @@ private:
     void resetFactory();
     void restart();
     void handleClaudeCommand(const String& args);
+    void handleWifiCommand(const String& args);
 };

@@ -30,6 +30,12 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _brightnessPercent(100)
     , _claudeStatusEnabled(true)
     , _displayTheme(THEME_ORANGE_WHITE), _themeForeground(COLOR_WHITE)
+    , _expressionMode(ExpressionMode::MANUAL)
+    , _selectedExpression(ExpressionId::NORMAL)
+    , _renderedExpression(ExpressionId::NORMAL)
+    , _lastAutoExpression(ExpressionId::NORMAL)
+    , _nextAutoEventMs(0), _autoReturnMs(0)
+    , _expressionPreferred(true)
     , _carouselEnabled(false), _carouselSpeedSeconds(12)
     , _carouselOrder{VIEW_WEATHER, VIEW_CRYPTO, VIEW_MARKET, VIEW_CLOCK}
     , _carouselFixedView(VIEW_WEATHER), _carouselIndex(0)
@@ -60,9 +66,16 @@ void DisplayService::init() {
         _displayTheme = _preferenceService->getDisplayTheme();
         _themeForeground = _displayTheme == THEME_ORANGE_BLACK
             ? COLOR_BLACK : COLOR_WHITE;
-        _eyesView.setForegroundColor(_themeForeground);
+        _eyesView.setBackgroundColor(_animBgColor);
         _ccView.setForegroundColor(_themeForeground);
         loadIdleDisplayPreferences();
+        const uint8_t startupView = _preferenceService->getStartupView();
+        _expressionPreferred = !_carouselEnabled &&
+            (startupView == VIEW_EYES_NORMAL || startupView == VIEW_EYES_SQUISH);
+        _selectedExpression = _preferenceService->getDefaultExpression();
+        _expressionMode = _preferenceService->getExpressionMode();
+        _renderedExpression = _expressionMode == ExpressionMode::AUTO
+            ? ExpressionId::NORMAL : _selectedExpression;
     } else {
         _animBgColor = COLOR_ORANGE;
         _drawBgColor = COLOR_ORANGE;
@@ -74,9 +87,86 @@ void DisplayService::setDisplayTheme(uint8_t theme) {
     if (theme != THEME_ORANGE_BLACK && theme != THEME_ORANGE_WHITE) return;
     _displayTheme = theme;
     _themeForeground = theme == THEME_ORANGE_BLACK ? COLOR_BLACK : COLOR_WHITE;
-    _eyesView.setForegroundColor(_themeForeground);
     _ccView.setForegroundColor(_themeForeground);
     invalidateTimeView();
+}
+
+void DisplayService::setExpression(ExpressionId expression) {
+    _expressionMode = ExpressionMode::MANUAL;
+    _selectedExpression = expression;
+    _autoReturnMs = 0;
+    _nextAutoEventMs = 0;
+    showExpression(expression);
+}
+
+void DisplayService::setExpressionMode(ExpressionMode mode) {
+    _expressionMode = mode;
+    _autoReturnMs = 0;
+    if (mode == ExpressionMode::AUTO) {
+        showExpression(ExpressionId::NORMAL);
+        scheduleNextAutoEvent(millis());
+        return;
+    }
+    _nextAutoEventMs = 0;
+    showExpression(_selectedExpression);
+}
+
+void DisplayService::showExpression(ExpressionId expression) {
+    _currentMode = DisplayMode::EXPRESSION;
+    _interactiveActive = false;
+    _expressionPreferred = true;
+    _interactiveView = expression == ExpressionId::HAPPY
+        ? InteractiveView::EYES_SQUISH : InteractiveView::EYES_NORMAL;
+    _renderedExpression = expression;
+    _eyesView.setExpression(expression);
+}
+
+void DisplayService::scheduleNextAutoEvent(unsigned long now) {
+    _nextAutoEventMs = now + random(12000UL, 35001UL);
+}
+
+void DisplayService::updateAutoExpression(unsigned long now) {
+    if (_expressionMode != ExpressionMode::AUTO) return;
+
+    if (_autoReturnMs != 0 &&
+        static_cast<long>(now - _autoReturnMs) >= 0) {
+        _autoReturnMs = 0;
+        showExpression(ExpressionId::NORMAL);
+        scheduleNextAutoEvent(now);
+        return;
+    }
+    if (_autoReturnMs != 0 || _nextAutoEventMs == 0 ||
+        static_cast<long>(now - _nextAutoEventMs) < 0) {
+        return;
+    }
+
+    constexpr ExpressionId AUTO_EVENTS[] = {
+        ExpressionId::HAPPY,
+        ExpressionId::CURIOUS,
+        ExpressionId::SURPRISED,
+        ExpressionId::SLEEPY,
+        ExpressionId::HAPPY,
+        ExpressionId::CURIOUS,
+        ExpressionId::SLEEPING,
+    };
+    constexpr uint8_t AUTO_EVENT_COUNT =
+        sizeof(AUTO_EVENTS) / sizeof(AUTO_EVENTS[0]);
+
+    ExpressionId next = _lastAutoExpression;
+    for (uint8_t attempt = 0; attempt < 4 && next == _lastAutoExpression; attempt++) {
+        next = AUTO_EVENTS[random(0, AUTO_EVENT_COUNT)];
+    }
+    if (next == _lastAutoExpression) {
+        next = next == ExpressionId::HAPPY
+            ? ExpressionId::CURIOUS : ExpressionId::HAPPY;
+    }
+
+    _lastAutoExpression = next;
+    showExpression(next);
+    const unsigned long duration = next == ExpressionId::SLEEPING
+        ? 6000UL : (next == ExpressionId::SLEEPY ? 4000UL : 2200UL);
+    _autoReturnMs = now + duration;
+    _nextAutoEventMs = 0;
 }
 
 // ── Eye geometry ───────────────────────────────────────────────
@@ -102,47 +192,6 @@ uint16_t DisplayService::hexToRgb565(const String& hex) {
 }
 
 // ── Drawing helpers ────────────────────────────────────────────
-void DisplayService::drawNormalEyes(int16_t ox, bool blink) {
-    _tft->fillScreen(_animBgColor);
-    const int16_t lx = eyeLX(ox), rx = eyeRX(ox), ey = eyeY();
-    if (!blink) {
-        _tft->fillRect(lx, ey, EYE_W, EYE_H, _themeForeground);
-        _tft->fillRect(rx, ey, EYE_W, EYE_H, _themeForeground);
-    } else {
-        _tft->fillRect(lx, ey + EYE_H / 2 - 3, EYE_W, 6, _themeForeground);
-        _tft->fillRect(rx, ey + EYE_H / 2 - 3, EYE_W, 6, _themeForeground);
-    }
-}
-
-void DisplayService::drawChevron(int16_t cx, int16_t cy, int16_t arm, int16_t reach,
-                                  uint8_t thk, bool rightFacing, uint16_t col) {
-    for (int8_t t = -(int8_t)thk; t <= (int8_t)thk; t++) {
-        if (rightFacing) {
-            _tft->drawLine(cx - reach/2, cy - arm + t, cx + reach/2, cy + t,      col);
-            _tft->drawLine(cx + reach/2, cy + t,       cx - reach/2, cy + arm + t, col);
-        } else {
-            _tft->drawLine(cx + reach/2, cy - arm + t, cx - reach/2, cy + t,      col);
-            _tft->drawLine(cx - reach/2, cy + t,       cx + reach/2, cy + arm + t, col);
-        }
-    }
-}
-
-void DisplayService::drawSquishEyes(bool closed) {
-    _tft->fillScreen(_animBgColor);
-    const int16_t lx = eyeLX(0), rx = eyeRX(0), cy = eyeCY();
-    const int16_t arm   = EYE_H / 2;
-    const int16_t reach = EYE_W / 2;
-    const int16_t lcx   = lx + EYE_W / 2;
-    const int16_t rcx   = rx + EYE_W / 2;
-    if (!closed) {
-        drawChevron(lcx, cy, arm, reach, 10, true,  _themeForeground);
-        drawChevron(rcx, cy, arm, reach, 10, false, _themeForeground);
-    } else {
-        _tft->fillRect(lx, cy - 5, EYE_W, 10, _themeForeground);
-        _tft->fillRect(rx, cy - 5, EYE_W, 10, _themeForeground);
-    }
-}
-
 void DisplayService::drawCodeView() {
     _termMode = false;
     _tft->fillScreen(COLOR_DARKBG);
@@ -723,34 +772,13 @@ void DisplayService::exitTerminal() {
 }
 
 // ── Animations ─────────────────────────────────────────────────
-void DisplayService::animNormalEyes() {
-    _busy = true;
-    const int16_t offs[] = {-16, 16, -16, 16, 0};
-    for (uint8_t i = 0; i < 5; i++) { drawNormalEyes(offs[i]); delay(speedMs(80)); }
-    drawNormalEyes(0, true);  delay(speedMs(100));
-    drawNormalEyes(0, false); delay(speedMs(70));
-    drawNormalEyes(0, true);  delay(speedMs(70));
-    drawNormalEyes(0, false);
-    _busy = false;
-}
-
-void DisplayService::animSquishEyes() {
-    _busy = true;
-    for (uint8_t i = 0; i < 3; i++) {
-        drawSquishEyes(false); delay(speedMs(160));
-        drawSquishEyes(true);  delay(speedMs(100));
-    }
-    drawSquishEyes(false);
-    _busy = false;
-}
-
 void DisplayService::drawThinking(uint8_t dotCount) {
     _tft->fillScreen(_animBgColor);
     const int16_t lx = eyeLX(0), rx = eyeRX(0);
     const int16_t ey = eyeY(), cy = eyeCY();
-    _tft->fillRect(lx, ey, EYE_W, EYE_H, _themeForeground);
+    _tft->fillRect(lx, ey, EYE_W, EYE_H, COLOR_EYES);
     _tft->fillRect(lx + EYE_W/2 - 3, cy - 3, 6, 6, _animBgColor);
-    _tft->fillRect(rx, ey, EYE_W, EYE_H, _themeForeground);
+    _tft->fillRect(rx, ey, EYE_W, EYE_H, COLOR_EYES);
     _tft->fillRect(rx + EYE_W - 10, ey + 6, 6, 6, _animBgColor);
     if (dotCount > 0) {
         int16_t dx = rx + EYE_W/2;
@@ -775,15 +803,15 @@ void DisplayService::drawWorking(bool blinkLeft, bool blinkRight) {
     const int16_t lx = eyeLX(0), rx = eyeRX(0);
     const int16_t ey = eyeY(), cy = eyeCY();
     if (blinkLeft) {
-        _tft->fillRect(lx, cy - 5, EYE_W, 10, _themeForeground);
+        _tft->fillRect(lx, cy - 5, EYE_W, 10, COLOR_EYES);
     } else {
-        _tft->fillRect(lx, ey, EYE_W, EYE_H, _themeForeground);
+        _tft->fillRect(lx, ey, EYE_W, EYE_H, COLOR_EYES);
         _tft->fillRect(lx + EYE_W/2 - 3, cy + 10, 6, 6, _animBgColor);
     }
     if (blinkRight) {
-        _tft->fillRect(rx, cy - 5, EYE_W, 10, _themeForeground);
+        _tft->fillRect(rx, cy - 5, EYE_W, 10, COLOR_EYES);
     } else {
-        _tft->fillRect(rx, ey, EYE_W, EYE_H, _themeForeground);
+        _tft->fillRect(rx, ey, EYE_W, EYE_H, COLOR_EYES);
         _tft->fillRect(rx + EYE_W/2 - 3, cy + 10, 6, 6, _animBgColor);
     }
     _tft->fillRect(lx - 10, ey + EYE_H + 12, (rx - lx + EYE_W + 20), 3, COLOR_ORANGE);
@@ -802,24 +830,29 @@ void DisplayService::animWorking() {
 
 void DisplayService::animLogoReveal() {
     _busy = true;
-    BootAnimation::run(*_tft);
+    const String line1 = _preferenceService
+        ? _preferenceService->getBootLine1() : "HELLO";
+    const String line2 = _preferenceService
+        ? _preferenceService->getBootLine2() : "MOCHI";
+    BootAnimation::run(*_tft, line1, line2);
     _busy = false;
 }
 
 // ── Interactive mode ───────────────────────────────────────────
 void DisplayService::enterInteractive() {
-    _interactiveActive = true;
-    _currentMode = DisplayMode::INTERACTIVE;
+    _interactiveActive = false;
+    _currentMode = DisplayMode::EXPRESSION;
     _interactiveView = InteractiveView::EYES_NORMAL;
-    drawNormalEyes();
+    showExpression(_renderedExpression);
 }
 
 void DisplayService::exitInteractive() {
     _interactiveActive = false;
     _termMode = false;
     _currentMode = DisplayMode::EXPRESSION;
+    _interactiveView = InteractiveView::EYES_NORMAL;
     _tft->clear(COLOR_BLACK);
-    _eyesView.init();
+    showExpression(_renderedExpression);
 }
 
 void DisplayService::setInteractiveView(uint8_t view) {
@@ -828,6 +861,9 @@ void DisplayService::setInteractiveView(uint8_t view) {
     }
     _currentMode = DisplayMode::INTERACTIVE;
     _interactiveView = static_cast<InteractiveView>(view);
+    if (view != VIEW_EYES_NORMAL && view != VIEW_EYES_SQUISH) {
+        _expressionPreferred = false;
+    }
     _termMode = false;
     if (_carouselEnabled && isCarouselView(view) && !_carouselSuspended) {
         syncCarouselIndexForView(view);
@@ -835,10 +871,10 @@ void DisplayService::setInteractiveView(uint8_t view) {
     }
     switch (_interactiveView) {
         case InteractiveView::EYES_NORMAL:
-            animNormalEyes();
+            setExpression(ExpressionId::NORMAL);
             break;
         case InteractiveView::EYES_SQUISH:
-            animSquishEyes();
+            setExpression(ExpressionId::HAPPY);
             break;
         case InteractiveView::CODE_VIEW:
             drawCodeView();
@@ -877,8 +913,8 @@ void DisplayService::setInteractiveView(uint8_t view) {
 
 void DisplayService::redrawCurrentView() {
     switch (_interactiveView) {
-        case InteractiveView::EYES_NORMAL: drawNormalEyes(); break;
-        case InteractiveView::EYES_SQUISH: drawSquishEyes(); break;
+        case InteractiveView::EYES_NORMAL:
+        case InteractiveView::EYES_SQUISH: _eyesView.redraw(); break;
         case InteractiveView::CODE_VIEW:   drawCodeView();   break;
         case InteractiveView::DRAW:        _tft->fillScreen(_drawBgColor); break;
         case InteractiveView::THINKING:    drawThinking(); break;
@@ -1047,23 +1083,20 @@ void DisplayService::applyIdleDefaultView() {
         : VIEW_EYES_NORMAL;
     switch (view) {
         case VIEW_EYES_SQUISH:
-            _currentMode = DisplayMode::EXPRESSION;
-            _interactiveActive = false;
-            _interactiveView = InteractiveView::EYES_SQUISH;
-            drawSquishEyes(false);
+            showExpression(ExpressionId::HAPPY);
             break;
         case VIEW_CLOCK:
+            _expressionPreferred = false;
             showClock();
             break;
         case VIEW_POMODORO:
+            _expressionPreferred = false;
             showPomodoroReady();
             break;
         case VIEW_EYES_NORMAL:
         default:
-            _currentMode = DisplayMode::EXPRESSION;
-            _interactiveActive = false;
-            _interactiveView = InteractiveView::EYES_NORMAL;
-            drawNormalEyes();
+            showExpression(_expressionMode == ExpressionMode::AUTO
+                ? _renderedExpression : _selectedExpression);
             break;
     }
 }
@@ -1102,6 +1135,11 @@ void DisplayService::showCarouselCurrentView() {
 }
 
 void DisplayService::switchToIdleDisplay() {
+    if (_expressionPreferred) {
+        showExpression(_expressionMode == ExpressionMode::AUTO
+            ? _renderedExpression : _selectedExpression);
+        return;
+    }
     if (_carouselEnabled) {
         showCarouselCurrentView();
         return;
@@ -1196,7 +1234,8 @@ void DisplayService::update() {
         updateProvisioning();
         return;
     } else if (_currentMode == DisplayMode::EXPRESSION) {
-        // 状态变化时由调用方触发 switchToExpressionMode();这里保持当前画面
+        updateAutoExpression(now);
+        _eyesView.update();
         return;
     } else {
         // INFO 模式:渲染 Claude Code 信息视图

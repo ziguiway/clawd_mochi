@@ -145,7 +145,18 @@ static void animLogoReveal() {
     delay(1500);
 }
 
-void BootAnimation::run(TftDisplay& tft, WebServer* server) {
+static void drawCenteredText(Adafruit_ST7789& tft, const String& text,
+                             int16_t y) {
+    const uint8_t textSize = text.length() > 13 ? 2 : 3;
+    const int16_t width = static_cast<int16_t>(text.length()) * 6 * textSize;
+    tft.setTextSize(textSize);
+    const int16_t x = width < 240 ? (240 - width) / 2 : 0;
+    tft.setCursor(x, y);
+    tft.print(text);
+}
+
+void BootAnimation::run(TftDisplay& tft, const String& line1,
+                        const String& line2, WebServer* server) {
     _tft_ptr = &tft.getTft();
     _server_ptr = server;
     _orange = tft.getTft().color565(218, 17, 0);
@@ -154,10 +165,8 @@ void BootAnimation::run(TftDisplay& tft, WebServer* server) {
     tft.getTft().fillScreen(_orange);
     tft.getTft().setTextColor(ST77XX_WHITE);
     tft.getTft().setTextSize(3);
-    tft.getTft().setCursor(66, 98);
-    tft.getTft().print("Clawd");
-    tft.getTft().setCursor(66, 134);
-    tft.getTft().print("Mochi");
+    drawCenteredText(tft.getTft(), line1, 98);
+    drawCenteredText(tft.getTft(), line2, 134);
     delay(1200);
 
     // Logo reveal - line by line

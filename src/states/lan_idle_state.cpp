@@ -12,7 +12,11 @@ bool shouldShowInfo(ClaudeCodeService::Status status) {
 }
 
 void LANIdleState::onEnter() {
-    _ctx->display()->switchToIdleDisplay();
+    if (_ctx->wifi()->isConnected()) {
+        _ctx->display()->switchToIdleDisplay();
+    } else {
+        _ctx->display()->switchToExpressionMode();
+    }
 }
 
 void LANIdleState::onUpdate() {
@@ -27,8 +31,5 @@ void LANIdleState::onUpdate() {
     if (_ctx->display()->isClaudeStatusEnabled() && shouldShowInfo(status)) {
         static_cast<AppStateMachine*>(_ctx)->transitionTo(AppStateMachine::LAN_WORKING);
         return;
-    }
-    if (!_ctx->wifi()->isConnected()) {
-        static_cast<AppStateMachine*>(_ctx)->transitionTo(AppStateMachine::PROVISIONING);
     }
 }
