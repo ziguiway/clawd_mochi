@@ -59,6 +59,8 @@ void WebService::setupRoutes() {
     _server.on("/profile",     HTTP_GET, [this]() { handleProfile(); });
     _server.on("/profile",     HTTP_POST, [this]() { handleProfileUpdate(); });
     _server.on("/profile/reset", HTTP_POST, [this]() { handleProfileReset(); });
+    _server.on("/config/export", HTTP_GET, [this]() { handleConfigExport(); });
+    _server.on("/config/import", HTTP_POST, [this]() { handleConfigImport(); });
     _server.on("/serial_mode", HTTP_GET, [this]() { handleSerialMode(); });
     _server.on("/crypto/config", HTTP_GET, [this]() { handleCryptoConfig(); });
     _server.on("/crypto/config", HTTP_POST, [this]() { handleCryptoUpdate(); });
@@ -286,8 +288,43 @@ void WebService::handlePrefs() {
     }
     if (_server.hasArg("theme")) {
         const uint8_t theme = static_cast<uint8_t>(_server.arg("theme").toInt());
+        if (theme < THEME_ORANGE_WHITE || theme >= THEME_COUNT) {
+            _server.send(400, "application/json", "{\"error\":\"unknown theme\"}");
+            return;
+        }
         _preferenceService->setDisplayTheme(theme);
-        _displayService->setDisplayTheme(_preferenceService->getDisplayTheme());
+        const char* background = "#e22400";
+        uint8_t brightness = 100;
+        uint8_t nightBrightness = 25;
+        ExpressionId expression = ExpressionId::NORMAL;
+        if (theme == THEME_DARK_ORANGE) {
+            background = "#050505";
+            brightness = 80;
+            nightBrightness = 15;
+            expression = ExpressionId::GRUMPY;
+        } else if (theme == THEME_MINT) {
+            background = "#10251f";
+            brightness = 85;
+            nightBrightness = 20;
+            expression = ExpressionId::CURIOUS;
+        } else if (theme == THEME_PINK) {
+            background = "#2a111d";
+            brightness = 80;
+            nightBrightness = 18;
+            expression = ExpressionId::LOVE;
+        }
+        _preferenceService->setDefaultBgHex(background);
+        _preferenceService->setBrightnessPercent(brightness);
+        _preferenceService->setNightBrightnessPercent(nightBrightness);
+        _preferenceService->setDefaultExpression(expression);
+        _preferenceService->setExpressionMode(ExpressionMode::MANUAL);
+        const uint16_t bg = _displayService->hexToRgb565(background);
+        _displayService->setAnimBgColor(bg);
+        _displayService->setDrawBgColor(bg);
+        _displayService->setDisplayTheme(theme);
+        _displayService->setExpression(expression);
+        _displayService->setBrightnessPercent(brightness);
+        LOG_INFO("Web", "Theme applied: %u", theme);
     }
     if (_server.hasArg("carousel")) {
         const bool enabled = _server.arg("carousel") == "1" ||
@@ -493,6 +530,115 @@ void WebService::handleProfileReset() {
     _displayService->setExpressionMode(ExpressionMode::MANUAL);
     LOG_INFO("Web", "Profile reset to defaults");
     handleProfile();
+}
+
+void WebService::handleConfigExport() {
+    if (!_preferenceService) {
+        _server.send(503, "application/json", "{\"error\":\"configuration unavailable\"}");
+        return;
+    }
+    String json = "{\"version\":1,\"profile\":";
+    json += _preferenceService->getProfileJson();
+    json += ",\"preferences\":";
+    json += _preferenceService->getJson();
+    json += "}";
+    _server.sendHeader("Content-Disposition",
+                       "attachment; filename=\"clawd-mochi-config.json\"");
+    _server.send(200, "application/json", json);
+}
+
+void WebService::handleConfigImport() {
+    if (!_preferenceService) {
+        _server.send(503, "application/json", "{\"error\":\"configuration unavailable\"}");
+        return;
+    }
+    JsonDocument doc;
+    if (deserializeJson(doc, _server.arg("plain"))) {
+        _server.send(400, "application/json", "{\"error\":\"invalid json\"}");
+        return;
+    }
+    JsonObject profile = doc["profile"];
+    JsonObject prefs = doc["preferences"];
+    if ((doc["version"] | 0) != 1 || profile.isNull() || prefs.isNull()) {
+        _server.send(400, "application/json", "{\"error\":\"unsupported configuration\"}");
+        return;
+    }
+
+    const String deviceName = profile["deviceName"] | "";
+    const String bootLine1 = profile["bootLine1"] | "";
+    const String bootLine2 = profile["bootLine2"] | "";
+    const String expressionName = profile["defaultExpression"] | "";
+    const String modeName = profile["expressionMode"] | "";
+    const String bg = prefs["bg"] | "";
+    ExpressionId expression;
+    const uint8_t theme = prefs["theme"] | 255;
+    const uint8_t speed = prefs["speed"] | 0;
+    const uint8_t brightness = prefs["brightness"] | 255;
+    const uint8_t nightStart = prefs["nightStart"] | 255;
+    const uint8_t nightEnd = prefs["nightEnd"] | 255;
+    const uint8_t nightBrightness = prefs["nightBrightness"] | 255;
+    bool validBg = bg.length() == 7 && bg[0] == '#';
+    for (size_t i = 1; validBg && i < bg.length(); i++) {
+        validBg = isxdigit(static_cast<unsigned char>(bg[i]));
+    }
+    if (!PreferenceService::isValidProfileText(deviceName, 12, false) ||
+        !PreferenceService::isValidProfileText(bootLine1, 16, true) ||
+        !PreferenceService::isValidProfileText(bootLine2, 16, true) ||
+        !expressionIdFromName(expressionName, expression) ||
+        (modeName != "auto" && modeName != "manual") ||
+        !validBg || theme >= THEME_COUNT || speed < 1 || speed > 3 ||
+        brightness > 100 || nightStart > 23 || nightEnd > 23 ||
+        nightBrightness > 100 ||
+        !prefs["nightDim"].is<bool>() ||
+        !prefs["claudeStatus"].is<bool>() ||
+        !prefs["carousel"].is<bool>()) {
+        _server.send(400, "application/json", "{\"error\":\"invalid configuration values\"}");
+        return;
+    }
+    JsonArray orderJson = prefs["carouselOrder"];
+    if (orderJson.size() != CAROUSEL_VIEW_COUNT) {
+        _server.send(400, "application/json", "{\"error\":\"invalid carousel order\"}");
+        return;
+    }
+    uint8_t order[CAROUSEL_VIEW_COUNT] = {};
+    for (uint8_t i = 0; i < CAROUSEL_VIEW_COUNT; i++) order[i] = orderJson[i] | 255;
+    if (!_preferenceService->setCarouselOrder(order)) {
+        _server.send(400, "application/json", "{\"error\":\"invalid carousel order\"}");
+        return;
+    }
+
+    _preferenceService->setDeviceName(deviceName);
+    _preferenceService->setBootLine1(bootLine1);
+    _preferenceService->setBootLine2(bootLine2);
+    _preferenceService->setDefaultExpression(expression);
+    const ExpressionMode mode = modeName == "auto"
+        ? ExpressionMode::AUTO : ExpressionMode::MANUAL;
+    _preferenceService->setExpressionMode(mode);
+    _preferenceService->setDefaultBgHex(bg);
+    _preferenceService->setAnimSpeed(speed);
+    _preferenceService->setBrightnessPercent(brightness);
+    _preferenceService->setClaudeStatusEnabled(prefs["claudeStatus"]);
+    _preferenceService->setDisplayTheme(theme);
+    _preferenceService->setCarouselEnabled(prefs["carousel"]);
+    _preferenceService->setCarouselSpeedSeconds(prefs["carouselSpeed"] | 12);
+    _preferenceService->setCarouselFixedView(prefs["carouselFixed"] | VIEW_WEATHER);
+    _preferenceService->setNightDimEnabled(prefs["nightDim"]);
+    _preferenceService->setNightHours(nightStart, nightEnd);
+    _preferenceService->setNightBrightnessPercent(nightBrightness);
+
+    const uint16_t bgColor = _displayService->hexToRgb565(bg);
+    _displayService->setAnimBgColor(bgColor);
+    _displayService->setDrawBgColor(bgColor);
+    _displayService->setAnimSpeed(speed);
+    _displayService->setBrightnessPercent(brightness);
+    _displayService->setClaudeStatusEnabled(prefs["claudeStatus"]);
+    _displayService->setDisplayTheme(theme);
+    _displayService->setExpression(expression);
+    _displayService->setExpressionMode(mode);
+    _displayService->reloadIdleDisplayPreferences();
+    LOG_INFO("Web", "Configuration imported: device=%s theme=%u",
+             deviceName.c_str(), theme);
+    handleConfigExport();
 }
 
 void WebService::sendExpressionState(bool includeList) {

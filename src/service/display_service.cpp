@@ -64,8 +64,11 @@ void DisplayService::init() {
         _brightnessPercent = _preferenceService->getBrightnessPercent();
         _claudeStatusEnabled = _preferenceService->getClaudeStatusEnabled();
         _displayTheme = _preferenceService->getDisplayTheme();
-        _themeForeground = _displayTheme == THEME_ORANGE_BLACK
-            ? COLOR_BLACK : COLOR_WHITE;
+        if (_displayTheme == THEME_ORANGE_BLACK) _themeForeground = COLOR_BLACK;
+        else if (_displayTheme == THEME_DARK_ORANGE) _themeForeground = COLOR_ORANGE;
+        else if (_displayTheme == THEME_MINT) _themeForeground = COLOR_MINT;
+        else if (_displayTheme == THEME_PINK) _themeForeground = COLOR_PINK;
+        else _themeForeground = COLOR_WHITE;
         _eyesView.setBackgroundColor(_animBgColor);
         _ccView.setForegroundColor(_themeForeground);
         loadIdleDisplayPreferences();
@@ -84,9 +87,13 @@ void DisplayService::init() {
 }
 
 void DisplayService::setDisplayTheme(uint8_t theme) {
-    if (theme != THEME_ORANGE_BLACK && theme != THEME_ORANGE_WHITE) return;
+    if (theme >= THEME_COUNT) return;
     _displayTheme = theme;
-    _themeForeground = theme == THEME_ORANGE_BLACK ? COLOR_BLACK : COLOR_WHITE;
+    if (theme == THEME_ORANGE_BLACK) _themeForeground = COLOR_BLACK;
+    else if (theme == THEME_DARK_ORANGE) _themeForeground = COLOR_ORANGE;
+    else if (theme == THEME_MINT) _themeForeground = COLOR_MINT;
+    else if (theme == THEME_PINK) _themeForeground = COLOR_PINK;
+    else _themeForeground = COLOR_WHITE;
     _ccView.setForegroundColor(_themeForeground);
     invalidateTimeView();
 }

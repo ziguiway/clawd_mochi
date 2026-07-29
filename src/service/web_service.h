@@ -60,6 +60,8 @@ private:
     void handleProfile();
     void handleProfileUpdate();
     void handleProfileReset();
+    void handleConfigExport();
+    void handleConfigImport();
     void handleSerialMode();
     void handleCryptoConfig();
     void handleCryptoUpdate();

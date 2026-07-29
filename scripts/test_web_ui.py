@@ -40,15 +40,7 @@ EDGE_PATH = Path(
 
 class SerialLogCapture:
     def __init__(self, port: str) -> None:
-        self._serial = serial.Serial()
-        self._serial.port = port
-        self._serial.baudrate = 115200
-        self._serial.timeout = 0.2
-        self._serial.dsrdtr = False
-        self._serial.rtscts = False
-        self._serial.dtr = False
-        self._serial.rts = False
-        self._serial.open()
+        self._serial = serial.Serial(port, 115200, timeout=0.2)
         self._lines: list[str] = []
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._read, daemon=True)
@@ -59,7 +51,10 @@ class SerialLogCapture:
 
     def _read(self) -> None:
         while not self._stop.is_set():
-            raw = self._serial.readline()
+            try:
+                raw = self._serial.readline()
+            except serial.SerialException:
+                return
             if raw:
                 self._lines.append(
                     raw.decode("utf-8", errors="replace").strip()
@@ -67,6 +62,10 @@ class SerialLogCapture:
 
     def text(self) -> str:
         return "\n".join(self._lines)
+
+    def write(self, command: str) -> None:
+        self._serial.write(command.encode())
+        self._serial.flush()
 
     def close(self) -> None:
         self._stop.set()
@@ -169,12 +168,18 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
     prefs: dict[str, Any] = {
         "bg": "#aa4818",
         "speed": 1,
+        "startup": 0,
+        "brightness": 100,
         "claudeStatus": True,
         "theme": 1,
         "carousel": False,
         "carouselSpeed": 12,
         "carouselOrder": [8, 9, 10, 6],
         "carouselFixed": 8,
+        "nightDim": False,
+        "nightStart": 22,
+        "nightEnd": 7,
+        "nightBrightness": 25,
     }
     prefs_update_count = 0
     expression_state: dict[str, str] = {
@@ -238,7 +243,29 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
                         "true",
                     }
                 if "theme" in args:
-                    self.__class__.prefs["theme"] = int(args["theme"][0])
+                    theme = int(args["theme"][0])
+                    presets = {
+                        1: ("#e22400", 100, 25, "normal"),
+                        2: ("#050505", 80, 15, "grumpy"),
+                        3: ("#10251f", 85, 20, "curious"),
+                        4: ("#2a111d", 80, 18, "love"),
+                    }
+                    bg, brightness, night_brightness, expression = presets[theme]
+                    self.__class__.prefs.update({
+                        "theme": theme,
+                        "bg": bg,
+                        "brightness": brightness,
+                        "nightBrightness": night_brightness,
+                    })
+                    self.__class__.profile.update({
+                        "defaultExpression": expression,
+                        "expressionMode": "manual",
+                    })
+                    self.__class__.expression_state = {
+                        "mode": "manual",
+                        "selected": expression,
+                        "rendered": expression,
+                    }
                 if "carouselSpeed" in args:
                     self.__class__.prefs["carouselSpeed"] = int(
                         args["carouselSpeed"][0]
@@ -277,6 +304,12 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
             )
         elif path == "/profile":
             self.send_json(self.profile)
+        elif path == "/config/export":
+            self.send_json({
+                "version": 1,
+                "profile": self.profile,
+                "preferences": self.prefs,
+            })
         elif path == "/wifi/status":
             self.send_json(
                 {
@@ -354,6 +387,25 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
                 "rendered": "normal",
             }
             self.send_json(self.profile)
+            return
+        if path == "/config/import":
+            length = int(self.headers.get("Content-Length", "0"))
+            try:
+                payload = json.loads(self.rfile.read(length) or b"{}")
+            except json.JSONDecodeError:
+                self.send_json({"error": "invalid json"}, 400)
+                return
+            if payload.get("version") != 1:
+                self.send_json({"error": "unsupported configuration"}, 400)
+                return
+            self.__class__.profile = dict(payload["profile"])
+            self.__class__.prefs = dict(payload["preferences"])
+            self.__class__.expression_state = {
+                "mode": self.profile["expressionMode"],
+                "selected": self.profile["defaultExpression"],
+                "rendered": self.profile["defaultExpression"],
+            }
+            self.send_json(payload)
             return
         if path not in {"/crypto/config", "/market/config"}:
             self.send_json({"ok": True})
@@ -526,31 +578,101 @@ def run_profile_flow(page: Page, *, stub_mode: bool) -> None:
 
 def run_theme_flow(page: Page, *, stub_mode: bool) -> None:
     open_controller(page)
-    page.wait_for_function("() => document.querySelectorAll('.theme-btn').length === 2")
+    page.wait_for_function("() => document.querySelectorAll('.theme-btn').length === 4")
     current = int(page.evaluate("displayTheme"))
-    target = 0 if current == 1 else 1
-    target_button = page.locator(f'.theme-btn[data-theme="{target}"]')
-    target_button.click()
-    page.wait_for_function(
-        "(theme) => displayTheme === theme",
-        arg=target,
-    )
-    assert target_button.get_attribute("aria-pressed") == "true"
-    expected_preview_color = "rgb(5, 5, 5)" if target == 0 else "rgb(255, 255, 255)"
-    assert page.locator(".mpreview").first.evaluate(
-        "(el) => getComputedStyle(el).color"
-    ) == expected_preview_color
-    if stub_mode:
-        assert FirmwareStubHandler.prefs["theme"] == target
+    expected = {
+        1: ("#e22400", "normal"),
+        2: ("#050505", "grumpy"),
+        3: ("#10251f", "curious"),
+        4: ("#2a111d", "love"),
+    }
+    for target in (1, 2, 3, 4):
+        target_button = page.locator(f'.theme-btn[data-theme="{target}"]')
+        target_button.click()
+        page.wait_for_function(
+            "(theme) => displayTheme === theme",
+            arg=target,
+        )
+        page.wait_for_function(
+            "(bg) => document.getElementById('bgCol').value.toLowerCase() === bg",
+            arg=expected[target][0],
+        )
+        page.wait_for_function(
+            "(expression) => document.getElementById('profileExpression').value === expression",
+            arg=expected[target][1],
+        )
+        assert target_button.get_attribute("aria-pressed") == "true"
+        assert page.locator("#bgCol").input_value().lower() == expected[target][0]
+        assert page.locator("#profileExpression").input_value() == expected[target][1]
+        if stub_mode:
+            assert FirmwareStubHandler.prefs["theme"] == target
 
     original_button = page.locator(f'.theme-btn[data-theme="{current}"]')
+    if current not in (1, 2, 3, 4):
+        original_button = page.locator('.theme-btn[data-theme="1"]')
+        current = 1
     original_button.click()
     page.wait_for_function(
         "(theme) => displayTheme === theme",
         arg=current,
     )
     assert original_button.get_attribute("aria-pressed") == "true"
-    print("PASS  切换并持久化系统橙白 / 橙黑主题")
+    print("PASS  切换并持久化 Classic / Dark / Mint / Pink 四主题")
+
+
+def run_config_flow(page: Page, *, stub_mode: bool) -> None:
+    open_controller(page)
+    exported = page.evaluate(
+        """async () => {
+            const r = await fetch('/config/export', {cache: 'no-store'});
+            return await r.json();
+        }"""
+    )
+    assert exported["version"] == 1
+    assert "wifi" not in json.dumps(exported).lower()
+    assert "password" not in json.dumps(exported).lower()
+    assert "logs" not in exported
+    print("PASS  导出配置不包含 WiFi、密码和日志")
+
+    imported = json.loads(json.dumps(exported))
+    imported["profile"]["deviceName"] = "IMPORT"
+    imported["profile"]["defaultExpression"] = "curious"
+    imported["profile"]["expressionMode"] = "manual"
+    imported["preferences"]["theme"] = 3
+    imported["preferences"]["bg"] = "#10251f"
+    status = page.evaluate(
+        """async config => {
+            const r = await fetch('/config/import', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(config)
+            });
+            return r.status;
+        }""",
+        imported,
+    )
+    assert status == 200
+    refreshed = page.evaluate(
+        "async () => await (await fetch('/profile')).json()"
+    )
+    assert refreshed["deviceName"] == "IMPORT"
+    print("PASS  导入合法配置并应用")
+
+    before = page.evaluate(
+        "async () => await (await fetch('/profile')).json()"
+    )
+    invalid_status = page.evaluate(
+        """async () => (await fetch('/config/import', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: '{"version":1,"profile":'
+        })).status"""
+    )
+    after = page.evaluate(
+        "async () => await (await fetch('/profile')).json()"
+    )
+    assert invalid_status == 400 and after == before
+    print("PASS  非法配置被拒绝且现有配置不变")
 
 
 def run_carousel_flow(page: Page, *, stub_mode: bool) -> None:
@@ -685,6 +807,11 @@ def parse_args() -> argparse.Namespace:
         "--serial-port",
         help="实机测试时同步断言串口日志，例如 /dev/cu.usbmodem1101",
     )
+    parser.add_argument(
+        "--serial-log-only",
+        action="store_true",
+        help="仅通过串口读取持久日志并断言关键功能动作",
+    )
     return parser.parse_args()
 
 
@@ -719,6 +846,13 @@ def get_device_logs(base_url: str) -> str:
         return response.read().decode("utf-8", errors="replace")
 
 
+def get_device_export(base_url: str) -> dict[str, Any]:
+    with urllib.request.urlopen(
+        f"{base_url}config/export", timeout=10
+    ) as response:
+        return json.load(response)
+
+
 def assert_device_logs(before: str, after: str) -> None:
     before_lines = [line for line in before.splitlines() if line.strip()]
     anchor = before_lines[-1] if before_lines else ""
@@ -728,6 +862,8 @@ def assert_device_logs(before: str, after: str) -> None:
     assert "[Web] Expression mode: auto" in delta
     assert "[Web] Profile saved:" in delta
     assert "[Web] Profile reset to defaults" in delta
+    assert "[Web] Theme applied: 4" in delta
+    assert "[Web] Configuration imported:" in delta
     print("PASS  HTTP 日志记录了表情与个性化功能动作")
 
 
@@ -736,6 +872,8 @@ def assert_serial_logs(logs: str) -> None:
     assert "[Web] Expression mode: auto" in logs
     assert "[Web] Profile saved:" in logs
     assert "[Web] Profile reset to defaults" in logs
+    assert "[Web] Theme applied: 4" in logs
+    assert "[Web] Configuration imported:" in logs
     print("PASS  串口日志实时输出了表情与个性化功能动作")
 
 
@@ -809,8 +947,30 @@ def restore_device_profile(base_url: str, profile: dict[str, Any]) -> None:
         pass
 
 
+def restore_device_export(base_url: str, config: dict[str, Any]) -> None:
+    request = urllib.request.Request(
+        f"{base_url}config/import",
+        data=json.dumps(config).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=10):
+        pass
+
+
 def main() -> int:
     args = parse_args()
+    if args.serial_log_only:
+        if not args.serial_port:
+            raise SystemExit("--serial-log-only 需要同时提供 --serial-port")
+        capture = SerialLogCapture(args.serial_port)
+        capture.start()
+        time.sleep(0.5)
+        capture.write("log 100\n")
+        time.sleep(1)
+        assert_serial_logs(capture.text())
+        capture.close()
+        return 0
     if not EDGE_PATH.exists():
         raise SystemExit(
             "未找到 Microsoft Edge。请安装 Edge，或修改脚本中的 EDGE_PATH。"
@@ -822,6 +982,7 @@ def main() -> int:
     original_device_prefs: dict[str, Any] | None = None
     original_device_profile: dict[str, Any] | None = None
     device_logs_before: str | None = None
+    original_device_export: dict[str, Any] | None = None
     serial_capture: SerialLogCapture | None = None
     if args.device_url:
         base_url = args.device_url.rstrip("/") + "/"
@@ -831,10 +992,8 @@ def main() -> int:
         ]
         original_device_prefs = get_device_prefs(base_url)
         original_device_profile = get_device_profile(base_url)
+        original_device_export = get_device_export(base_url)
         device_logs_before = get_device_logs(base_url)
-        if args.serial_port:
-            serial_capture = SerialLogCapture(args.serial_port)
-            serial_capture.start()
     else:
         FirmwareStubHandler.assets = [dict(item) for item in INITIAL_ASSETS]
         FirmwareStubHandler.market_assets = [
@@ -845,12 +1004,18 @@ def main() -> int:
         FirmwareStubHandler.prefs = {
             "bg": "#aa4818",
             "speed": 1,
+            "startup": 0,
+            "brightness": 100,
             "claudeStatus": True,
             "theme": 1,
             "carousel": False,
             "carouselSpeed": 12,
             "carouselOrder": [8, 9, 10, 6],
             "carouselFixed": 8,
+            "nightDim": False,
+            "nightStart": 22,
+            "nightEnd": 7,
+            "nightBrightness": 25,
         }
         FirmwareStubHandler.prefs_update_count = 0
         FirmwareStubHandler.profile = {
@@ -909,15 +1074,13 @@ def main() -> int:
                 run_expression_flow(page, stub_mode=not bool(args.device_url))
                 run_profile_flow(page, stub_mode=not bool(args.device_url))
                 run_theme_flow(page, stub_mode=not bool(args.device_url))
+                run_config_flow(page, stub_mode=not bool(args.device_url))
                 run_carousel_flow(page, stub_mode=not bool(args.device_url))
                 run_market_flow(page, stub_mode=not bool(args.device_url))
                 if device_logs_before is not None:
                     assert_device_logs(
                         device_logs_before, get_device_logs(base_url)
                     )
-                if serial_capture is not None:
-                    time.sleep(0.3)
-                    assert_serial_logs(serial_capture.text())
             except Exception:
                 screenshot = Path("/tmp/clawd_mochi_ui_failure.png")
                 page.screenshot(path=str(screenshot), full_page=True)
@@ -927,8 +1090,6 @@ def main() -> int:
                 context.close()
                 browser.close()
     finally:
-        if serial_capture is not None:
-            serial_capture.close()
         if original_device_assets is not None:
             restore_device_config(base_url, original_device_assets)
             print("INFO  已恢复设备原有币种配置")
@@ -937,10 +1098,13 @@ def main() -> int:
                 base_url, original_device_market_assets
             )
             print("INFO  已恢复设备原有股票配置")
-        if original_device_prefs is not None:
+        if original_device_export is not None:
+            restore_device_export(base_url, original_device_export)
+            print("INFO  已恢复设备原有显示与个性化配置")
+        elif original_device_prefs is not None:
             restore_device_carousel_prefs(base_url, original_device_prefs)
             print("INFO  已恢复设备原有轮播设置")
-        if original_device_profile is not None:
+        if original_device_export is None and original_device_profile is not None:
             restore_device_profile(base_url, original_device_profile)
             print("INFO  已恢复设备原有个性化配置")
         if server is not None:

@@ -50,6 +50,13 @@
 // 系统显示主题
 #define THEME_ORANGE_BLACK 0
 #define THEME_ORANGE_WHITE 1
+#define THEME_DARK_ORANGE  2
+#define THEME_MINT         3
+#define THEME_PINK         4
+#define THEME_COUNT        5
+
+#define COLOR_MINT                  0x5F15
+#define COLOR_PINK                  0xFBD6
 
 // 终端配置
 #define TERM_COLS      15

@@ -12,8 +12,7 @@ void PreferenceService::init() {
     _brightnessPercent = constrain(_prefs.getUChar("bright", _brightnessPercent), 0, 100);
     _claudeStatusEnabled = _prefs.getBool("ccstatus", _claudeStatusEnabled);
     _displayTheme = _prefs.getUChar("theme", _displayTheme);
-    if (_displayTheme != THEME_ORANGE_BLACK &&
-        _displayTheme != THEME_ORANGE_WHITE) {
+    if (_displayTheme >= THEME_COUNT) {
         _displayTheme = THEME_ORANGE_WHITE;
     }
     _carouselEnabled = _prefs.getBool("carousel", _carouselEnabled);
@@ -162,7 +161,7 @@ void PreferenceService::setClaudeStatusEnabled(bool enabled) {
 }
 
 void PreferenceService::setDisplayTheme(uint8_t theme) {
-    if (theme != THEME_ORANGE_BLACK && theme != THEME_ORANGE_WHITE) return;
+    if (theme >= THEME_COUNT) return;
     _displayTheme = theme;
     _prefs.putUChar("theme", _displayTheme);
 }

@@ -53,6 +53,8 @@ void SerialCommandService::processCommand(const String& cmd) {
     else if (cmd == "time") showTime();
     else if (cmd == "time sync") syncTime();
     else if (cmd == "log") showLogs();
+    else if (cmd.startsWith("log ")) showLogs(
+        constrain(cmd.substring(4).toInt(), 1, 100));
     else if (cmd == "log clear") clearLogs();
     else if (cmd.startsWith("log level ")) setLogLevel(cmd.substring(10));
     else if (cmd.startsWith("cc ")) handleClaudeCommand(cmd.substring(3));
@@ -71,7 +73,7 @@ void SerialCommandService::printHelp() {
     Serial.println("  ip            - 显示 IP 地址");
     Serial.println("  time          - 显示当前时间");
     Serial.println("  time sync     - 手动同步时间");
-    Serial.println("  log           - 显示最近日志");
+    Serial.println("  log [N]       - 显示最近 N 条日志 (默认 20)");
     Serial.println("  log clear     - 清除日志");
     Serial.println("  log level N   - 设置日志级别 (debug/info/warn/error)");
     Serial.println("  cc <event>,<hook>,<tool>,<detail>,<model> - 注入 Claude 状态");
@@ -105,9 +107,9 @@ void SerialCommandService::syncTime() {
     Serial.println("时间: " + _timeService->getDateTime());
 }
 
-void SerialCommandService::showLogs() {
+void SerialCommandService::showLogs(size_t maxLines) {
     Serial.println("\n--- 最近日志 ---");
-    Serial.println(Logger::getInstance().getLogs(20));
+    Serial.println(Logger::getInstance().getLogs(maxLines));
     Serial.println("----------------\n");
 }
 

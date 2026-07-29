@@ -25,7 +25,7 @@ private:
     void printIP();
     void showTime();
     void syncTime();
-    void showLogs();
+    void showLogs(size_t maxLines = 20);
     void clearLogs();
     void setLogLevel(const String& level);
     void resetFactory();
