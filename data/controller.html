@@ -226,7 +226,7 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
 <div class="egrid" id="expressionGrid">
   <button class="ebtn active" data-expression="normal" onclick="selectExpression('normal')"><span class="face">■ ■</span>Normal</button>
   <button class="ebtn" data-expression="happy" onclick="selectExpression('happy')"><span class="face">&gt; &lt;</span>Happy</button>
-  <button class="ebtn" data-expression="sleepy" onclick="selectExpression('sleepy')"><span class="face">▬ ▬</span>Sleepy</button>
+  <button class="ebtn" data-expression="thinking" onclick="selectExpression('thinking')"><span class="face">■ ■ ···</span>Thinking</button>
   <button class="ebtn" data-expression="sleeping" onclick="selectExpression('sleeping')"><span class="face">— —</span>Sleeping</button>
   <button class="ebtn" data-expression="curious" onclick="selectExpression('curious')"><span class="face">■ ▪</span>Curious</button>
   <button class="ebtn" data-expression="surprised" onclick="selectExpression('surprised')"><span class="face">● ●</span>Surprised</button>
@@ -238,7 +238,7 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
   <div class="rrow"><span class="mlabel">DEVICE NAME</span><input class="tin" id="profileName" maxlength="12" placeholder="MOCHI"></div>
   <div class="rrow"><span class="mlabel">BOOT LINE 1</span><input class="tin" id="profileBoot1" maxlength="16" placeholder="HELLO"></div>
   <div class="rrow"><span class="mlabel">BOOT LINE 2</span><input class="tin" id="profileBoot2" maxlength="16" placeholder="MOCHI"></div>
-  <div class="rrow"><span class="mlabel">DEFAULT FACE</span><select class="rselect" id="profileExpression"><option value="normal">Normal</option><option value="happy">Happy</option><option value="sleepy">Sleepy</option><option value="sleeping">Sleeping</option><option value="curious">Curious</option><option value="surprised">Surprised</option><option value="grumpy">Grumpy</option><option value="love">Love</option></select></div>
+  <div class="rrow"><span class="mlabel">DEFAULT FACE</span><select class="rselect" id="profileExpression"><option value="normal">Normal</option><option value="happy">Happy</option><option value="thinking">Thinking</option><option value="sleeping">Sleeping</option><option value="curious">Curious</option><option value="surprised">Surprised</option><option value="grumpy">Grumpy</option><option value="love">Love</option></select></div>
   <div class="rrow"><span class="mlabel">START MODE</span><select class="rselect" id="profileMode"><option value="manual">Manual</option><option value="auto">Auto</option></select></div>
   <div class="ctrl"><button class="cbtn on" id="profileSave" onclick="saveProfile()">save profile</button><button class="cbtn" onclick="resetProfile()">restore defaults</button></div>
   <div class="ctrl"><button class="cbtn" id="configExport" onclick="exportConfig()">export JSON</button><button class="cbtn" id="configImport" onclick="document.getElementById('configFile').click()">import JSON</button></div>

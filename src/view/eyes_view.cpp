@@ -8,9 +8,8 @@
 namespace {
 constexpr unsigned long BLINK_MIN_INTERVAL_MS = 2500;
 constexpr unsigned long BLINK_MAX_INTERVAL_MS = 6000;
-constexpr unsigned long SLEEPY_BLINK_MIN_INTERVAL_MS = 4000;
-constexpr unsigned long SLEEPY_BLINK_MAX_INTERVAL_MS = 8000;
 constexpr unsigned long BLINK_DURATION_MS = 160;
+constexpr unsigned long THINKING_FRAME_INTERVAL_MS = 280;
 
 int16_t eyeLX(int16_t screenW) {
     return (screenW - (EYE_W * 2 + EYE_GAP)) / 2;
@@ -31,14 +30,18 @@ EyesView::EyesView(TftDisplay* tft)
     , _expression(ExpressionId::NORMAL)
     , _nextBlinkMs(0)
     , _blinkStartedMs(0)
+    , _lastThinkingFrameMs(0)
     , _isBlinking(false)
+    , _thinkingFrame(2)
 {
 }
 
 void EyesView::init() {
     _isBlinking = false;
+    _thinkingFrame = 2;
+    _lastThinkingFrameMs = millis();
     redraw();
-    scheduleNextBlink(millis());
+    if (supportsBlink()) scheduleNextBlink(_lastThinkingFrameMs);
 }
 
 void EyesView::setExpression(ExpressionId expression) {
@@ -52,9 +55,18 @@ void EyesView::redraw() {
 }
 
 void EyesView::update() {
+    const unsigned long now = millis();
+    if (_expression == ExpressionId::THINKING) {
+        if (now - _lastThinkingFrameMs >= THINKING_FRAME_INTERVAL_MS) {
+            _lastThinkingFrameMs = now;
+            _thinkingFrame = (_thinkingFrame + 1) % 4;
+            drawThinkingDots();
+        }
+        return;
+    }
+
     if (!supportsBlink()) return;
 
-    const unsigned long now = millis();
     if (!_isBlinking && static_cast<long>(now - _nextBlinkMs) >= 0) {
         _isBlinking = true;
         _blinkStartedMs = now;
@@ -72,7 +84,7 @@ void EyesView::drawExpression() {
     switch (_expression) {
         case ExpressionId::NORMAL:    drawNormal(_isBlinking); break;
         case ExpressionId::HAPPY:     drawHappy(); break;
-        case ExpressionId::SLEEPY:    drawSleepy(_isBlinking); break;
+        case ExpressionId::THINKING:  drawThinking(); break;
         case ExpressionId::SLEEPING:  drawSleeping(); break;
         case ExpressionId::CURIOUS:   drawCurious(); break;
         case ExpressionId::SURPRISED: drawSurprised(); break;
@@ -102,17 +114,25 @@ void EyesView::drawHappy() {
     drawChevron(rx, cy, 25, 18, 5, false);
 }
 
-void EyesView::drawSleepy(bool blinking) {
-    const int16_t lx = eyeLX(_tft->getWidth());
-    const int16_t rx = eyeRX(_tft->getWidth());
-    const int16_t ey = eyeY(_tft->getHeight());
-    if (blinking) {
-        _tft->fillRect(lx - 2, ey + 39, EYE_W + 4, 7, COLOR_EYES);
-        _tft->fillRect(rx - 2, ey + 39, EYE_W + 4, 7, COLOR_EYES);
-        return;
+void EyesView::drawThinking() {
+    drawNormal(false);
+    drawThinkingDots();
+}
+
+void EyesView::drawThinkingDots() {
+    constexpr int16_t DOT_X = 194;
+    constexpr int16_t DOT_Y = 14;
+    constexpr int16_t DOT_SIZE = 8;
+    constexpr int16_t DOT_STEP = 14;
+    constexpr uint8_t VISIBLE_DOTS[] = {1, 2, 3, 2};
+
+    // 只刷新右上角符号区域，避免动画导致整屏闪烁。
+    _tft->fillRect(DOT_X - 2, DOT_Y - 2, 42, 12, _backgroundColor);
+    const uint8_t count = VISIBLE_DOTS[_thinkingFrame];
+    for (uint8_t index = 0; index < count; index++) {
+        _tft->fillRect(DOT_X + index * DOT_STEP, DOT_Y,
+                       DOT_SIZE, DOT_SIZE, COLOR_EYES);
     }
-    _tft->fillRect(lx, ey + 24, EYE_W, 36, COLOR_EYES);
-    _tft->fillRect(rx, ey + 24, EYE_W, 36, COLOR_EYES);
 }
 
 void EyesView::drawSleeping() {
@@ -126,21 +146,26 @@ void EyesView::drawSleeping() {
 }
 
 void EyesView::drawCurious() {
-    const int16_t lx = eyeLX(_tft->getWidth());
-    const int16_t rx = eyeRX(_tft->getWidth());
-    const int16_t ey = eyeY(_tft->getHeight());
-    _tft->fillRect(lx - 4, ey + 8, EYE_W + 8, EYE_H - 16, COLOR_EYES);
-    _tft->fillRect(rx + 5, ey - 5, EYE_W - 10, EYE_H + 10, COLOR_EYES);
+    // 眼睛完全复用默认表情，尺寸、位置与间距均不改变。
+    drawNormal(false);
+
+    // 原图像素问号的六个独立矩形块。
+    _tft->fillRect(209, 13, 12, 5, COLOR_EYES);
+    _tft->fillRect(205, 18, 5, 5, COLOR_EYES);
+    _tft->fillRect(221, 18, 5, 10, COLOR_EYES);
+    _tft->fillRect(217, 28, 5, 5, COLOR_EYES);
+    _tft->fillRect(212, 32, 5, 5, COLOR_EYES);
+    _tft->fillRect(212, 42, 5, 5, COLOR_EYES);
 }
 
 void EyesView::drawSurprised() {
-    const int16_t lx = eyeLX(_tft->getWidth()) + EYE_W / 2;
-    const int16_t rx = eyeRX(_tft->getWidth()) + EYE_W / 2;
-    const int16_t cy = eyeY(_tft->getHeight()) + EYE_H / 2;
-    _tft->fillCircle(lx, cy, 24, COLOR_EYES);
-    _tft->fillCircle(rx, cy, 24, COLOR_EYES);
-    _tft->fillCircle(lx, cy, 11, _backgroundColor);
-    _tft->fillCircle(rx, cy, 11, _backgroundColor);
+    // 完全复用默认表情的方眼尺寸、间距与纵向位置。
+    drawNormal(false);
+
+    // 右上角使用方形感叹号表达惊讶，与 Sleeping 的 Zz 状态符号呼应。
+    const int16_t symbolX = _tft->getWidth() - 20;
+    _tft->fillRect(symbolX, 14, 8, 24, COLOR_EYES);
+    _tft->fillRect(symbolX, 44, 8, 8, COLOR_EYES);
 }
 
 void EyesView::drawGrumpy() {
@@ -163,6 +188,20 @@ void EyesView::drawLove() {
     const int16_t cy = eyeY(_tft->getHeight()) + EYE_H / 2;
     drawHeart(lx, cy);
     drawHeart(rx, cy);
+
+    // 短小的上扬弧线，让爱心眼保留辨识度的同时更有表情
+    const int16_t mouthX = _tft->getWidth() / 2;
+    const int16_t mouthY = cy + 61;
+    for (int8_t offset = -3; offset <= 3; offset++) {
+        _tft->drawLine(mouthX - 12, mouthY + offset,
+                       mouthX - 5, mouthY + 6 + offset, COLOR_EYES);
+        _tft->drawLine(mouthX - 5, mouthY + 6 + offset,
+                       mouthX + 5, mouthY + 6 + offset, COLOR_EYES);
+        _tft->drawLine(mouthX + 5, mouthY + 6 + offset,
+                       mouthX + 12, mouthY + offset, COLOR_EYES);
+    }
+    _tft->fillCircle(mouthX - 12, mouthY, 3, COLOR_EYES);
+    _tft->fillCircle(mouthX + 12, mouthY, 3, COLOR_EYES);
 }
 
 void EyesView::drawChevron(int16_t cx, int16_t cy, int16_t arm, int16_t reach,
@@ -184,22 +223,28 @@ void EyesView::drawChevron(int16_t cx, int16_t cy, int16_t arm, int16_t reach,
 }
 
 void EyesView::drawHeart(int16_t cx, int16_t cy) {
-    _tft->fillCircle(cx - 9, cy - 10, 12, COLOR_EYES);
-    _tft->fillCircle(cx + 9, cy - 10, 12, COLOR_EYES);
-    _tft->getTft().fillTriangle(cx - 21, cy - 7, cx + 21, cy - 7,
-                                cx, cy + 24, COLOR_EYES);
+    // 圆润双瓣与逐行收窄的下半部，避免圆形和三角形拼接出的硬边
+    _tft->fillCircle(cx - 11, cy - 10, 15, COLOR_EYES);
+    _tft->fillCircle(cx + 11, cy - 10, 15, COLOR_EYES);
+
+    static constexpr uint8_t HALF_WIDTHS[] = {
+        28, 28, 28, 27, 27, 27, 26, 26, 25,
+        25, 24, 24, 23, 23, 22, 21, 21, 20,
+        19, 19, 18, 17, 16, 16, 15, 14, 13,
+        12, 11, 10, 9, 8, 7, 5, 3, 1
+    };
+    for (uint8_t row = 0; row < sizeof(HALF_WIDTHS); row++) {
+        const int16_t halfWidth = HALF_WIDTHS[row];
+        _tft->fillRect(cx - halfWidth, cy - 7 + row,
+                       halfWidth * 2 + 1, 1, COLOR_EYES);
+    }
 }
 
 void EyesView::scheduleNextBlink(unsigned long now) {
-    const bool sleepy = _expression == ExpressionId::SLEEPY;
-    const unsigned long minimum = sleepy
-        ? SLEEPY_BLINK_MIN_INTERVAL_MS : BLINK_MIN_INTERVAL_MS;
-    const unsigned long maximum = sleepy
-        ? SLEEPY_BLINK_MAX_INTERVAL_MS : BLINK_MAX_INTERVAL_MS;
-    _nextBlinkMs = now + random(minimum, maximum + 1);
+    _nextBlinkMs = now + random(BLINK_MIN_INTERVAL_MS,
+                                BLINK_MAX_INTERVAL_MS + 1);
 }
 
 bool EyesView::supportsBlink() const {
-    return _expression == ExpressionId::NORMAL ||
-           _expression == ExpressionId::SLEEPY;
+    return _expression == ExpressionId::NORMAL;
 }

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="920" viewBox="0 0 1440 920">
+  <rect width="1440" height="920" fill="#101114"/>
+  <text x="72" y="78" fill="#ffffff" font-family="Hiragino Sans GB, sans-serif" font-size="42" font-weight="700">Love A · 嘴型追加方案</text>
+  <text x="72" y="122" fill="#92949b" font-family="Hiragino Sans GB, sans-serif" font-size="22">保留已经确认不错的微笑版，新增一个更夸张、更有梗的“心动流口水”版本</text>
+
+  <!-- A1 -->
+  <g transform="translate(112 186)">
+    <rect width="520" height="520" rx="48" fill="#FA6A00"/>
+    <g transform="scale(2.1666667)" fill="#101114">
+      <path d="M31 76 C31 61 48 55 60 68 C72 55 89 61 89 76 C89 94 72 106 60 120 C48 106 31 94 31 76 Z"/>
+      <path d="M151 76 C151 61 168 55 180 68 C192 55 209 61 209 76 C209 94 192 106 180 120 C168 106 151 94 151 76 Z"/>
+      <path d="M108 143 Q120 153 132 143" fill="none" stroke="#101114" stroke-width="6" stroke-linecap="round"/>
+    </g>
+    <text x="0" y="572" fill="#ffffff" font-family="Hiragino Sans GB, sans-serif" font-size="30" font-weight="700">A1 · 小幅微笑</text>
+    <text x="0" y="610" fill="#92949b" font-family="Hiragino Sans GB, sans-serif" font-size="20">甜、克制，适合作为常驻 Love 表情</text>
+    <rect x="0" y="642" width="126" height="40" rx="20" fill="#25272c"/>
+    <text x="63" y="669" text-anchor="middle" fill="#d7d8da" font-family="Hiragino Sans GB, sans-serif" font-size="18" font-weight="700">当前保留</text>
+  </g>
+
+  <!-- A2 -->
+  <g transform="translate(808 186)">
+    <rect x="-9" y="-9" width="538" height="538" rx="58" fill="none" stroke="#FF8A22" stroke-width="5"/>
+    <rect width="520" height="520" rx="48" fill="#FA6A00"/>
+    <g transform="scale(2.1666667)" fill="#101114">
+      <path d="M31 76 C31 61 48 55 60 68 C72 55 89 61 89 76 C89 94 72 106 60 120 C48 106 31 94 31 76 Z"/>
+      <path d="M151 76 C151 61 168 55 180 68 C192 55 209 61 209 76 C209 94 192 106 180 120 C168 106 151 94 151 76 Z"/>
+
+      <!-- asymmetric goofy open smile -->
+      <path d="M101 140 Q119 153 139 137 Q137 157 121 163 Q106 161 101 140 Z"/>
+      <path d="M109 148 Q121 154 132 146 Q128 154 120 156 Q113 155 109 148 Z" fill="#FA6A00"/>
+
+      <!-- drool from the raised mouth corner -->
+      <path d="M139 143 C143 151 142 159 139 166" fill="none" stroke="#101114" stroke-width="5" stroke-linecap="round"/>
+      <path d="M139 162 C132 171 133 179 139 182 C145 179 146 171 139 162 Z"/>
+    </g>
+    <rect x="364" y="20" width="132" height="42" rx="21" fill="#101114"/>
+    <text x="430" y="49" text-anchor="middle" fill="#FF8A22" font-family="Hiragino Sans GB, sans-serif" font-size="19" font-weight="700">新增版本</text>
+    <text x="0" y="572" fill="#ffffff" font-family="Hiragino Sans GB, sans-serif" font-size="30" font-weight="700">A2 · 心动流口水</text>
+    <text x="0" y="610" fill="#d2d3d6" font-family="Hiragino Sans GB, sans-serif" font-size="20">歪嘴傻笑 + 一滴口水，更夸张也更有梗</text>
+    <rect x="0" y="642" width="168" height="40" rx="20" fill="#FF8A22"/>
+    <text x="84" y="669" text-anchor="middle" fill="#101114" font-family="Hiragino Sans GB, sans-serif" font-size="18" font-weight="700">适合互动触发</text>
+  </g>
+</svg>

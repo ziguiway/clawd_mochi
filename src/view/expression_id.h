@@ -5,7 +5,7 @@
 enum class ExpressionId : uint8_t {
     NORMAL = 0,
     HAPPY,
-    SLEEPY,
+    THINKING,
     SLEEPING,
     CURIOUS,
     SURPRISED,

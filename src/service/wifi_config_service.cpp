@@ -8,7 +8,9 @@ WifiConfigService* WifiConfigService::_instance = nullptr;
 WifiConfigService::WifiConfigService()
     : _configured(false), _connected(false), _connecting(false)
     , _apStarted(false), _mdnsStarted(false), _connectStartTime(0)
-    , _lastReconnectMs(0)
+    , _lastAttemptEndMs(0), _connectedSinceMs(0), _lastPowerAdjustMs(0)
+    , _filteredRssi(0), _currentTxPower(WIFI_POWER_19_5dBm)
+    , _wifiSleepEnabled(true), _radioProfileInitialized(false)
     , _connectPhase(ConnectPhase::ASSOCIATING), _lastDisconnectReason(0)
     , _lastError("Connection failed"), _retryCount(0), _retryExhausted(false)
     , _provMode(ProvisioningMode::NONE), _provModeStartMs(0)
@@ -49,10 +51,15 @@ static const char* mapDisconnectReason(uint8_t reason) {
     switch (reason) {
         case WIFI_REASON_NO_AP_FOUND:
             return "Network not found";
+        case WIFI_REASON_AUTH_EXPIRE:
+        case WIFI_REASON_ASSOC_EXPIRE:
+        case WIFI_REASON_BEACON_TIMEOUT:
+            return "Weak signal / AP timeout";
         case WIFI_REASON_AUTH_FAIL:
+            return "Wrong password";
         case WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT:
         case WIFI_REASON_HANDSHAKE_TIMEOUT:
-            return "Wrong password";
+            return "Authentication timeout";
         default:
             return "Connection failed";
     }
@@ -117,7 +124,9 @@ void WifiConfigService::update() {
 
     if (_connected && WiFi.status() != WL_CONNECTED) {
         _connected = false;
+        _lastAttemptEndMs = millis();
         stopMDNS();
+        applyConnectingRadioProfile();
         LOG_WARN("WiFi", "STA disconnected, keeping AP control");
     }
 
@@ -129,11 +138,17 @@ void WifiConfigService::update() {
             _lastError = "";
             _retryCount = 0;
             _retryExhausted = false;
+            _connectedSinceMs = millis();
+            _lastPowerAdjustMs = 0;
+            _filteredRssi = 0;
             startMDNS();
             setProvisioningMode(ProvisioningMode::CONNECTED);
-            LOG_INFO("WiFi", "已连接: %s IP: %s", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+            LOG_INFO("WiFi", "已连接: %s IP: %s RSSI: %d dBm CH: %d",
+                     WiFi.SSID().c_str(), WiFi.localIP().toString().c_str(),
+                     WiFi.RSSI(), WiFi.channel());
         } else if (millis() - _connectStartTime > CFG_WIFI_CONNECT_TIMEOUT_MS) {
             _connecting = false;
+            _lastAttemptEndMs = millis();
             _lastError = mapDisconnectReason(_lastDisconnectReason);
             LOG_WARN("WiFi", "连接超时: %s (reason=%d)", _lastError, _lastDisconnectReason);
             if (!_configured) {
@@ -154,6 +169,10 @@ void WifiConfigService::update() {
         return;
     }
 
+    if (_connected) {
+        updateConnectedRadioProfile();
+    }
+
     // 已连接后:3 秒展示,然后回归 NONE
     if (_provMode == ProvisioningMode::CONNECTED) {
         if (millis() - _provModeStartMs > 3000) {
@@ -162,17 +181,17 @@ void WifiConfigService::update() {
         return;
     }
 
-    // 常态:已配置但掉线,定时重连(时间戳在 connectToWifi 里统一记录)
+    // 常态:已配置但掉线,按连续失败次数渐进重连
     if (_configured && !_connected && !_connecting
         && _provMode != ProvisioningMode::AP_FALLBACK) {
-        if (millis() - _lastReconnectMs > CFG_WIFI_RECONNECT_INTERVAL_MS) {
+        if (millis() - _lastAttemptEndMs >= getReconnectDelayMs()) {
             connectToWifi(_ssid.c_str(), _password.c_str());
         }
     }
 
     // 重试打满后:保留 5 分钟一次的慢速重试,路由器恢复后可自愈
     if (_retryExhausted && _configured && !_connected && !_connecting
-        && millis() - _lastReconnectMs > CFG_WIFI_SLOW_RETRY_INTERVAL_MS) {
+        && millis() - _lastAttemptEndMs >= CFG_WIFI_SLOW_RETRY_INTERVAL_MS) {
         LOG_INFO("WiFi", "慢速重试连接...");
         connectToWifi(_ssid.c_str(), _password.c_str());
     }
@@ -213,10 +232,10 @@ bool WifiConfigService::connectToWifi(const char* ssid, const char* password) {
     stopMDNS();
     _connected = false;
     ensureAccessPoint();
+    applyConnectingRadioProfile();
     WiFi.begin(ssid, password);
     _connecting = true;
     _connectStartTime = millis();
-    _lastReconnectMs = _connectStartTime;
     _connectPhase = ConnectPhase::ASSOCIATING;
     _lastDisconnectReason = 0;
     setProvisioningMode(ProvisioningMode::CONNECTING);
@@ -247,9 +266,86 @@ void WifiConfigService::reset() {
 bool WifiConfigService::isConfigured() { return _configured; }
 bool WifiConfigService::isConnected() { return _connected; }
 unsigned long WifiConfigService::getRetryRemainingMs() const {
-    unsigned long elapsed = millis() - _lastReconnectMs;
-    if (elapsed >= CFG_WIFI_RECONNECT_INTERVAL_MS) return 0;
-    return CFG_WIFI_RECONNECT_INTERVAL_MS - elapsed;
+    unsigned long delayMs = getReconnectDelayMs();
+    unsigned long elapsed = millis() - _lastAttemptEndMs;
+    if (elapsed >= delayMs) return 0;
+    return delayMs - elapsed;
+}
+
+unsigned long WifiConfigService::getReconnectDelayMs() const {
+    switch (_retryCount) {
+        case 0:
+        case 1:  return CFG_WIFI_RETRY_DELAY_1_MS;
+        case 2:  return CFG_WIFI_RETRY_DELAY_2_MS;
+        case 3:  return CFG_WIFI_RETRY_DELAY_3_MS;
+        case 4:  return CFG_WIFI_RETRY_DELAY_4_MS;
+        default: return CFG_WIFI_RETRY_DELAY_5_MS;
+    }
+}
+
+void WifiConfigService::setRadioProfile(wifi_power_t txPower, bool sleepEnabled,
+                                        const char* profileName, int16_t rssi) {
+    bool changed = !_radioProfileInitialized
+        || txPower != _currentTxPower
+        || sleepEnabled != _wifiSleepEnabled;
+    if (!changed) return;
+
+    if (!_radioProfileInitialized || txPower != _currentTxPower) {
+        if (WiFi.setTxPower(txPower)) {
+            _currentTxPower = txPower;
+        } else {
+            LOG_WARN("WiFi", "设置发射功率失败: %s", profileName);
+        }
+    }
+    if (!_radioProfileInitialized || sleepEnabled != _wifiSleepEnabled) {
+        WiFi.setSleep(sleepEnabled);
+        _wifiSleepEnabled = sleepEnabled;
+    }
+    _radioProfileInitialized = true;
+
+    if (rssi == 0) {
+        LOG_INFO("WiFi", "射频策略: %s TX=%.1f dBm sleep=%s",
+                 profileName, static_cast<int>(_currentTxPower) / 4.0f,
+                 _wifiSleepEnabled ? "on" : "off");
+    } else {
+        LOG_INFO("WiFi", "射频策略: %s RSSI=%d dBm TX=%.1f dBm sleep=%s",
+                 profileName, rssi, static_cast<int>(_currentTxPower) / 4.0f,
+                 _wifiSleepEnabled ? "on" : "off");
+    }
+}
+
+void WifiConfigService::applyConnectingRadioProfile() {
+    // 扫描/认证/弱信号恢复阶段优先保证成功率
+    setRadioProfile(WIFI_POWER_19_5dBm, false, "connecting", 0);
+}
+
+void WifiConfigService::updateConnectedRadioProfile() {
+    unsigned long now = millis();
+    if (now - _connectedSinceMs < CFG_WIFI_POWER_SETTLE_MS) return;
+    if (_lastPowerAdjustMs != 0
+        && now - _lastPowerAdjustMs < CFG_WIFI_POWER_ADJUST_INTERVAL_MS) {
+        return;
+    }
+    _lastPowerAdjustMs = now;
+
+    int16_t rssi = WiFi.RSSI();
+    if (_filteredRssi == 0) {
+        _filteredRssi = rssi;
+    } else {
+        // 简单低通滤波,避免瞬时波动导致功率档位频繁切换
+        _filteredRssi = (_filteredRssi * 3 + rssi) / 4;
+    }
+
+    if (_filteredRssi >= CFG_WIFI_RSSI_EXCELLENT_DBM) {
+        setRadioProfile(WIFI_POWER_8_5dBm, true, "excellent", _filteredRssi);
+    } else if (_filteredRssi >= CFG_WIFI_RSSI_GOOD_DBM) {
+        setRadioProfile(WIFI_POWER_13dBm, true, "good", _filteredRssi);
+    } else if (_filteredRssi >= CFG_WIFI_RSSI_FAIR_DBM) {
+        setRadioProfile(WIFI_POWER_17dBm, false, "fair", _filteredRssi);
+    } else {
+        // 弱信号时保持最高功率和常醒,避免为了省电牺牲稳定性
+        setRadioProfile(WIFI_POWER_19_5dBm, false, "weak", _filteredRssi);
+    }
 }
 bool WifiConfigService::isSerialMode() const {
     auto* opMode = OperationModeService::current();

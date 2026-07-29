@@ -30,6 +30,7 @@ public:
 
     void drawRoundRect(int x, int y, int w, int h, int r, uint16_t color);
     void fillRoundRect(int x, int y, int w, int h, int r, uint16_t color);
+    void fillEllipse(int x, int y, int rx, int ry, uint16_t color);
 
     int getWidth() const { return CFG_DISPLAY_WIDTH; }
     int getHeight() const { return CFG_DISPLAY_HEIGHT; }

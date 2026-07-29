@@ -309,7 +309,7 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
                         for name in (
                             "normal",
                             "happy",
-                            "sleepy",
+                            "thinking",
                             "sleeping",
                             "curious",
                             "surprised",
@@ -544,6 +544,12 @@ def run_expression_flow(page: Page, *, stub_mode: bool) -> None:
     open_controller(page)
     buttons = page.locator("#expressionGrid .ebtn")
     assert buttons.count() == 8, "表情首屏没有显示完整的 8 种表情"
+    assert buttons.filter(has_text="Thinking").count() == 1, (
+        "Thinking 表情没有替换 Sleepy"
+    )
+    assert buttons.filter(has_text="Sleepy").count() == 0, (
+        "Sleepy 表情仍然出现在控制器中"
+    )
     buttons.filter(has_text="Love").click()
     page.locator("#exprCurrent").get_by_text("Love", exact=True).wait_for(
         state="visible"

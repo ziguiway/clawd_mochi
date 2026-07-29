@@ -66,7 +66,13 @@ private:
     bool _apStarted;
     bool _mdnsStarted;
     unsigned long _connectStartTime;
-    unsigned long _lastReconnectMs;  // 上次发起连接的时间戳,决定 30s 自动重连节奏
+    unsigned long _lastAttemptEndMs; // 上次连接失败/掉线的时间戳,用于渐进重试
+    unsigned long _connectedSinceMs;
+    unsigned long _lastPowerAdjustMs;
+    int16_t _filteredRssi;
+    wifi_power_t _currentTxPower;
+    bool _wifiSleepEnabled;
+    bool _radioProfileInitialized;
 
     // 连接阶段(由 WiFi 事件推进): 关联+认证 → 获取 IP
     enum class ConnectPhase : uint8_t { ASSOCIATING, OBTAINING_IP };
@@ -87,4 +93,9 @@ private:
     void ensureAccessPoint();
     void startMDNS();
     void stopMDNS();
+    unsigned long getReconnectDelayMs() const;
+    void applyConnectingRadioProfile();
+    void updateConnectedRadioProfile();
+    void setRadioProfile(wifi_power_t txPower, bool sleepEnabled,
+                         const char* profileName, int16_t rssi);
 };

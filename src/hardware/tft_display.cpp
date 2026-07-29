@@ -77,7 +77,56 @@ void TftDisplay::drawRoundRect(int x, int y, int w, int h, int r, uint16_t color
 }
 
 void TftDisplay::fillRoundRect(int x, int y, int w, int h, int r, uint16_t color) {
+    if (w <= 0 || h <= 0) return;
+
+    // Adafruit_GFX 内部会绘制宽度为 w - 2r 的中心矩形。
+    // 半径达到短边一半时该宽度可能为 0，部分 ST7789 驱动会下溢并锁住 SPI。
+    const int shortestSide = w < h ? w : h;
+    const int maxRadius = (shortestSide - 1) / 2;
+    if (r < 0) r = 0;
+    if (r > maxRadius) r = maxRadius;
+
+    if (r == 0) {
+        _tft.fillRect(x, y, w, h, color);
+        return;
+    }
     _tft.fillRoundRect(x, y, w, h, r, color);
+}
+
+void TftDisplay::fillEllipse(int x, int y, int rx, int ry, uint16_t color) {
+    if (rx < 0 || ry < 0) return;
+    if (rx == 0) {
+        _tft.drawFastVLine(x, y - ry, ry * 2 + 1, color);
+        return;
+    }
+    if (ry == 0) {
+        _tft.drawFastHLine(x - rx, y, rx * 2 + 1, color);
+        return;
+    }
+
+    // 自己管理一次 SPI 写事务，并只调用 writeFastHLine。
+    // 避免 Adafruit_GFX::fillEllipse() 在 startWrite() 后再次调用
+    // drawFastHLine() 所产生的嵌套事务。
+    const int64_t rx2 = static_cast<int64_t>(rx) * rx;
+    const int64_t ry2 = static_cast<int64_t>(ry) * ry;
+    const int64_t limit = rx2 * ry2;
+    int span = rx;
+
+    _tft.startWrite();
+    for (int row = 0; row <= ry; row++) {
+        const int64_t rowTerm = static_cast<int64_t>(row) * row * rx2;
+        while (span > 0 &&
+               static_cast<int64_t>(span) * span * ry2 + rowTerm > limit) {
+            span--;
+        }
+
+        const int lineWidth = span * 2 + 1;
+        _tft.writeFastHLine(x - span, y + row, lineWidth, color);
+        if (row != 0) {
+            _tft.writeFastHLine(x - span, y - row, lineWidth, color);
+        }
+    }
+    _tft.endWrite();
 }
 
 int TftDisplay::getTextWidth(const char* text, uint8_t size) {

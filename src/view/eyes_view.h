@@ -21,12 +21,15 @@ private:
     ExpressionId _expression;
     unsigned long _nextBlinkMs;
     unsigned long _blinkStartedMs;
+    unsigned long _lastThinkingFrameMs;
     bool _isBlinking;
+    uint8_t _thinkingFrame;
 
     void drawExpression();
     void drawNormal(bool blinking);
     void drawHappy();
-    void drawSleepy(bool blinking);
+    void drawThinking();
+    void drawThinkingDots();
     void drawSleeping();
     void drawCurious();
     void drawSurprised();

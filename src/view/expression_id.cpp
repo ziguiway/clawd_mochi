@@ -9,7 +9,7 @@ struct ExpressionMetadata {
 constexpr ExpressionMetadata EXPRESSIONS[EXPRESSION_COUNT] = {
     {"normal", "Normal"},
     {"happy", "Happy"},
-    {"sleepy", "Sleepy"},
+    {"thinking", "Thinking"},
     {"sleeping", "Sleeping"},
     {"curious", "Curious"},
     {"surprised", "Surprised"},
@@ -29,6 +29,11 @@ const char* expressionIdToLabel(ExpressionId expression) {
 }
 
 bool expressionIdFromName(const String& name, ExpressionId& expression) {
+    // 兼容升级前已保存的默认表情配置。
+    if (name.equalsIgnoreCase("sleepy")) {
+        expression = ExpressionId::THINKING;
+        return true;
+    }
     for (uint8_t index = 0; index < EXPRESSION_COUNT; index++) {
         if (name.equalsIgnoreCase(EXPRESSIONS[index].name)) {
             expression = static_cast<ExpressionId>(index);

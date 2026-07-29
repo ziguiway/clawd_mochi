@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1120" viewBox="0 0 1440 1120">
+  <rect width="1440" height="1120" fill="#101114"/>
+  <text x="72" y="82" fill="#ffffff" font-family="Hiragino Sans GB, sans-serif" font-size="42" font-weight="700">Clawd Mochi · Love 表情提案</text>
+  <text x="72" y="126" fill="#9b9da3" font-family="Hiragino Sans GB, sans-serif" font-size="22">按 240 × 240 屏幕比例绘制 · 所有方案均可用 ESP32 基础图元实现</text>
+
+  <!-- Current -->
+  <g transform="translate(72 190)">
+    <rect width="288" height="288" rx="26" fill="#FA6A00"/>
+    <g transform="scale(1.2)">
+      <g fill="#101114">
+        <circle cx="43" cy="82" r="12"/><circle cx="61" cy="82" r="12"/>
+        <path d="M31 85 L73 85 L52 116 Z"/>
+        <circle cx="179" cy="82" r="12"/><circle cx="197" cy="82" r="12"/>
+        <path d="M167 85 L209 85 L188 116 Z"/>
+      </g>
+    </g>
+    <text x="0" y="338" fill="#ffffff" font-family="Hiragino Sans GB, sans-serif" font-size="28" font-weight="700">当前版本</text>
+    <text x="0" y="374" fill="#909299" font-family="Hiragino Sans GB, sans-serif" font-size="18">双实心爱心</text>
+    <text x="0" y="404" fill="#909299" font-family="Hiragino Sans GB, sans-serif" font-size="18">直接但略显生硬</text>
+  </g>
+
+  <!-- A -->
+  <g transform="translate(408 190)">
+    <rect width="288" height="288" rx="26" fill="#FA6A00"/>
+    <g transform="scale(1.2)" fill="#101114">
+      <path d="M31 76 C31 61 48 55 60 68 C72 55 89 61 89 76 C89 94 72 106 60 120 C48 106 31 94 31 76 Z"/>
+      <path d="M151 76 C151 61 168 55 180 68 C192 55 209 61 209 76 C209 94 192 106 180 120 C168 106 151 94 151 76 Z"/>
+    </g>
+    <path d="M129 171 Q144 183 159 171" fill="none" stroke="#101114" stroke-width="7" stroke-linecap="round"/>
+    <text x="0" y="338" fill="#ffffff" font-family="Hiragino Sans GB, sans-serif" font-size="28" font-weight="700">A · 柔化爱心眼</text>
+    <text x="0" y="374" fill="#909299" font-family="Hiragino Sans GB, sans-serif" font-size="18">饱满爱心 + 小幅微笑</text>
+    <text x="0" y="404" fill="#909299" font-family="Hiragino Sans GB, sans-serif" font-size="18">甜但不夸张，辨识度稳定</text>
+  </g>
+
+  <!-- B recommended -->
+  <g transform="translate(744 190)">
+    <rect x="-8" y="-8" width="304" height="304" rx="34" fill="none" stroke="#FF9A46" stroke-width="4"/>
+    <rect width="288" height="288" rx="26" fill="#FA6A00"/>
+    <g transform="scale(1.2)" fill="none" stroke="#101114" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M33 96 Q55 73 77 96"/>
+      <path d="M163 96 Q185 73 207 96"/>
+      <path d="M105 137 Q120 148 135 137"/>
+    </g>
+    <g transform="scale(1.2)" fill="#101114">
+      <path d="M104 49 C104 38 116 34 124 43 C132 34 144 38 144 49 C144 62 132 71 124 81 C116 71 104 62 104 49 Z"/>
+      <rect x="25" y="121" width="23" height="5" rx="2.5" transform="rotate(-10 25 121)"/>
+      <rect x="192" y="117" width="23" height="5" rx="2.5" transform="rotate(10 192 117)"/>
+    </g>
+    <rect x="170" y="18" width="101" height="38" rx="19" fill="#101114"/>
+    <text x="220.5" y="44" text-anchor="middle" fill="#FF9A46" font-family="Hiragino Sans GB, sans-serif" font-size="18" font-weight="700">推荐</text>
+    <text x="0" y="338" fill="#ffffff" font-family="Hiragino Sans GB, sans-serif" font-size="28" font-weight="700">B · 害羞心动</text>
+    <text x="0" y="374" fill="#d2d3d6" font-family="Hiragino Sans GB, sans-serif" font-size="18">弯眼 + 心心 + 腮红</text>
+    <text x="0" y="404" fill="#d2d3d6" font-family="Hiragino Sans GB, sans-serif" font-size="18">更像“活”的表情</text>
+  </g>
+
+  <!-- C -->
+  <g transform="translate(1080 190)">
+    <rect width="288" height="288" rx="26" fill="#FA6A00"/>
+    <g transform="scale(1.2)">
+      <rect x="23" y="52" width="72" height="91" rx="32" fill="#101114"/>
+      <rect x="145" y="52" width="72" height="91" rx="32" fill="#101114"/>
+      <g fill="#FA6A00">
+        <path d="M45 83 C45 75 54 72 60 78 C66 72 75 75 75 83 C75 92 66 99 60 106 C54 99 45 92 45 83 Z"/>
+        <path d="M167 83 C167 75 176 72 182 78 C188 72 197 75 197 83 C197 92 188 99 182 106 C176 99 167 92 167 83 Z"/>
+      </g>
+    </g>
+    <text x="0" y="338" fill="#ffffff" font-family="Hiragino Sans GB, sans-serif" font-size="28" font-weight="700">C · 爱心瞳孔</text>
+    <text x="0" y="374" fill="#909299" font-family="Hiragino Sans GB, sans-serif" font-size="18">角色感最强</text>
+    <text x="0" y="404" fill="#909299" font-family="Hiragino Sans GB, sans-serif" font-size="18">远看更接近日常眼睛</text>
+  </g>
+
+  <g transform="translate(72 676)">
+    <rect width="1296" height="328" rx="30" fill="#191b20"/>
+    <text x="42" y="60" fill="#FF8A22" font-family="Hiragino Sans GB, sans-serif" font-size="26" font-weight="700">我的建议：选择 B「害羞心动」</text>
+    <text x="42" y="112" fill="#d8d9dc" font-family="Hiragino Sans GB, sans-serif" font-size="22">它不只是把眼睛替换成爱心，而是形成“看到喜欢的东西 → 闭眼微笑 → 冒出爱心”的完整情绪。</text>
+    <text x="42" y="154" fill="#d8d9dc" font-family="Hiragino Sans GB, sans-serif" font-size="22">在真机上，弯眼和顶部爱心的轮廓更分散，不容易糊成两团；也能自然扩展成轻微跳动动画。</text>
+    <line x1="42" y1="192" x2="1254" y2="192" stroke="#303238"/>
+    <text x="42" y="238" fill="#92949b" font-family="Hiragino Sans GB, sans-serif" font-size="19">建议动画：爱心以 92% → 108% → 100% 做一次轻微“心跳”，总时长约 520 ms；眼睛保持稳定，避免闪烁。</text>
+    <text x="42" y="278" fill="#92949b" font-family="Hiragino Sans GB, sans-serif" font-size="19">颜色继续沿用橙色背景 + 黑色图形，不破坏 Clawd Mochi 现有视觉语言。</text>
+  </g>
+</svg>

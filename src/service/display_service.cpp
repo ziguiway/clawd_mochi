@@ -151,7 +151,7 @@ void DisplayService::updateAutoExpression(unsigned long now) {
         ExpressionId::HAPPY,
         ExpressionId::CURIOUS,
         ExpressionId::SURPRISED,
-        ExpressionId::SLEEPY,
+        ExpressionId::THINKING,
         ExpressionId::HAPPY,
         ExpressionId::CURIOUS,
         ExpressionId::SLEEPING,
@@ -171,7 +171,7 @@ void DisplayService::updateAutoExpression(unsigned long now) {
     _lastAutoExpression = next;
     showExpression(next);
     const unsigned long duration = next == ExpressionId::SLEEPING
-        ? 6000UL : (next == ExpressionId::SLEEPY ? 4000UL : 2200UL);
+        ? 6000UL : (next == ExpressionId::THINKING ? 4000UL : 2200UL);
     _autoReturnMs = now + duration;
     _nextAutoEventMs = 0;
 }

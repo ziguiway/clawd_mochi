@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120">
+  <rect width="1600" height="1120" fill="#101114"/>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif; }
+    .title { fill:#f7f7f8; font-size:46px; font-weight:700; }
+    .sub { fill:#8f9299; font-size:20px; }
+    .name { fill:#f7f7f8; font-size:27px; font-weight:650; }
+    .desc { fill:#a2a5ac; font-size:17px; }
+    .timing { fill:#ff7a00; font-size:16px; font-weight:650; }
+    .frame { fill:#ff7100; }
+    .pixel { fill:#101114; }
+    .arrow { stroke:#4e5158; stroke-width:2; fill:none; }
+  </style>
+
+  <text x="70" y="78" class="title">Clawd Mochi · Thinking 动画提案</text>
+  <text x="70" y="116" class="sub">240 × 240 屏幕比例 · 默认眼睛保持不动 · 仅刷新右上角符号</text>
+  <line x1="70" y1="148" x2="1530" y2="148" stroke="#292b30"/>
+
+  <!-- A -->
+  <text x="70" y="215" class="name">A · 逐级点亮</text>
+  <text x="70" y="247" class="desc">点数逐步增加，三点齐亮时停顿。</text>
+  <text x="70" y="276" class="timing">220 → 220 → 420 → 220 ms</text>
+
+  <g transform="translate(430 178)">
+    <rect width="170" height="170" rx="18" class="frame"/>
+    <rect x="35" y="75" width="32" height="50" rx="10" class="pixel"/><rect x="103" y="75" width="32" height="50" rx="10" class="pixel"/>
+    <rect x="116" y="25" width="10" height="10" class="pixel"/><rect x="134" y="27" width="6" height="6" class="pixel"/><rect x="150" y="27" width="6" height="6" class="pixel"/>
+  </g>
+  <path d="M610 263h26m-8-7 8 7-8 7" class="arrow"/>
+  <g transform="translate(650 178)">
+    <rect width="170" height="170" rx="18" class="frame"/>
+    <rect x="35" y="75" width="32" height="50" rx="10" class="pixel"/><rect x="103" y="75" width="32" height="50" rx="10" class="pixel"/>
+    <rect x="116" y="25" width="10" height="10" class="pixel"/><rect x="132" y="25" width="10" height="10" class="pixel"/><rect x="150" y="27" width="6" height="6" class="pixel"/>
+  </g>
+  <path d="M830 263h26m-8-7 8 7-8 7" class="arrow"/>
+  <g transform="translate(870 178)">
+    <rect width="170" height="170" rx="18" class="frame"/>
+    <rect x="35" y="75" width="32" height="50" rx="10" class="pixel"/><rect x="103" y="75" width="32" height="50" rx="10" class="pixel"/>
+    <rect x="116" y="25" width="10" height="10" class="pixel"/><rect x="132" y="25" width="10" height="10" class="pixel"/><rect x="148" y="25" width="10" height="10" class="pixel"/>
+  </g>
+  <path d="M1050 263h26m-8-7 8 7-8 7" class="arrow"/>
+  <g transform="translate(1090 178)">
+    <rect width="170" height="170" rx="18" class="frame"/>
+    <rect x="35" y="75" width="32" height="50" rx="10" class="pixel"/><rect x="103" y="75" width="32" height="50" rx="10" class="pixel"/>
+    <rect x="116" y="25" width="10" height="10" class="pixel"/><rect x="132" y="25" width="10" height="10" class="pixel"/><rect x="150" y="27" width="6" height="6" class="pixel"/>
+  </g>
+  <rect x="1285" y="196" width="245" height="122" rx="14" fill="#1a1c21"/>
+  <text x="1310" y="230" class="timing">特点</text>
+  <text x="1310" y="262" class="desc">读法最直接</text>
+  <text x="1310" y="290" class="desc">停顿像“正在想”</text>
+
+  <!-- B -->
+  <line x1="70" y1="388" x2="1530" y2="388" stroke="#22242a"/>
+  <text x="70" y="455" class="name">B · 思绪传递</text>
+  <text x="70" y="487" class="desc">一个主方点沿阶梯方向移动。</text>
+  <text x="70" y="516" class="timing">240 ms / 帧</text>
+
+  <g transform="translate(430 418)">
+    <rect width="170" height="170" rx="18" class="frame"/>
+    <rect x="35" y="75" width="32" height="50" rx="10" class="pixel"/><rect x="103" y="75" width="32" height="50" rx="10" class="pixel"/>
+    <rect x="116" y="31" width="12" height="12" class="pixel"/><rect x="135" y="25" width="7" height="7" class="pixel"/><rect x="151" y="19" width="7" height="7" class="pixel"/>
+  </g>
+  <path d="M610 503h26m-8-7 8 7-8 7" class="arrow"/>
+  <g transform="translate(650 418)">
+    <rect width="170" height="170" rx="18" class="frame"/>
+    <rect x="35" y="75" width="32" height="50" rx="10" class="pixel"/><rect x="103" y="75" width="32" height="50" rx="10" class="pixel"/>
+    <rect x="118" y="33" width="7" height="7" class="pixel"/><rect x="132" y="23" width="12" height="12" class="pixel"/><rect x="151" y="19" width="7" height="7" class="pixel"/>
+  </g>
+  <path d="M830 503h26m-8-7 8 7-8 7" class="arrow"/>
+  <g transform="translate(870 418)">
+    <rect width="170" height="170" rx="18" class="frame"/>
+    <rect x="35" y="75" width="32" height="50" rx="10" class="pixel"/><rect x="103" y="75" width="32" height="50" rx="10" class="pixel"/>
+    <rect x="118" y="33" width="7" height="7" class="pixel"/><rect x="135" y="25" width="7" height="7" class="pixel"/><rect x="148" y="16" width="12" height="12" class="pixel"/>
+  </g>
+  <path d="M1050 503h26m-8-7 8 7-8 7" class="arrow"/>
+  <g transform="translate(1090 418)">
+    <rect width="170" height="170" rx="18" class="frame"/>
+    <rect x="35" y="75" width="32" height="50" rx="10" class="pixel"/><rect x="103" y="75" width="32" height="50" rx="10" class="pixel"/>
+    <rect x="118" y="33" width="7" height="7" class="pixel"/><rect x="132" y="23" width="12" height="12" class="pixel"/><rect x="151" y="19" width="7" height="7" class="pixel"/>
+  </g>
+  <rect x="1285" y="436" width="245" height="122" rx="14" fill="#1a1c21"/>
+  <text x="1310" y="470" class="timing">特点</text>
+  <text x="1310" y="502" class="desc">运动感最明显</text>
+  <text x="1310" y="530" class="desc">像念头向外传递</text>
+
+  <!-- C -->
+  <line x1="70" y1="628" x2="1530" y2="628" stroke="#22242a"/>
+  <text x="70" y="695" class="name">C · 想法冒出</text>
+  <text x="70" y="727" class="desc">方点逐个形成，完成后长停顿。</text>
+  <text x="70" y="756" class="timing">200 → 200 → 240 → 500 ms</text>
+
+  <g transform="translate(430 658)">
+    <rect width="170" height="170" rx="18" class="frame"/>
+    <rect x="35" y="75" width="32" height="50" rx="10" class="pixel"/><rect x="103" y="75" width="32" height="50" rx="10" class="pixel"/>
+    <rect x="120" y="29" width="6" height="6" class="pixel"/>
+  </g>
+  <path d="M610 743h26m-8-7 8 7-8 7" class="arrow"/>
+  <g transform="translate(650 658)">
+    <rect width="170" height="170" rx="18" class="frame"/>
+    <rect x="35" y="75" width="32" height="50" rx="10" class="pixel"/><rect x="103" y="75" width="32" height="50" rx="10" class="pixel"/>
+    <rect x="117" y="26" width="10" height="10" class="pixel"/>
+  </g>
+  <path d="M830 743h26m-8-7 8 7-8 7" class="arrow"/>
+  <g transform="translate(870 658)">
+    <rect width="170" height="170" rx="18" class="frame"/>
+    <rect x="35" y="75" width="32" height="50" rx="10" class="pixel"/><rect x="103" y="75" width="32" height="50" rx="10" class="pixel"/>
+    <rect x="116" y="25" width="10" height="10" class="pixel"/><rect x="132" y="25" width="10" height="10" class="pixel"/>
+  </g>
+  <path d="M1050 743h26m-8-7 8 7-8 7" class="arrow"/>
+  <g transform="translate(1090 658)">
+    <rect width="170" height="170" rx="18" class="frame"/>
+    <rect x="35" y="75" width="32" height="50" rx="10" class="pixel"/><rect x="103" y="75" width="32" height="50" rx="10" class="pixel"/>
+    <rect x="116" y="25" width="10" height="10" class="pixel"/><rect x="132" y="25" width="10" height="10" class="pixel"/><rect x="148" y="25" width="10" height="10" class="pixel"/>
+  </g>
+  <rect x="1285" y="676" width="245" height="122" rx="14" fill="#1a1c21"/>
+  <text x="1310" y="710" class="timing">特点</text>
+  <text x="1310" y="742" class="desc">情绪最克制</text>
+  <text x="1310" y="770" class="desc">像想法逐渐成形</text>
+
+  <!-- Recommendation -->
+  <rect x="70" y="888" width="1460" height="170" rx="24" fill="#1b1d22"/>
+  <rect x="70" y="888" width="8" height="170" rx="4" fill="#ff7100"/>
+  <text x="108" y="940" fill="#ff7a00" font-size="25" font-weight="700">推荐 A「逐级点亮」</text>
+  <text x="108" y="982" fill="#d8d9dc" font-size="19">识别最直接；三点齐亮时的停顿最像思考；三个固定位置也更稳、更耐看。</text>
+  <text x="108" y="1022" fill="#8f9299" font-size="17">固件建议：保留固定包围盒，只清除右上角符号区域，避免整屏刷新。</text>
+</svg>
