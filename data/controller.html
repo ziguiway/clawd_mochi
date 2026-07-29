@@ -423,6 +423,7 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
 <div class="toast" id="toast"></div>
 <script>
 let activeView=0,termOpen=false,canvasOpen=false,blOn=true,claudeStatusOn=true,displayTheme=1,isBusy=false,drawing=false,initialLoadComplete=false;
+const testMode=new URLSearchParams(location.search).has('test');
 let expressionState={mode:'manual',selected:'normal',rendered:'normal'};
 let lastX=0,lastY=0,tt;
 let marketSelected=[],marketDirectory=[],marketLoaded=false,marketSaving=false,marketSaveQueued=false,marketUpdatedAt=null,marketDrag=null;
@@ -699,7 +700,7 @@ async function endDraw(e){if(!drawing)return;drawing=false;if(!canvasOpen||strok
 cvs.addEventListener('mousedown',startDraw);cvs.addEventListener('mousemove',moveDraw);cvs.addEventListener('mouseup',endDraw);cvs.addEventListener('mouseleave',endDraw);
 cvs.addEventListener('touchstart',startDraw,{passive:false});cvs.addEventListener('touchmove',moveDraw,{passive:false});cvs.addEventListener('touchend',endDraw);
 async function clearAll(){const bg=document.getElementById('bgCol').value;redrawCanvas(bg);await req('/draw/clear?bg='+encodeURIComponent(bg));toast('cleared');}
-(async()=>{await loadExpressions();await loadProfile();await loadPrefs();try{const r=await fetch('/state');const j=await r.json();const bv=typeof j.brightness==='number'?j.brightness:(j.bl===false?0:100);document.getElementById('bright').value=bv;document.getElementById('brightV').textContent=bv+'%';blOn=bv>0;updateBlButton();}catch(e){}initialLoadComplete=true;pollWifiStatus();pollTimer();setInterval(pollTimer,1000);setInterval(()=>{if(activeView===9&&!marketSaving&&!marketDrag)loadMarketConfig();if(activeView===10&&!stockSaving&&!stockDrag)loadStockConfig();},30000);})();
+(async()=>{await loadExpressions();await loadProfile();await loadPrefs();try{const r=await fetch('/state');const j=await r.json();const bv=typeof j.brightness==='number'?j.brightness:(j.bl===false?0:100);document.getElementById('bright').value=bv;document.getElementById('brightV').textContent=bv+'%';blOn=bv>0;updateBlButton();}catch(e){}initialLoadComplete=true;if(!testMode){pollWifiStatus();pollTimer();setInterval(pollTimer,1000);setInterval(()=>{if(activeView===9&&!marketSaving&&!marketDrag)loadMarketConfig();if(activeView===10&&!stockSaving&&!stockDrag)loadStockConfig();},30000);}})();
 </script>
 </body>
 </html>

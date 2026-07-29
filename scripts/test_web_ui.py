@@ -72,6 +72,21 @@ class SerialLogCapture:
         self._thread.join(timeout=1)
         self._serial.close()
 
+
+class DeviceRequestThrottle:
+    def __init__(self, interval_seconds: float) -> None:
+        self._interval = max(0.0, interval_seconds)
+        self._last_request = 0.0
+        self._lock = threading.Lock()
+
+    def __call__(self, route: Route) -> None:
+        with self._lock:
+            wait_seconds = self._interval - (time.monotonic() - self._last_request)
+            if wait_seconds > 0:
+                time.sleep(wait_seconds)
+            self._last_request = time.monotonic()
+        route.continue_()
+
 COINLORE_ASSETS = [
     {"id": "90", "symbol": "BTC", "name": "Bitcoin", "rank": 1},
     {"id": "80", "symbol": "ETH", "name": "Ethereum", "rank": 2},
@@ -444,7 +459,7 @@ def result_symbols(page: Page) -> list[str]:
 
 
 def open_controller(page: Page) -> None:
-    page.goto("/", wait_until="domcontentloaded")
+    page.goto("/?test=1", wait_until="domcontentloaded")
     page.wait_for_function("() => initialLoadComplete === true")
 
 
@@ -812,6 +827,12 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="仅通过串口读取持久日志并断言关键功能动作",
     )
+    parser.add_argument(
+        "--request-interval",
+        type=float,
+        default=3.0,
+        help="实机模式下相邻设备 HTTP 请求的最小间隔秒数，默认 3",
+    )
     return parser.parse_args()
 
 
@@ -966,8 +987,12 @@ def main() -> int:
         capture = SerialLogCapture(args.serial_port)
         capture.start()
         time.sleep(0.5)
+        marker = f"SERIAL_{int(time.time())}"
+        capture.write(f"log mark {marker}\n")
+        time.sleep(0.3)
         capture.write("log 100\n")
         time.sleep(1)
+        assert marker in capture.text()
         assert_serial_logs(capture.text())
         capture.close()
         return 0
@@ -1043,6 +1068,11 @@ def main() -> int:
                 viewport={"width": 430, "height": 932},
             )
             page = context.new_page()
+            if args.device_url:
+                page.route(
+                    f"{base_url}**",
+                    DeviceRequestThrottle(args.request_interval),
+                )
             page.on(
                 "requestfailed",
                 lambda request: print(

@@ -53,6 +53,15 @@ void SerialCommandService::processCommand(const String& cmd) {
     else if (cmd == "time") showTime();
     else if (cmd == "time sync") syncTime();
     else if (cmd == "log") showLogs();
+    else if (cmd.startsWith("log mark ")) {
+        const String marker = cmd.substring(9);
+        if (marker.isEmpty() || marker.length() > 48) {
+            Serial.println("usage: log mark <text>");
+        } else {
+            LOG_INFO("Test", "Serial marker: %s", marker.c_str());
+            Serial.println("日志标记已写入");
+        }
+    }
     else if (cmd.startsWith("log ")) showLogs(
         constrain(cmd.substring(4).toInt(), 1, 100));
     else if (cmd == "log clear") clearLogs();
@@ -74,6 +83,7 @@ void SerialCommandService::printHelp() {
     Serial.println("  time          - 显示当前时间");
     Serial.println("  time sync     - 手动同步时间");
     Serial.println("  log [N]       - 显示最近 N 条日志 (默认 20)");
+    Serial.println("  log mark TEXT - 写入串口测试日志标记");
     Serial.println("  log clear     - 清除日志");
     Serial.println("  log level N   - 设置日志级别 (debug/info/warn/error)");
     Serial.println("  cc <event>,<hook>,<tool>,<detail>,<model> - 注入 Claude 状态");
