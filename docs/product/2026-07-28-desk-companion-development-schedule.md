@@ -18,7 +18,7 @@
 | 阶段 3：个性化配置 | `VERIFY` | 2026-07-29 | 配置、API、开机文本和 Web 主路径完成，等待重启与定制样机验收 |
 | 阶段 4：Web 首页与主题 | `DONE` | 2026-07-29 | 四主题、配置导入导出、LittleFS 单一来源和功能回归完成 |
 | 集成缓冲与 RC | `VERIFY` | 2026-07-29 | RC1 软件交付物、全量回归和 1 台样机通过；另 2 台一致性验收待执行 |
-| 阶段 5：实机与小批量验证 | `TODO` | - | - |
+| 阶段 5：实机与小批量验证 | `DOING` | 2026-07-29 | 当前仅执行功能性实机验收，不做稳定性或性能结论 |
 
 阶段 0 记录：
 [2026-07-28-desk-companion-baseline.md](./2026-07-28-desk-companion-baseline.md)
@@ -37,6 +37,9 @@
 
 RC1 集成记录：
 [2026-07-29-rc1-integration-report.md](./2026-07-29-rc1-integration-report.md)
+
+阶段 5 功能性实机验收：
+[2026-07-29-phase-5-functional-validation-report.md](./2026-07-29-phase-5-functional-validation-report.md)
 
 ## 1. 排期目标
 
