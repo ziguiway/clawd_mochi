@@ -297,7 +297,9 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
                 self.__class__.prefs_update_count += 1
             self.send_json(self.prefs)
         elif path == "/state":
-            self.send_json({"busy": False, "brightness": 100})
+            self.send_json(
+                {"version": "1.0.0-rc1", "busy": False, "brightness": 100}
+            )
         elif path == "/expressions":
             self.send_json(
                 {
@@ -860,6 +862,11 @@ def get_device_profile(base_url: str) -> dict[str, Any]:
         return json.load(response)
 
 
+def get_device_state(base_url: str) -> dict[str, Any]:
+    with urllib.request.urlopen(f"{base_url}state", timeout=10) as response:
+        return json.load(response)
+
+
 def get_device_logs(base_url: str) -> str:
     with urllib.request.urlopen(
         f"{base_url}logs/api?max=200", timeout=10
@@ -1011,6 +1018,9 @@ def main() -> int:
     serial_capture: SerialLogCapture | None = None
     if args.device_url:
         base_url = args.device_url.rstrip("/") + "/"
+        state = get_device_state(base_url)
+        assert state["version"] == "1.0.0-rc1", state
+        print("PASS  实机状态接口返回 RC1 版本号")
         original_device_assets = get_device_config(base_url)["assets"]
         original_device_market_assets = get_device_market_config(base_url)[
             "assets"

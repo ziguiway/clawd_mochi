@@ -6,7 +6,7 @@
 
 // 设备信息
 #define APP_NAME                    "Clawd Mochi"
-#define APP_VERSION                 "1.0.0"
+#define APP_VERSION                 "1.0.0-rc1"
 #define APP_AUTHOR                  "Clawd"
 
 // 调试模式

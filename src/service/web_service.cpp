@@ -1,4 +1,5 @@
 #include "web_service.h"
+#include "../config/app_config.h"
 #include "operation_mode_service.h"
 #include "../config/cfg_display.h"
 #include <ArduinoJson.h>
@@ -387,7 +388,8 @@ void WebService::handlePrefs() {
 }
 
 void WebService::handleState() {
-    String j = "{\"view\":"; j += _displayService->getInteractiveView();
+    String j = "{\"version\":\""; j += APP_VERSION;
+    j += "\",\"view\":"; j += _displayService->getInteractiveView();
     j += ",\"busy\":";   j += _displayService->isBusy()       ? "true" : "false";
     j += ",\"term\":";   j += _displayService->isTermMode()   ? "true" : "false";
     j += ",\"bl\":";     j += _displayService->getBrightnessPercent() > 0 ? "true" : "false";

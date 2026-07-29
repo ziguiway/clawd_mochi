@@ -1,5 +1,6 @@
 #include "serial_command_service.h"
 #include "operation_mode_service.h"
+#include "../config/app_config.h"
 #include "../utils/logger.h"
 
 SerialCommandService::SerialCommandService(WifiConfigService* wifiService,
@@ -96,6 +97,7 @@ void SerialCommandService::printHelp() {
 
 void SerialCommandService::printStatus() {
     Serial.println("\n--- 状态 ---");
+    Serial.println("版本: " + String(APP_VERSION));
     Serial.println("WiFi: " + String(_wifiService->isConnected() ? "已连接" : "未连接"));
     Serial.println("SSID: " + _wifiService->getSSID());
     Serial.println("IP: " + _wifiService->getIP());
