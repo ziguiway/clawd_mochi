@@ -5,13 +5,8 @@
 #include "claude_code_service.h"
 #include "../view/claude_code_view.h"
 #include "../view/eyes_view.h"
-#include "../view/dino_game.h"
-#include "../view/sokoban_game.h"
+#include "../view/arcade_game.h"
 #include "../view/arcade_canvas.h"
-#include "../view/tetris_game.h"
-#include "../view/snake_game.h"
-#include "../view/game_2048.h"
-#include "../view/breakout_game.h"
 #include "wifi_config_service.h"
 #include "time_service.h"
 #include "preference_service.h"
@@ -185,13 +180,8 @@ private:
     MarketService* _marketService;
     ClaudeCodeView _ccView;
     EyesView _eyesView;
-    DinoGame _dinoGame;
-    SokobanGame _sokobanGame;
-    ArcadeCanvas _arcadeCanvas;
-    TetrisGame _tetrisGame;
-    SnakeGame _snakeGame;
-    Game2048 _game2048;
-    BreakoutGame _breakoutGame;
+    uint8_t* _monoGameBuffer;
+    ArcadeCanvas* _arcadeCanvas;
     IArcadeGame* _activeArcadeGame;
     DisplayMode _currentMode;
     unsigned long _lastRefreshMs;
@@ -251,9 +241,11 @@ private:
     uint16_t _lastProgressPermille;
     bool _lastLightProgress;
 
-    IArcadeGame* findArcadeGame(const String& slug);
-    const IArcadeGame* findArcadeGame(const String& slug) const;
+    IArcadeGame* createArcadeGame(const String& slug);
+    void releaseArcadeGame();
+    bool isKnownArcadeGame(const String& slug) const;
     uint8_t viewForArcadeGame(ArcadeGameId id) const;
+    const char* slugForArcadeView(uint8_t view) const;
     bool isArcadeGameView() const;
 
     // Terminal state

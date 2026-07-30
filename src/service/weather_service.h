@@ -25,7 +25,8 @@ public:
 private:
     static constexpr unsigned long WEATHER_REFRESH_MS = 30UL * 60UL * 1000UL;
     static constexpr unsigned long LOCATION_REFRESH_MS = 24UL * 60UL * 60UL * 1000UL;
-    static constexpr unsigned long RETRY_INTERVAL_MS = 5UL * 60UL * 1000UL;
+    static constexpr unsigned long FIRST_RETRY_MS = 30UL * 1000UL;
+    static constexpr unsigned long MAX_RETRY_MS = 5UL * 60UL * 1000UL;
 
     WifiConfigService* _wifiService;
     bool _valid;
@@ -43,6 +44,7 @@ private:
     unsigned long _lastWeatherMs;
     unsigned long _lastLocationMs;
     unsigned long _lastAttemptMs;
+    volatile uint8_t _failureCount;
     volatile uint32_t _version;
     TaskHandle_t _refreshTask;
 
@@ -50,5 +52,6 @@ private:
     void runRefresh();
     bool fetchLocation();
     bool fetchWeather();
+    unsigned long retryDelayMs() const;
     void copyCity(const char* city);
 };

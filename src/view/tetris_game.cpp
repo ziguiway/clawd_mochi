@@ -268,7 +268,8 @@ void TetrisGame::drawCell(int16_t x, int16_t y, uint8_t colorIndex,
 
 void TetrisGame::render() {
     _dirty = false;
-    _canvas->clear(COLOR_DARKBG);
+    _canvas->beginFrame(COLOR_DARKBG);
+    do {
     _canvas->fillRect(0, 0, 240, 27, COLOR_ORANGE);
     _canvas->setTextColor(COLOR_WHITE);
     _canvas->setTextSize(2);
@@ -353,7 +354,7 @@ void TetrisGame::render() {
         _canvas->setCursor(_state == State::GAME_OVER ? 58 : 77, 112);
         _canvas->print(_state == State::GAME_OVER ? "GAME OVER" : "PAUSED");
     }
-    _canvas->flush();
+    } while (_canvas->nextStrip());
 }
 
 void TetrisGame::redraw() {

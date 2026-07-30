@@ -6,6 +6,7 @@
 #include <math.h>
 
 #include "../utils/logger.h"
+#include "../utils/memory_monitor.h"
 #include "../utils/network_request_gate.h"
 
 WeatherService::WeatherService(WifiConfigService* wifiService)
@@ -24,6 +25,7 @@ WeatherService::WeatherService(WifiConfigService* wifiService)
     , _lastWeatherMs(0)
     , _lastLocationMs(0)
     , _lastAttemptMs(0)
+    , _failureCount(0)
     , _version(0)
     , _refreshTask(nullptr)
 {
@@ -45,10 +47,14 @@ void WeatherService::update() {
     if (_loading || !_wifiService || !_wifiService->isConnected()) return;
 
     const unsigned long now = millis();
-    const bool retryDue = !_valid &&
-        (_lastAttemptMs == 0 || now - _lastAttemptMs >= RETRY_INTERVAL_MS);
-    const bool weatherDue = _valid && now - _lastWeatherMs >= WEATHER_REFRESH_MS;
-    if (!_refreshRequested && !retryDue && !weatherDue) return;
+    const bool firstAttempt = _lastAttemptMs == 0;
+    const bool lastAttemptFailed = !firstAttempt &&
+        (!_valid || _lastAttemptMs > _lastWeatherMs);
+    const bool retryDue = lastAttemptFailed &&
+        now - _lastAttemptMs >= retryDelayMs();
+    const bool weatherDue = _valid && !lastAttemptFailed &&
+        now - _lastWeatherMs >= WEATHER_REFRESH_MS;
+    if (!_refreshRequested && !firstAttempt && !retryDue && !weatherDue) return;
 
     if (!NetworkRequestGate::tryAcquire()) return;
 
@@ -56,6 +62,12 @@ void WeatherService::update() {
     _refreshRequested = false;
     _lastAttemptMs = now;
     _version++;
+    if (!MemoryMonitor::hasTlsHeadroom("Weather")) {
+        _loading = false;
+        _version++;
+        NetworkRequestGate::release();
+        return;
+    }
     if (xTaskCreate(refreshTaskEntry, "WeatherNet", 8192, this, 1,
                     &_refreshTask) != pdPASS) {
         _refreshTask = nullptr;
@@ -85,22 +97,32 @@ void WeatherService::runRefresh() {
     if (locationDue) ok = fetchLocation();
     if (ok && _locationValid) ok = fetchWeather();
 
-    if (!ok) LOG_WARN("Weather", "天气更新失败，将稍后重试");
+    if (ok) {
+        _failureCount = 0;
+    } else {
+        if (_failureCount < 5) _failureCount++;
+        LOG_WARN("Weather", "天气更新失败，%lu 秒后重试",
+                 retryDelayMs() / 1000UL);
+    }
 }
 
 bool WeatherService::fetchLocation() {
     WiFiClientSecure client;
     client.setInsecure();
+    client.setHandshakeTimeout(15);
 
     HTTPClient http;
-    http.setTimeout(7000);
+    http.setConnectTimeout(12000);
+    http.setTimeout(10000);
     if (!http.begin(client, "https://ipwho.is/")) return false;
     http.useHTTP10(true);
     http.addHeader("Accept-Encoding", "identity");
 
     const int code = http.GET();
     if (code != HTTP_CODE_OK) {
-        LOG_WARN("Weather", "IP 定位请求失败 HTTP=%d", code);
+        const String reason = HTTPClient::errorToString(code);
+        LOG_WARN("Weather", "IP 定位请求失败 HTTP=%d reason=%s",
+                 code, reason.c_str());
         http.end();
         return false;
     }
@@ -140,16 +162,20 @@ bool WeatherService::fetchWeather() {
 
     WiFiClientSecure client;
     client.setInsecure();
+    client.setHandshakeTimeout(15);
 
     HTTPClient http;
-    http.setTimeout(7000);
+    http.setConnectTimeout(12000);
+    http.setTimeout(10000);
     if (!http.begin(client, url)) return false;
     http.useHTTP10(true);
     http.addHeader("Accept-Encoding", "identity");
 
     const int code = http.GET();
     if (code != HTTP_CODE_OK) {
-        LOG_WARN("Weather", "天气请求失败 HTTP=%d", code);
+        const String reason = HTTPClient::errorToString(code);
+        LOG_WARN("Weather", "天气请求失败 HTTP=%d reason=%s",
+                 code, reason.c_str());
         http.end();
         return false;
     }
@@ -185,6 +211,13 @@ bool WeatherService::fetchWeather() {
              _city, _temperature, _highTemperature, _lowTemperature,
              _humidity, _weatherCode);
     return true;
+}
+
+unsigned long WeatherService::retryDelayMs() const {
+    if (_failureCount == 0) return FIRST_RETRY_MS;
+    const uint8_t shift = min<uint8_t>(_failureCount - 1, 3);
+    const unsigned long delayMs = FIRST_RETRY_MS << shift;
+    return min<unsigned long>(delayMs, MAX_RETRY_MS);
 }
 
 void WeatherService::copyCity(const char* city) {

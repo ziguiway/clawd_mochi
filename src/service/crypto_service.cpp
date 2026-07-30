@@ -6,6 +6,7 @@
 #include <ctype.h>
 
 #include "../utils/logger.h"
+#include "../utils/memory_monitor.h"
 #include "../utils/network_request_gate.h"
 
 CryptoService::CryptoService(WifiConfigService* wifiService)
@@ -50,6 +51,12 @@ void CryptoService::update() {
     _refreshRequested = false;
     _lastAttemptMs = now;
     _version++;
+    if (!MemoryMonitor::hasTlsHeadroom("Crypto")) {
+        _loading = false;
+        _version++;
+        NetworkRequestGate::release();
+        return;
+    }
     if (xTaskCreate(refreshTaskEntry, "CryptoNet", 7168, this, 1,
                     &_refreshTask) != pdPASS) {
         _refreshTask = nullptr;

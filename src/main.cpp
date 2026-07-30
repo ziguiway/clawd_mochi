@@ -15,6 +15,13 @@
 #include "config/app_config.h"
 #include "states/app_state_machine.h"
 
+// AppStateMachine 常驻静态 RAM。新增服务或游戏若让它超过 32 KB，
+// 编译必须失败并要求重新设计生命周期/共享缓冲，而不是继续挤压 TLS 堆。
+static_assert(sizeof(AppStateMachine) <= 32U * 1024U,
+              "AppStateMachine exceeds the 32 KB static RAM budget");
+static_assert(ArcadeCanvas::BUFFER_BYTES <= 12U * 1024U,
+              "ArcadeCanvas buffer exceeds the 12 KB render budget");
+
 AppStateMachine appState;
 
 void setup() {

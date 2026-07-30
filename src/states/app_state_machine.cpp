@@ -1,6 +1,7 @@
 #include "app_state_machine.h"
 #include "../config/cfg_display.h"
 #include "../utils/logger.h"
+#include "../utils/memory_monitor.h"
 
 AppStateMachine::AppStateMachine()
     : _cc(&_sm)
@@ -27,6 +28,7 @@ void AppStateMachine::init() {
     Logger::getInstance().init();
     Logger::getInstance().setTimeProvider(TimeService::timestampCallback);
     LOG_INFO("App", "Clawd Mochi 启动中...");
+    MemoryMonitor::logSnapshot("boot");
 
     _prefs.init();
     _weather.init();

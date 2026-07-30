@@ -98,6 +98,86 @@ All services are owned by `AppStateMachine` and accessed via `IAppContext`:
 - **LittleFS**: Web assets in `data/` are uploaded separately from firmware via `pio run --target uploadfs`
 - **Global singletons**: `OperationModeService` and `WifiConfigService` use `bind()/current()` pattern for cross-service access without passing through IAppContext
 
+## RAM Budget (ESP32-C3)
+
+RAM is a hard product constraint. Flash partition changes do not increase RAM.
+
+- **Lazy loading is mandatory**: module runtime state, game objects, render
+  buffers, scratch buffers, and other large resources must be allocated only
+  when the user enters that module. Do not allocate them at boot or keep them
+  as value members of global services. Immutable code/assets may remain in
+  Flash/PROGMEM because they do not consume runtime heap.
+- **Immediate release is mandatory**: when the user exits or switches away
+  from a module, stop it and immediately `delete`/free all module-owned
+  objects, render buffers, scratch buffers, and temporary state. Clear owning
+  pointers after release. Do not retain memory “for faster reopening.”
+- Never allocate a 240x240 RGB565 framebuffer: it costs 115,200 bytes and is
+  unsafe even when allocated lazily because WiFi heap fragmentation may prevent
+  obtaining one contiguous block.
+- Full-color games must use the 16-row `ArcadeCanvas` strip buffer
+  (7,680 bytes), created on game entry and destroyed on game exit.
+- Mutually exclusive views must reuse one scratch allocation. Dino and Sokoban
+  each request the same 7,200-byte 1-bit buffer shape, so only the active game
+  receives one lazily allocated buffer.
+- Keep `AppStateMachine` at or below the 32 KB compile-time budget and each
+  render buffer at or below 12 KB. Do not relax these assertions to make a
+  build pass; redesign ownership or rendering instead.
+- Account for dynamic headroom, not only PlatformIO's static RAM percentage.
+  WiFi, WebServer, mDNS, task stacks, JSON, and TLS all allocate from the heap.
+- HTTPS work requires at least 80 KB free heap and a 64 KB largest contiguous
+  block. Use `MemoryMonitor` for new network services.
+- Pause nonessential HTTPS refreshes while a game is active. Resume through
+  normal retry/refresh scheduling after the game exits.
+- After memory-affecting changes, run `pio run` and report the before/after
+  static RAM bytes and percentage.
+
+### 2026-07-30 memory incident (do not repeat)
+
+The first multi-game implementation placed a `uint16_t[240 * 240]` RGB565
+canvas inside `DisplayService`. Because `DisplayService` is owned by the global
+`AppStateMachine`, that canvas permanently consumed 115,200 bytes from boot,
+even outside the game module. Dino and Sokoban also held separate 7,200-byte
+1-bit buffers.
+
+Static RAM changed from 45,372 bytes (13.8%) to 177,788 bytes (54.3%). Once
+WiFi, WebServer, mDNS, and the weather task stack were active, mbedTLS could
+not obtain a large contiguous allocation. The first request to
+`https://ipwho.is/` failed with `MBEDTLS_ERR_SSL_ALLOC_FAILED`
+(`-0x7F00`, logged as `-32512`).
+
+The corrective architecture is:
+
+- keep game code and immutable sprites/levels in Flash;
+- allocate only the selected game object on entry;
+- allocate either one 7,680-byte RGB565 strip buffer or one 7,200-byte 1-bit
+  buffer for that active game;
+- render full resolution/full color through strips rather than lowering game
+  fidelity;
+- destroy the game first, then its canvas/scratch buffer, immediately on exit
+  or game switch;
+- pause Weather/Crypto/Market HTTPS refresh while a game is active, then let
+  normal scheduling resume after exit;
+- log heap snapshots on boot, game load, and game release;
+- reject/delay TLS when free 8-bit heap is below 80 KB or the largest
+  contiguous block is below 64 KB.
+
+After the strip-rendering change, static RAM fell to 63,084 bytes (19.3%).
+After game objects and buffers were made lazy, boot-time static RAM returned to
+45,452 bytes (13.9%). A successful link alone is not sufficient validation;
+network/TLS behavior and allocation/release cycles must also be tested.
+
+Interpret network errors before changing memory architecture:
+
+- `-32512` / `-0x7F00` is `MBEDTLS_ERR_SSL_ALLOC_FAILED` and indicates an
+  allocation failure.
+- `start_ssl_client: -1` together with `HTTP=-1` is the generic TCP/TLS
+  connection failure/timeout path; it is not evidence of low memory. Check the
+  logged free heap and largest block before drawing conclusions.
+- External TLS handshakes can fail transiently even with ample heap. Preserve
+  HTTPS, use bounded connection/handshake timeouts, and retry with backoff.
+  Never downgrade authenticated or sensitive traffic to HTTP to hide a
+  transient network failure.
+
 ## Config Headers
 
 All hardware pins, timeouts, buffer sizes, and UI constants are in `src/config/`:

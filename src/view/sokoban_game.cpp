@@ -40,7 +40,8 @@ uint16_t glyph3x5(char c) {
 }
 }  // namespace
 
-SokobanGame::SokobanGame(TftDisplay* tft, PreferenceService* preferences)
+SokobanGame::SokobanGame(TftDisplay* tft, PreferenceService* preferences,
+                         uint8_t* frameBuffer)
     : _tft(tft)
     , _preferences(preferences)
     , _active(false)
@@ -58,7 +59,7 @@ SokobanGame::SokobanGame(TftDisplay* tft, PreferenceService* preferences)
     , _boxes{}
     , _history{}
     , _historyCount(0)
-    , _frameBuffer{}
+    , _frameBuffer(frameBuffer)
 {
 }
 
@@ -298,7 +299,7 @@ void SokobanGame::completeLevel() {
 }
 
 void SokobanGame::clearFrame() {
-    memset(_frameBuffer, 0, sizeof(_frameBuffer));
+    memset(_frameBuffer, 0, FRAME_BYTES);
 }
 
 void SokobanGame::setPixel(int16_t x, int16_t y, bool on) {

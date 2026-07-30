@@ -17,7 +17,8 @@ public:
         GAME_OVER
     };
 
-    DinoGame(TftDisplay* tft, PreferenceService* preferences);
+    DinoGame(TftDisplay* tft, PreferenceService* preferences,
+             uint8_t* frameBuffer);
 
     ArcadeGameId id() const override { return ArcadeGameId::DINO; }
     const char* slug() const override { return "dino"; }
@@ -50,6 +51,7 @@ private:
     static constexpr int16_t PLAYFIELD_Y = 0;
     static constexpr int16_t PLAYFIELD_H = 240;
     static constexpr int16_t FRAME_STRIDE = 30;
+    static constexpr size_t FRAME_BYTES = FRAME_STRIDE * PLAYFIELD_H;
     static constexpr int16_t GROUND_Y = 204;
     static constexpr int16_t DINO_X = 24;
     static constexpr int16_t DINO_W = 44;
@@ -74,7 +76,7 @@ private:
     unsigned long _lastUpdateMs;
     unsigned long _lastFrameMs;
     bool _legFrame;
-    uint8_t _frameBuffer[FRAME_STRIDE * PLAYFIELD_H];
+    uint8_t* _frameBuffer;
 
     void startRunning();
     void resetRound();

@@ -196,7 +196,8 @@ void Game2048::drawCenteredNumber(int16_t x, int16_t y, int16_t size,
 }
 
 void Game2048::render() {
-    _canvas->clear(0xEED9);
+    _canvas->beginFrame(0xEED9);
+    do {
     _canvas->fillRect(0, 0, 240, 35, 0x724A);
     _canvas->setTextColor(COLOR_WHITE);
     _canvas->setTextSize(2);
@@ -234,7 +235,7 @@ void Game2048::render() {
         _canvas->setCursor(_state == State::WON ? 72 : 58, 119);
         _canvas->print(_state == State::WON ? "2048!" : "GAME OVER");
     }
-    _canvas->flush();
+    } while (_canvas->nextStrip());
 }
 
 void Game2048::redraw() {

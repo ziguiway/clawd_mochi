@@ -71,7 +71,8 @@ uint16_t tinyGlyph(char c) {
 }
 }  // namespace
 
-DinoGame::DinoGame(TftDisplay* tft, PreferenceService* preferences)
+DinoGame::DinoGame(TftDisplay* tft, PreferenceService* preferences,
+                   uint8_t* frameBuffer)
     : _tft(tft)
     , _preferences(preferences)
     , _active(false)
@@ -91,7 +92,7 @@ DinoGame::DinoGame(TftDisplay* tft, PreferenceService* preferences)
     , _lastUpdateMs(0)
     , _lastFrameMs(0)
     , _legFrame(false)
-    , _frameBuffer{}
+    , _frameBuffer(frameBuffer)
 {
 }
 
@@ -286,7 +287,7 @@ void DinoGame::composePlayfield() {
 }
 
 void DinoGame::clearPlayfield() {
-    memset(_frameBuffer, 0, sizeof(_frameBuffer));
+    memset(_frameBuffer, 0, FRAME_BYTES);
 }
 
 void DinoGame::setBufferPixel(int16_t x, int16_t y) {

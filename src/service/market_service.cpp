@@ -6,6 +6,7 @@
 #include <ctype.h>
 
 #include "../utils/logger.h"
+#include "../utils/memory_monitor.h"
 #include "../utils/network_request_gate.h"
 
 namespace {
@@ -67,6 +68,12 @@ void MarketService::update() {
     _refreshRequested = false;
     _lastAttemptMs = now;
     _version++;
+    if (!MemoryMonitor::hasTlsHeadroom("Market")) {
+        _loading = false;
+        _version++;
+        NetworkRequestGate::release();
+        return;
+    }
     if (xTaskCreate(refreshTaskEntry, "MarketNet", 8192, this, 1,
                     &_refreshTask) != pdPASS) {
         _refreshTask = nullptr;

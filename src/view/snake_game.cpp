@@ -157,7 +157,8 @@ bool SnakeGame::handleAction(const String& action, int) {
 
 void SnakeGame::render() {
     _dirty = false;
-    _canvas->clear(COLOR_DARKBG);
+    _canvas->beginFrame(COLOR_DARKBG);
+    do {
     _canvas->fillRect(0, 0, 240, 28, COLOR_ORANGE);
     _canvas->setTextColor(COLOR_WHITE);
     _canvas->setTextSize(2);
@@ -222,7 +223,7 @@ void SnakeGame::render() {
             _canvas->print("GAME OVER");
         }
     }
-    _canvas->flush();
+    } while (_canvas->nextStrip());
 }
 
 void SnakeGame::redraw() {

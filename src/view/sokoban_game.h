@@ -13,7 +13,8 @@ public:
         COMPLETE
     };
 
-    SokobanGame(TftDisplay* tft, PreferenceService* preferences);
+    SokobanGame(TftDisplay* tft, PreferenceService* preferences,
+                uint8_t* frameBuffer);
 
     ArcadeGameId id() const override { return ArcadeGameId::SOKOBAN; }
     const char* slug() const override { return "sokoban"; }
@@ -70,7 +71,7 @@ private:
     bool _boxes[MAX_CELLS];
     HistoryEntry _history[HISTORY_SIZE];
     uint8_t _historyCount;
-    uint8_t _frameBuffer[FRAME_BYTES];
+    uint8_t* _frameBuffer;
 
     bool loadLevel(uint8_t index);
     void markExteriorVoid();

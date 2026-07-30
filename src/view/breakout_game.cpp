@@ -253,7 +253,8 @@ bool BreakoutGame::handleAction(const String& action, int value) {
 
 void BreakoutGame::render() {
     _dirty = false;
-    _canvas->clear(0x0000);
+    _canvas->beginFrame(0x0000);
+    do {
     _canvas->fillRect(0, 0, 240, 25, COLOR_ORANGE);
     _canvas->setTextColor(COLOR_WHITE);
     _canvas->setTextSize(1);
@@ -318,7 +319,7 @@ void BreakoutGame::render() {
             _canvas->print("GAME OVER");
         }
     }
-    _canvas->flush();
+    } while (_canvas->nextStrip());
 }
 
 void BreakoutGame::redraw() {
