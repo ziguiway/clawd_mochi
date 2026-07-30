@@ -11,7 +11,7 @@
         <header class="provision-hero">
             <p class="kicker">Clawd Mochi</p>
             <h1>WiFi Setup</h1>
-            <p class="subtitle">Choose a local network, enter the password, then keep this page open while the device joins.</p>
+            <p class="subtitle">Choose a local network or replace the current one. Saved credentials are changed only after the new connection succeeds.</p>
         </header>
 
         <section class="setup-steps" aria-label="Setup steps">
@@ -33,12 +33,19 @@
             </ul>
         </section>
 
+        <div class="status-msg info">
+            Recovery access stays available: join <strong>ClaWD-Mochi</strong>
+            and open <strong>192.168.4.1</strong>.
+        </div>
+
         <section class="card provision-card connect-panel" id="connect-form" style="display:none">
             <h2>Connect</h2>
             <label class="field-label" for="ssid-input">Network</label>
-            <input type="text" id="ssid-input" readonly>
+            <input type="text" id="ssid-input" maxlength="32"
+                   placeholder="Network name">
             <label class="field-label" for="password-input">Password</label>
-            <input type="password" id="password-input" placeholder="WiFi password">
+            <input type="password" id="password-input" maxlength="64"
+                   placeholder="Empty for an open network">
             <div id="connect-msg"></div>
             <button class="primary-btn" onclick="connectWifi()">Connect Device</button>
         </section>

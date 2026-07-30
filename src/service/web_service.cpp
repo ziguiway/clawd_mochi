@@ -52,6 +52,23 @@ void WebService::setupRoutes() {
     _server.on("/timer/pause",  HTTP_GET, [this]() { handleTimerPause(); });
     _server.on("/timer/reset",  HTTP_GET, [this]() { handleTimerReset(); });
     _server.on("/timer/config", HTTP_GET, [this]() { handleTimerConfig(); });
+    _server.on("/game/dino/start", HTTP_POST, [this]() { handleDinoStart(); });
+    _server.on("/game/dino/action", HTTP_POST, [this]() { handleDinoAction(); });
+    _server.on("/game/dino/restart", HTTP_POST, [this]() { handleDinoRestart(); });
+    _server.on("/game/dino/exit", HTTP_POST, [this]() { handleDinoExit(); });
+    _server.on("/game/dino/state", HTTP_GET, [this]() { handleDinoState(); });
+    _server.on("/game/sokoban/start", HTTP_POST, [this]() { handleSokobanStart(); });
+    _server.on("/game/sokoban/move", HTTP_POST, [this]() { handleSokobanMove(); });
+    _server.on("/game/sokoban/undo", HTTP_POST, [this]() { handleSokobanUndo(); });
+    _server.on("/game/sokoban/restart", HTTP_POST, [this]() { handleSokobanRestart(); });
+    _server.on("/game/sokoban/level", HTTP_POST, [this]() { handleSokobanLevel(); });
+    _server.on("/game/sokoban/exit", HTTP_POST, [this]() { handleSokobanExit(); });
+    _server.on("/game/sokoban/state", HTTP_GET, [this]() { handleSokobanState(); });
+    _server.on("/game/start", HTTP_POST, [this]() { handleArcadeStart(); });
+    _server.on("/game/action", HTTP_POST, [this]() { handleArcadeAction(); });
+    _server.on("/game/exit", HTTP_POST, [this]() { handleArcadeExit(); });
+    _server.on("/game/state", HTTP_GET, [this]() { handleArcadeState(); });
+    _server.on("/game/catalog", HTTP_GET, [this]() { handleArcadeCatalog(); });
     _server.on("/prefs",       HTTP_GET, [this]() { handlePrefs(); });
     _server.on("/state",       HTTP_GET, [this]() { handleState(); });
     _server.on("/expressions", HTTP_GET, [this]() { handleExpressions(); });
@@ -210,6 +227,174 @@ void WebService::handleBrightness() {
     json += _displayService->getBrightnessPercent();
     json += "}";
     _server.send(200, "application/json", json);
+}
+
+void WebService::handleDinoStart() {
+    _displayService->startDinoGame();
+    _server.send(200, "application/json", _displayService->getDinoGameStateJson());
+}
+
+void WebService::handleDinoAction() {
+    if (!_server.hasArg("action") || _server.arg("action") != "jump") {
+        _server.send(400, "application/json", "{\"error\":\"unknown action\"}");
+        return;
+    }
+    if (!_displayService->isDinoGameActive()) {
+        _server.send(409, "application/json", "{\"error\":\"game is not active\"}");
+        return;
+    }
+    _displayService->dinoJump();
+    _server.send(200, "application/json", _displayService->getDinoGameStateJson());
+}
+
+void WebService::handleDinoRestart() {
+    if (!_displayService->isDinoGameActive()) {
+        _server.send(409, "application/json", "{\"error\":\"game is not active\"}");
+        return;
+    }
+    _displayService->restartDinoGame();
+    _server.send(200, "application/json", _displayService->getDinoGameStateJson());
+}
+
+void WebService::handleDinoExit() {
+    _displayService->exitDinoGame();
+    _server.send(200, "application/json", _displayService->getDinoGameStateJson());
+}
+
+void WebService::handleDinoState() {
+    _server.send(200, "application/json", _displayService->getDinoGameStateJson());
+}
+
+void WebService::handleSokobanStart() {
+    _displayService->startSokobanGame();
+    _server.send(200, "application/json", _displayService->getSokobanStateJson());
+}
+
+void WebService::handleSokobanMove() {
+    if (!_displayService->isSokobanGameActive()) {
+        _server.send(409, "application/json", "{\"error\":\"game is not active\"}");
+        return;
+    }
+    if (!_server.hasArg("direction")) {
+        _server.send(400, "application/json", "{\"error\":\"missing direction\"}");
+        return;
+    }
+    const String direction = _server.arg("direction");
+    int8_t dx = 0;
+    int8_t dy = 0;
+    if (direction == "up") dy = -1;
+    else if (direction == "down") dy = 1;
+    else if (direction == "left") dx = -1;
+    else if (direction == "right") dx = 1;
+    else {
+        _server.send(400, "application/json", "{\"error\":\"unknown direction\"}");
+        return;
+    }
+    _displayService->moveSokoban(dx, dy);
+    _server.send(200, "application/json", _displayService->getSokobanStateJson());
+}
+
+void WebService::handleSokobanUndo() {
+    if (!_displayService->isSokobanGameActive()) {
+        _server.send(409, "application/json", "{\"error\":\"game is not active\"}");
+        return;
+    }
+    _displayService->undoSokoban();
+    _server.send(200, "application/json", _displayService->getSokobanStateJson());
+}
+
+void WebService::handleSokobanRestart() {
+    if (!_displayService->isSokobanGameActive()) {
+        _server.send(409, "application/json", "{\"error\":\"game is not active\"}");
+        return;
+    }
+    _displayService->restartSokoban();
+    _server.send(200, "application/json", _displayService->getSokobanStateJson());
+}
+
+void WebService::handleSokobanLevel() {
+    if (!_displayService->isSokobanGameActive()) {
+        _server.send(409, "application/json", "{\"error\":\"game is not active\"}");
+        return;
+    }
+    if (!_server.hasArg("index")) {
+        _server.send(400, "application/json", "{\"error\":\"missing level\"}");
+        return;
+    }
+    const int index = _server.arg("index").toInt();
+    if (index < 1 || !_displayService->selectSokobanLevel(index - 1)) {
+        _server.send(400, "application/json", "{\"error\":\"invalid level\"}");
+        return;
+    }
+    _server.send(200, "application/json", _displayService->getSokobanStateJson());
+}
+
+void WebService::handleSokobanExit() {
+    _displayService->exitSokobanGame();
+    _server.send(200, "application/json", _displayService->getSokobanStateJson());
+}
+
+void WebService::handleSokobanState() {
+    _server.send(200, "application/json", _displayService->getSokobanStateJson());
+}
+
+void WebService::handleArcadeStart() {
+    if (!_server.hasArg("id") ||
+        !_displayService->startArcadeGame(_server.arg("id"))) {
+        _server.send(400, "application/json",
+                     "{\"error\":\"unknown game\"}");
+        return;
+    }
+    _server.send(200, "application/json",
+                 _displayService->getArcadeGameStateJson());
+}
+
+void WebService::handleArcadeAction() {
+    if (!_displayService->isGameActive()) {
+        _server.send(409, "application/json",
+                     "{\"error\":\"game is not active\"}");
+        return;
+    }
+    if (!_server.hasArg("action")) {
+        _server.send(400, "application/json",
+                     "{\"error\":\"missing action\"}");
+        return;
+    }
+    const int value = _server.hasArg("value")
+        ? _server.arg("value").toInt() : 0;
+    const bool changed =
+        _displayService->handleArcadeAction(_server.arg("action"), value);
+    String json = _displayService->getArcadeGameStateJson();
+    if (!changed && json.indexOf("\"game_over\"") < 0) {
+        // 无效移动不是协议错误，客户端仍需拿到最新状态。
+        _server.send(200, "application/json", json);
+        return;
+    }
+    _server.send(200, "application/json", json);
+}
+
+void WebService::handleArcadeExit() {
+    _displayService->exitArcadeGame();
+    _server.send(200, "application/json",
+                 "{\"active\":false,\"state\":\"closed\"}");
+}
+
+void WebService::handleArcadeState() {
+    const String id = _server.hasArg("id") ? _server.arg("id") : "";
+    _server.send(200, "application/json",
+                 _displayService->getArcadeGameStateJson(id));
+}
+
+void WebService::handleArcadeCatalog() {
+    _server.send(200, "application/json",
+        "{\"games\":["
+        "{\"id\":\"dino\",\"name\":\"DINO.RUN\",\"controls\":\"jump\"},"
+        "{\"id\":\"sokoban\",\"name\":\"BOX.PUSH\",\"controls\":\"dpad\"},"
+        "{\"id\":\"tetris\",\"name\":\"TETRIS\",\"controls\":\"five-key\"},"
+        "{\"id\":\"snake\",\"name\":\"SNAKE\",\"controls\":\"dpad\"},"
+        "{\"id\":\"2048\",\"name\":\"2048\",\"controls\":\"swipe\"},"
+        "{\"id\":\"breakout\",\"name\":\"BREAKOUT\",\"controls\":\"paddle\"}"
+        "]}");
 }
 
 void WebService::handleTimerStatus() {

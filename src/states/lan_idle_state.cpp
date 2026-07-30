@@ -27,6 +27,9 @@ void LANIdleState::onUpdate() {
     _ctx->serial()->update();
     _ctx->display()->update();
 
+    // 游戏占用屏幕期间继续在后台接收 Codex 状态，但不抢走游戏画面。
+    if (_ctx->display()->isGameActive()) return;
+
     auto status = _ctx->cc()->getStatus();
     if (_ctx->display()->isClaudeStatusEnabled() && shouldShowInfo(status)) {
         static_cast<AppStateMachine*>(_ctx)->transitionTo(AppStateMachine::LAN_WORKING);

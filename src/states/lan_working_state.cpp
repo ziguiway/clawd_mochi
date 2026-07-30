@@ -27,6 +27,9 @@ void LANWorkingState::onUpdate() {
     _ctx->serial()->update();
     _ctx->display()->update();
 
+    // Web 游戏优先，退出后再按最新 Codex 状态恢复面板。
+    if (_ctx->display()->isGameActive()) return;
+
     // WiFi 持续断开超过宽限期:回空闲表情,后台继续重连。
     if (!_ctx->wifi()->isConnected()) {
         if (!_wifiLost) {

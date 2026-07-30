@@ -11,8 +11,9 @@ WifiConfigService::WifiConfigService()
     , _lastAttemptEndMs(0), _connectedSinceMs(0), _lastPowerAdjustMs(0)
     , _filteredRssi(0), _currentTxPower(WIFI_POWER_19_5dBm)
     , _wifiSleepEnabled(true), _radioProfileInitialized(false)
+    , _credentialPrefsReady(false), _credentialChangePending(false)
     , _connectPhase(ConnectPhase::ASSOCIATING), _lastDisconnectReason(0)
-    , _lastError("Connection failed"), _retryCount(0), _retryExhausted(false)
+    , _lastError(""), _retryCount(0), _retryExhausted(false)
     , _provMode(ProvisioningMode::NONE), _provModeStartMs(0)
 {
 }
@@ -20,6 +21,11 @@ WifiConfigService::WifiConfigService()
 void WifiConfigService::init() {
     ensureAccessPoint();
     WiFi.onEvent(onWifiEvent);
+    _credentialPrefsReady = _credentialPrefs.begin(
+        CFG_WIFI_NVS_NAMESPACE, false);
+    if (!_credentialPrefsReady) {
+        LOG_ERROR("WiFi", "WiFi NVS 初始化失败");
+    }
     loadCredentials();
     if (_configured) {
         LOG_INFO("WiFi", "已有凭据,连接: %s", _ssid.c_str());
@@ -63,6 +69,17 @@ static const char* mapDisconnectReason(uint8_t reason) {
         default:
             return "Connection failed";
     }
+}
+
+static String escapeJsonString(const String& value) {
+    String escaped;
+    escaped.reserve(value.length() + 4);
+    for (size_t i = 0; i < value.length(); i++) {
+        const char c = value[i];
+        if (c == '"' || c == '\\') escaped += '\\';
+        if (static_cast<uint8_t>(c) >= 0x20) escaped += c;
+    }
+    return escaped;
 }
 
 const char* WifiConfigService::getConnectPhaseText() const {
@@ -135,6 +152,20 @@ void WifiConfigService::update() {
         if (WiFi.status() == WL_CONNECTED) {
             _connected = true;
             _connecting = false;
+            if (_credentialChangePending) {
+                if (persistCredentials(_pendingSsid, _pendingPassword)) {
+                    _ssid = _pendingSsid;
+                    _password = _pendingPassword;
+                    _configured = true;
+                    LOG_INFO("WiFi", "新网络验证成功并保存到 NVS: %s",
+                             _ssid.c_str());
+                } else {
+                    LOG_ERROR("WiFi", "新网络已连接,但凭据写入 NVS 失败");
+                }
+                _pendingSsid = "";
+                _pendingPassword = "";
+                _credentialChangePending = false;
+            }
             _lastError = "";
             _retryCount = 0;
             _retryExhausted = false;
@@ -151,6 +182,21 @@ void WifiConfigService::update() {
             _lastAttemptEndMs = millis();
             _lastError = mapDisconnectReason(_lastDisconnectReason);
             LOG_WARN("WiFi", "连接超时: %s (reason=%d)", _lastError, _lastDisconnectReason);
+            if (_credentialChangePending) {
+                LOG_WARN("WiFi", "候选网络验证失败,保留原凭据: %s",
+                         _ssid.c_str());
+                _pendingSsid = "";
+                _pendingPassword = "";
+                _credentialChangePending = false;
+                _retryCount = 0;
+                _retryExhausted = false;
+                if (_configured) {
+                    setProvisioningMode(ProvisioningMode::RETRY_WAIT);
+                } else {
+                    startAPMode();
+                }
+                return;
+            }
             if (!_configured) {
                 startAPMode();
             } else {
@@ -198,18 +244,79 @@ void WifiConfigService::update() {
 }
 
 void WifiConfigService::loadCredentials() {
-    if (!LittleFS.exists(CFG_WIFI_CRED_PATH)) { _configured = false; return; }
-    File file = LittleFS.open(CFG_WIFI_CRED_PATH, "r");
-    if (!file) { _configured = false; return; }
+    _configured = false;
+    if (_credentialPrefsReady) {
+        _ssid = _credentialPrefs.getString(CFG_WIFI_NVS_SSID_KEY, "");
+        _password = _credentialPrefs.getString(CFG_WIFI_NVS_PASS_KEY, "");
+        _configured = isValidCredentialInput(_ssid, _password);
+    }
+    if (_configured) return;
+
+    _ssid = "";
+    _password = "";
+    migrateLegacyCredentials();
+}
+
+void WifiConfigService::migrateLegacyCredentials() {
+    // 遍历根目录而不是对不存在的文件调用 LittleFS.exists()，
+    // 避免 vfs 在全新文件系统上打印误导性的 open() 错误。
+    File root = LittleFS.open("/");
+    if (!root || !root.isDirectory()) return;
+
+    File legacy;
+    for (File entry = root.openNextFile(); entry; entry = root.openNextFile()) {
+        String name = entry.name();
+        if (name == CFG_WIFI_LEGACY_CRED_PATH ||
+            name == String(CFG_WIFI_LEGACY_CRED_PATH).substring(1)) {
+            legacy = entry;
+            break;
+        }
+    }
+    if (!legacy) return;
 
     JsonDocument doc;
-    DeserializationError err = deserializeJson(doc, file);
-    file.close();
-    if (err) { _configured = false; return; }
+    const DeserializationError err = deserializeJson(doc, legacy);
+    legacy.close();
+    if (err) {
+        LOG_WARN("WiFi", "旧 LittleFS WiFi 凭据无效,忽略迁移");
+        return;
+    }
 
-    _ssid = doc["ssid"].as<String>();
-    _password = doc["password"].as<String>();
-    _configured = !_ssid.isEmpty();
+    const String ssid = doc["ssid"].as<String>();
+    const String password = doc["password"].as<String>();
+    if (!isValidCredentialInput(ssid, password) ||
+        !persistCredentials(ssid, password)) {
+        LOG_WARN("WiFi", "旧 WiFi 凭据迁移到 NVS 失败");
+        return;
+    }
+
+    _ssid = ssid;
+    _password = password;
+    _configured = true;
+    LittleFS.remove(CFG_WIFI_LEGACY_CRED_PATH);
+    LOG_INFO("WiFi", "旧 WiFi 凭据已迁移到 NVS: %s", _ssid.c_str());
+}
+
+bool WifiConfigService::persistCredentials(const String& ssid,
+                                           const String& password) {
+    if (!_credentialPrefsReady || !isValidCredentialInput(ssid, password)) {
+        return false;
+    }
+    const size_t ssidBytes = _credentialPrefs.putString(
+        CFG_WIFI_NVS_SSID_KEY, ssid);
+    const size_t passwordBytes = _credentialPrefs.putString(
+        CFG_WIFI_NVS_PASS_KEY, password);
+    return ssidBytes > 0 && passwordBytes > 0;
+}
+
+bool WifiConfigService::isValidCredentialInput(
+    const String& ssid, const String& password) const {
+    if (ssid.isEmpty() || ssid.length() > CFG_WIFI_CRED_SSID_MAX_LEN) {
+        return false;
+    }
+    return password.isEmpty() ||
+           (password.length() >= 8 &&
+            password.length() <= CFG_WIFI_CRED_PASS_MAX_LEN);
 }
 
 void WifiConfigService::startAPMode() {
@@ -229,6 +336,7 @@ void WifiConfigService::skipProvisioning() {
 }
 
 bool WifiConfigService::connectToWifi(const char* ssid, const char* password) {
+    if (!ssid || !password) return false;
     stopMDNS();
     _connected = false;
     ensureAccessPoint();
@@ -242,20 +350,39 @@ bool WifiConfigService::connectToWifi(const char* ssid, const char* password) {
     return true;
 }
 
+bool WifiConfigService::configureAndConnect(const char* ssid,
+                                            const char* password) {
+    const String candidateSsid = ssid ? String(ssid) : String();
+    const String candidatePassword = password ? String(password) : String();
+    if (!isValidCredentialInput(candidateSsid, candidatePassword)) return false;
+
+    _pendingSsid = candidateSsid;
+    _pendingPassword = candidatePassword;
+    _credentialChangePending = true;
+    _lastError = "";
+    _retryCount = 0;
+    _retryExhausted = false;
+    return connectToWifi(_pendingSsid.c_str(), _pendingPassword.c_str());
+}
+
 void WifiConfigService::saveCredentials(const char* ssid, const char* password) {
-    JsonDocument doc;
-    doc["ssid"] = ssid;
-    doc["password"] = password;
-    File file = LittleFS.open(CFG_WIFI_CRED_PATH, "w");
-    if (file) { serializeJson(doc, file); file.close(); }
-    _ssid = ssid;
-    _password = password;
+    const String valueSsid = ssid ? String(ssid) : String();
+    const String valuePassword = password ? String(password) : String();
+    if (!persistCredentials(valueSsid, valuePassword)) return;
+    _ssid = valueSsid;
+    _password = valuePassword;
     _configured = true;
 }
 
 void WifiConfigService::clearCredentials() {
-    LittleFS.remove(CFG_WIFI_CRED_PATH);
-    _ssid = ""; _password = ""; _configured = false;
+    if (_credentialPrefsReady) _credentialPrefs.clear();
+    LittleFS.remove(CFG_WIFI_LEGACY_CRED_PATH);
+    _ssid = "";
+    _password = "";
+    _pendingSsid = "";
+    _pendingPassword = "";
+    _credentialChangePending = false;
+    _configured = false;
 }
 
 void WifiConfigService::reset() {
@@ -370,7 +497,8 @@ void WifiConfigService::handleScanRequest(WebServer& server) {
     String json = "[";
     for (int i = 0; i < n; i++) {
         if (i > 0) json += ",";
-        json += "{\"ssid\":\"" + WiFi.SSID(i) + "\",\"rssi\":" + String(WiFi.RSSI(i));
+        json += "{\"ssid\":\"" + escapeJsonString(WiFi.SSID(i)) +
+                "\",\"rssi\":" + String(WiFi.RSSI(i));
         json += ",\"encrypted\":" + String(WiFi.encryptionType(i) != WIFI_AUTH_OPEN ? "true" : "false") + "}";
     }
     json += "]";
@@ -382,12 +510,13 @@ void WifiConfigService::handleConnectRequest(WebServer& server) {
     if (server.hasArg("ssid") && server.hasArg("password")) {
         String ssid = server.arg("ssid");
         String password = server.arg("password");
-        saveCredentials(ssid.c_str(), password.c_str());
-        // 用户手动提交新凭据:重置重试计数,重新进入快速重试循环
-        _retryCount = 0;
-        _retryExhausted = false;
-        connectToWifi(ssid.c_str(), password.c_str());
-        server.send(200, "application/json", "{\"status\":\"connecting\"}");
+        if (!configureAndConnect(ssid.c_str(), password.c_str())) {
+            server.send(400, "application/json",
+                        "{\"error\":\"SSID must be 1-32 characters; password must be empty or 8-64 characters\"}");
+            return;
+        }
+        server.send(202, "application/json",
+                    "{\"status\":\"connecting\",\"apIp\":\"192.168.4.1\",\"credentialsPending\":true}");
     } else {
         server.send(400, "application/json", "{\"error\":\"missing parameters\"}");
     }
@@ -395,17 +524,21 @@ void WifiConfigService::handleConnectRequest(WebServer& server) {
 
 void WifiConfigService::handleStatusRequest(WebServer& server) {
     String json = "{\"connected\":" + String(_connected ? "true" : "false");
-    json += ",\"ssid\":\"" + getSSID() + "\",\"ip\":\"" + getIP() + "\"";
-    json += ",\"lanIp\":\"" + getLanIP() + "\"";
-    json += ",\"apIp\":\"" + getAPIP() + "\"";
+    json += ",\"ssid\":\"" + escapeJsonString(getSSID()) +
+            "\",\"ip\":\"" + escapeJsonString(getIP()) + "\"";
+    json += ",\"lanIp\":\"" + escapeJsonString(getLanIP()) + "\"";
+    json += ",\"apIp\":\"" + escapeJsonString(getAPIP()) + "\"";
     json += ",\"apSsid\":\"" + String(CFG_WIFI_AP_SSID) + "\"";
     json += ",\"mdns\":\"" + getMDNSUrl() + "\"";
     json += ",\"mdnsActive\":" + String(_mdnsStarted ? "true" : "false");
     json += ",\"configured\":" + String(_configured ? "true" : "false");
-    json += ",\"savedSsid\":\"" + _ssid + "\"";
+    json += ",\"savedSsid\":\"" + escapeJsonString(_ssid) + "\"";
     json += ",\"lastError\":\"" + String(_lastError) + "\"";
     json += ",\"retryCount\":" + String(_retryCount);
     json += ",\"retryExhausted\":" + String(_retryExhausted ? "true" : "false");
+    json += ",\"changingNetwork\":" +
+            String(_credentialChangePending ? "true" : "false");
+    json += ",\"credentialStorage\":\"nvs\"";
     json += ",\"phase\":\"" + String(getConnectPhaseText()) + "\"";
     json += ",\"rssi\":" + String(WiFi.RSSI()) + "}";
     server.send(200, "application/json", json);

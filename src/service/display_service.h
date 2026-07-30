@@ -5,6 +5,13 @@
 #include "claude_code_service.h"
 #include "../view/claude_code_view.h"
 #include "../view/eyes_view.h"
+#include "../view/dino_game.h"
+#include "../view/sokoban_game.h"
+#include "../view/arcade_canvas.h"
+#include "../view/tetris_game.h"
+#include "../view/snake_game.h"
+#include "../view/game_2048.h"
+#include "../view/breakout_game.h"
 #include "wifi_config_service.h"
 #include "time_service.h"
 #include "preference_service.h"
@@ -32,7 +39,13 @@ enum class InteractiveView {
     POMODORO,
     WEATHER,
     CRYPTO,
-    MARKET
+    MARKET,
+    DINO_GAME,
+    SOKOBAN_GAME,
+    TETRIS_GAME,
+    SNAKE_GAME,
+    GAME_2048,
+    BREAKOUT_GAME
 };
 
 enum class PomodoroPhase {
@@ -87,6 +100,32 @@ public:
     // Canvas
     void drawClear(uint16_t bgColor);
     void drawStroke(uint16_t penColor, const String& pointsData);
+
+    // Dino game
+    void startDinoGame();
+    void dinoJump();
+    void restartDinoGame();
+    void exitDinoGame();
+    bool isDinoGameActive() const;
+    String getDinoGameStateJson() const;
+
+    // Sokoban game
+    void startSokobanGame();
+    bool moveSokoban(int8_t dx, int8_t dy);
+    bool undoSokoban();
+    void restartSokoban();
+    bool selectSokobanLevel(uint8_t level);
+    void exitSokobanGame();
+    bool isSokobanGameActive() const;
+    bool isGameActive() const;
+    String getSokobanStateJson() const;
+
+    // 可扩展游戏注册入口
+    bool startArcadeGame(const String& slug);
+    bool handleArcadeAction(const String& action, int value = 0);
+    void exitArcadeGame();
+    String getArcadeGameStateJson(const String& slug = "") const;
+    const char* getActiveArcadeGameSlug() const;
 
     // Logo animation
     void animLogoReveal();
@@ -146,6 +185,14 @@ private:
     MarketService* _marketService;
     ClaudeCodeView _ccView;
     EyesView _eyesView;
+    DinoGame _dinoGame;
+    SokobanGame _sokobanGame;
+    ArcadeCanvas _arcadeCanvas;
+    TetrisGame _tetrisGame;
+    SnakeGame _snakeGame;
+    Game2048 _game2048;
+    BreakoutGame _breakoutGame;
+    IArcadeGame* _activeArcadeGame;
     DisplayMode _currentMode;
     unsigned long _lastRefreshMs;
 
@@ -203,6 +250,11 @@ private:
     char _lastHintText[12];
     uint16_t _lastProgressPermille;
     bool _lastLightProgress;
+
+    IArcadeGame* findArcadeGame(const String& slug);
+    const IArcadeGame* findArcadeGame(const String& slug) const;
+    uint8_t viewForArcadeGame(ArcadeGameId id) const;
+    bool isArcadeGameView() const;
 
     // Terminal state
     bool _termMode;

@@ -209,6 +209,48 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
         "defaultExpression": "normal",
         "expressionMode": "manual",
     }
+    dino_state: dict[str, Any] = {
+        "active": False,
+        "state": "ready",
+        "score": 0,
+        "highScore": 0,
+        "speed": 92,
+    }
+    dino_jump_count = 0
+    sokoban_state: dict[str, Any] = {
+        "active": False,
+        "state": "playing",
+        "level": 1,
+        "levelCount": 8,
+        "moves": 0,
+        "pushes": 0,
+        "boxesOnGoals": 0,
+        "boxes": 6,
+        "completedLevels": 0,
+        "canUndo": False,
+    }
+    sokoban_move_count = 0
+    arcade_states: dict[str, dict[str, Any]] = {
+        "tetris": {
+            "id": "tetris", "active": False, "state": "playing",
+            "score": 0, "highScore": 0, "lines": 0, "level": 1,
+        },
+        "snake": {
+            "id": "snake", "active": False, "state": "ready",
+            "score": 0, "highScore": 0, "length": 5, "speedMs": 175,
+        },
+        "2048": {
+            "id": "2048", "active": False, "state": "playing",
+            "score": 0, "bestScore": 0, "maxTile": 2, "canUndo": False,
+        },
+        "breakout": {
+            "id": "breakout", "active": False, "state": "ready",
+            "score": 0, "highScore": 0, "lives": 3, "level": 1,
+            "bricks": 48,
+        },
+    }
+    active_arcade_game = ""
+    arcade_actions: list[tuple[str, str, int]] = []
 
     def log_message(self, _format: str, *_args: object) -> None:
         return
@@ -300,6 +342,26 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
             self.send_json(
                 {"version": "1.0.0-rc1", "busy": False, "brightness": 100}
             )
+        elif path == "/game/dino/state":
+            self.send_json(self.dino_state)
+        elif path == "/game/sokoban/state":
+            self.send_json(self.sokoban_state)
+        elif path == "/game/state":
+            args = urllib.parse.parse_qs(parsed.query)
+            game_id = args.get(
+                "id", [self.active_arcade_game or "tetris"]
+            )[0]
+            self.send_json(self.arcade_states.get(game_id, {"active": False}))
+        elif path == "/game/catalog":
+            self.send_json({
+                "games": [
+                    {"id": game_id}
+                    for game_id in (
+                        "dino", "sokoban", "tetris", "snake",
+                        "2048", "breakout",
+                    )
+                ]
+            })
         elif path == "/expressions":
             self.send_json(
                 {
@@ -333,6 +395,14 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
                     "connected": True,
                     "ssid": "UI-TEST",
                     "lanIp": "127.0.0.1",
+                    "ip": "127.0.0.1",
+                    "apIp": "192.168.4.1",
+                    "apSsid": "ClaWD-Mochi",
+                    "mdns": "http://clawd-mochi.local",
+                    "configured": True,
+                    "savedSsid": "UI-TEST",
+                    "changingNetwork": False,
+                    "lastError": "",
                 }
             )
         elif path == "/timer/status":
@@ -350,7 +420,148 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
             self.send_json({"ok": True})
 
     def do_POST(self) -> None:
-        path = self.path.split("?", 1)[0]
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        args = urllib.parse.parse_qs(parsed.query)
+        if path == "/game/dino/start":
+            self.__class__.dino_state = {
+                **self.dino_state,
+                "active": True,
+                "state": "ready",
+                "score": 0,
+            }
+            self.send_json(self.dino_state)
+            return
+        if path == "/game/dino/action":
+            self.__class__.dino_jump_count += 1
+            self.__class__.dino_state = {
+                **self.dino_state,
+                "state": "running",
+            }
+            self.send_json(self.dino_state)
+            return
+        if path == "/game/dino/restart":
+            self.__class__.dino_state = {
+                **self.dino_state,
+                "state": "ready",
+                "score": 0,
+            }
+            self.send_json(self.dino_state)
+            return
+        if path == "/game/dino/exit":
+            self.__class__.dino_state = {
+                **self.dino_state,
+                "active": False,
+            }
+            self.send_json(self.dino_state)
+            return
+        if path == "/game/sokoban/start":
+            self.__class__.sokoban_state = {
+                **self.sokoban_state,
+                "active": True,
+                "state": "playing",
+                "moves": 0,
+                "pushes": 0,
+                "canUndo": False,
+            }
+            self.send_json(self.sokoban_state)
+            return
+        if path == "/game/sokoban/move":
+            self.__class__.sokoban_move_count += 1
+            self.__class__.sokoban_state = {
+                **self.sokoban_state,
+                "moves": self.sokoban_state["moves"] + 1,
+                "canUndo": True,
+            }
+            self.send_json(self.sokoban_state)
+            return
+        if path == "/game/sokoban/undo":
+            self.__class__.sokoban_state = {
+                **self.sokoban_state,
+                "moves": max(0, self.sokoban_state["moves"] - 1),
+                "canUndo": self.sokoban_state["moves"] > 1,
+            }
+            self.send_json(self.sokoban_state)
+            return
+        if path == "/game/sokoban/restart":
+            self.__class__.sokoban_state = {
+                **self.sokoban_state,
+                "state": "playing",
+                "moves": 0,
+                "pushes": 0,
+                "canUndo": False,
+            }
+            self.send_json(self.sokoban_state)
+            return
+        if path == "/game/sokoban/level":
+            level = int(args.get("index", ["1"])[0])
+            self.__class__.sokoban_state = {
+                **self.sokoban_state,
+                "state": "playing",
+                "level": level,
+                "moves": 0,
+                "pushes": 0,
+                "canUndo": False,
+            }
+            self.send_json(self.sokoban_state)
+            return
+        if path == "/game/sokoban/exit":
+            self.__class__.sokoban_state = {
+                **self.sokoban_state,
+                "active": False,
+            }
+            self.send_json(self.sokoban_state)
+            return
+        if path == "/game/start":
+            game_id = args.get("id", [""])[0]
+            if game_id not in self.arcade_states:
+                self.send_json({"error": "unknown game"}, 400)
+                return
+            self.__class__.active_arcade_game = game_id
+            state = {
+                **self.arcade_states[game_id],
+                "active": True,
+                "state": "ready" if game_id in {"snake", "breakout"}
+                else "playing",
+            }
+            self.__class__.arcade_states[game_id] = state
+            self.send_json(state)
+            return
+        if path == "/game/action":
+            game_id = self.active_arcade_game
+            action = args.get("action", [""])[0]
+            value = int(args.get("value", ["0"])[0])
+            if not game_id:
+                self.send_json({"error": "game is not active"}, 409)
+                return
+            self.__class__.arcade_actions.append((game_id, action, value))
+            state = {**self.arcade_states[game_id]}
+            if game_id == "tetris" and action == "drop":
+                state.update(score=20, lines=1)
+            elif game_id == "snake" and action in {
+                "up", "down", "left", "right"
+            }:
+                state.update(state="playing", score=1, length=6)
+            elif game_id == "2048":
+                if action == "undo":
+                    state.update(score=0, maxTile=2, canUndo=False)
+                elif action in {"up", "down", "left", "right"}:
+                    state.update(score=4, bestScore=4, maxTile=4, canUndo=True)
+            elif game_id == "breakout" and action == "launch":
+                state.update(state="playing", score=10)
+            self.__class__.arcade_states[game_id] = state
+            self.send_json(state)
+            return
+        if path == "/game/exit":
+            game_id = self.active_arcade_game
+            if game_id:
+                self.__class__.arcade_states[game_id] = {
+                    **self.arcade_states[game_id],
+                    "active": False,
+                }
+            self.__class__.active_arcade_game = ""
+            self.send_json({"active": False, "state": "closed"})
+            return
         if path == "/expression":
             length = int(self.headers.get("Content-Length", "0"))
             payload = json.loads(self.rfile.read(length) or b"{}")
@@ -522,6 +733,29 @@ def run_positive_flow(page: Page, *, stub_mode: bool) -> None:
 
 
 def run_wifi_status_flow(page: Page) -> None:
+    open_controller(page)
+    page.evaluate(
+        """() => renderWifiStatus({
+            connected: true,
+            configured: true,
+            ssid: 'UI-TEST',
+            savedSsid: 'UI-TEST',
+            lanIp: '127.0.0.1',
+            apIp: '192.168.4.1',
+            apSsid: 'ClaWD-Mochi',
+            mdns: 'http://clawd-mochi.local',
+            changingNetwork: false,
+            lastError: ''
+        })"""
+    )
+    change_button = page.locator("#wscanBtn")
+    assert change_button.is_visible()
+    assert change_button.text_content() == "CHANGE NETWORK"
+    change_button.click()
+    page.locator("#wsetup.open").wait_for(state="visible")
+    assert page.locator("#wform").is_visible()
+    print("PASS  已联网时仍可进入更换网络流程")
+
     rendered = page.evaluate(
         """() => wifiStatusHtml({
             connected: false,
@@ -538,6 +772,25 @@ def run_wifi_status_flow(page: Page) -> None:
         "WiFi 重试状态没有显示设备返回的具体失败原因和次数"
     )
     print("PASS  WiFi 显示具体连接失败原因")
+
+    page.evaluate(
+        """() => renderWifiStatus({
+            connected: false,
+            configured: false,
+            ssid: 'ClaWD-Mochi',
+            savedSsid: '',
+            apIp: '192.168.4.1',
+            apSsid: 'ClaWD-Mochi',
+            changingNetwork: false,
+            lastError: ''
+        })"""
+    )
+    assert page.locator("#wscanBtn").text_content() == "CONNECT WIFI"
+    assert page.locator("#wsetup").is_visible()
+    assert "192.168.4.1" in (
+        page.locator(".wrescue").text_content() or ""
+    )
+    print("PASS  无凭据时自动展开配网并持续显示 AP 救援入口")
 
 
 def run_expression_flow(page: Page, *, stub_mode: bool) -> None:
@@ -763,6 +1016,162 @@ def run_carousel_flow(page: Page, *, stub_mode: bool) -> None:
         assert FirmwareStubHandler.prefs["carousel"] is False
         assert FirmwareStubHandler.prefs["carouselFixed"] == 10
     print("PASS  关闭轮播并固定显示 Market")
+
+
+def run_game_arcade_flow(page: Page, *, stub_mode: bool) -> None:
+    open_controller(page)
+    page.locator("#dinoViewBtn").click()
+    page.locator("#arcadeWrap.open").wait_for(state="visible")
+    assert page.locator("#arcadeHome .game-card").count() == 6
+    assert page.locator("#arcadeDinoCard").is_visible()
+    assert page.locator("#arcadeSokobanCard").is_visible()
+    assert page.locator("#arcadeTetrisCard").is_visible()
+    assert page.locator("#arcadeSnakeCard").is_visible()
+    assert page.locator("#arcade2048Card").is_visible()
+    assert page.locator("#arcadeBreakoutCard").is_visible()
+    print("PASS  独立游戏厅显示六款游戏")
+
+    page.locator("#arcadeDinoCard").click()
+    page.locator("#dinoWrap.open").wait_for(state="visible")
+    assert page.locator("#dinoState").text_content() == "READY"
+    assert page.locator("#dinoScore").text_content() == "0000"
+    print("PASS  打开无物理按键的小恐龙控制器")
+
+    jump = page.locator("#dinoJump")
+    jump.dispatch_event("pointerdown")
+    page.wait_for_function(
+        "() => document.querySelector('#dinoState').textContent === 'RUNNING'"
+    )
+    page.wait_for_timeout(80)
+    page.keyboard.press("Space")
+    page.wait_for_timeout(100)
+    if stub_mode:
+        assert FirmwareStubHandler.dino_jump_count == 2, (
+            "触摸与空格没有各发送一次跳跃指令"
+        )
+    print("PASS  触摸和空格键均可触发跳跃")
+
+    page.locator("#dinoRestart").click()
+    page.wait_for_function(
+        "() => document.querySelector('#dinoState').textContent === 'READY'"
+    )
+    page.locator("#dinoExit").click()
+    page.wait_for_function(
+        "() => !document.querySelector('#dinoWrap').classList.contains('open')"
+    )
+    assert not page.locator("#dinoWrap").is_visible()
+    assert page.locator("#arcadeHome").is_visible()
+    print("PASS  小恐龙可重开并返回游戏厅")
+
+    page.locator("#arcadeSokobanCard").click()
+    page.locator("#sokobanWrap.open").wait_for(state="visible")
+    assert page.locator("#sokobanState").text_content() == "PLAYING"
+    assert page.locator("#sokobanLevel").text_content() == "01/08"
+    assert page.locator("#sokobanMoves").text_content() == "000"
+    print("PASS  推箱子控制器显示关卡和步数")
+
+    page.locator(
+        '#sokobanPad .dbtn[data-direction="up"]'
+    ).dispatch_event("pointerdown")
+    page.wait_for_function(
+        "() => document.querySelector('#sokobanMoves').textContent === '001'"
+    )
+    page.wait_for_timeout(80)
+    page.keyboard.press("ArrowRight")
+    page.wait_for_function(
+        "() => document.querySelector('#sokobanMoves').textContent === '002'"
+    )
+    if stub_mode:
+        assert FirmwareStubHandler.sokoban_move_count == 2, (
+            "方向键触控与键盘没有各发送一次移动指令"
+        )
+    print("PASS  推箱子支持触控方向键和电脑方向键")
+
+    page.locator("#sokobanUndo").click()
+    page.wait_for_function(
+        "() => document.querySelector('#sokobanMoves').textContent === '001'"
+    )
+    page.locator("#sokobanRestart").click()
+    page.wait_for_function(
+        "() => document.querySelector('#sokobanMoves').textContent === '000'"
+    )
+    page.locator("#sokobanNext").click()
+    page.wait_for_function(
+        "() => document.querySelector('#sokobanLevel').textContent === '02/08'"
+    )
+    page.locator("#sokobanExit").click()
+    page.wait_for_function(
+        "() => !document.querySelector('#sokobanWrap').classList.contains('open')"
+    )
+    assert page.locator("#arcadeHome").is_visible()
+    print("PASS  推箱子支持撤销、重开、选关并返回游戏厅")
+
+    page.locator("#arcadeTetrisCard").click()
+    page.locator("#tetrisWrap.open").wait_for(state="visible")
+    page.locator(
+        '#tetrisWrap [data-arcade-action="rotate"]'
+    ).dispatch_event("pointerdown")
+    page.wait_for_timeout(80)
+    page.keyboard.press("Space")
+    page.wait_for_function(
+        "() => document.querySelector('#tetrisScore').textContent === '000020'"
+    )
+    assert page.locator("#tetrisLines").text_content() == "001"
+    print("PASS  俄罗斯方块支持旋转、硬降和状态同步")
+    page.locator("#tetrisWrap .gactions .cbtn").last.click()
+    page.locator("#arcadeHome").wait_for(state="visible")
+
+    page.locator("#arcadeSnakeCard").click()
+    page.locator("#snakeWrap.open").wait_for(state="visible")
+    page.locator(
+        '#snakeWrap [data-arcade-action="up"]'
+    ).dispatch_event("pointerdown")
+    page.wait_for_function(
+        "() => document.querySelector('#snakeState').textContent === 'PLAYING'"
+    )
+    assert page.locator("#snakeLength").text_content() == "006"
+    print("PASS  贪吃蛇支持触控方向和实时长度")
+    page.locator("#snakeWrap .gactions .cbtn").last.click()
+    page.locator("#arcadeHome").wait_for(state="visible")
+
+    page.locator("#arcade2048Card").click()
+    page.locator("#game2048Wrap.open").wait_for(state="visible")
+    page.keyboard.press("ArrowLeft")
+    page.wait_for_function(
+        "() => document.querySelector('#game2048Score').textContent === '00004'"
+    )
+    assert page.locator("#game2048Undo").is_enabled()
+    page.locator("#game2048Undo").click()
+    page.wait_for_function(
+        "() => document.querySelector('#game2048Score').textContent === '00000'"
+    )
+    print("PASS  2048 支持方向操作和单步撤销")
+    page.locator("#game2048Wrap .gactions .cbtn").last.click()
+    page.locator("#arcadeHome").wait_for(state="visible")
+
+    page.locator("#arcadeBreakoutCard").click()
+    page.locator("#breakoutWrap.open").wait_for(state="visible")
+    page.locator("#breakoutLaunch").click()
+    page.wait_for_function(
+        "() => document.querySelector('#breakoutState').textContent === 'PLAYING'"
+    )
+    page.locator("#breakoutPaddle").fill("700")
+    page.wait_for_timeout(120)
+    if stub_mode:
+        assert ("breakout", "launch", 0) in FirmwareStubHandler.arcade_actions
+        assert any(
+            game == "breakout" and action == "position" and value == 700
+            for game, action, value in FirmwareStubHandler.arcade_actions
+        )
+    print("PASS  打砖块支持发球和连续滑杆控制")
+    page.locator("#breakoutWrap .gactions .cbtn").last.click()
+    page.locator("#arcadeHome").wait_for(state="visible")
+
+    page.locator("#arcadeClose").click()
+    page.wait_for_function(
+        "() => !document.querySelector('#arcadeWrap').classList.contains('open')"
+    )
+    print("PASS  游戏厅可关闭并返回主控制面板")
 
 
 def assert_stock_suggestion(
@@ -1059,6 +1468,50 @@ def main() -> int:
             "nightBrightness": 25,
         }
         FirmwareStubHandler.prefs_update_count = 0
+        FirmwareStubHandler.dino_state = {
+            "active": False,
+            "state": "ready",
+            "score": 0,
+            "highScore": 0,
+            "speed": 92,
+        }
+        FirmwareStubHandler.dino_jump_count = 0
+        FirmwareStubHandler.sokoban_state = {
+            "active": False,
+            "state": "playing",
+            "level": 1,
+            "levelCount": 8,
+            "moves": 0,
+            "pushes": 0,
+            "boxesOnGoals": 0,
+            "boxes": 6,
+            "completedLevels": 0,
+            "canUndo": False,
+        }
+        FirmwareStubHandler.sokoban_move_count = 0
+        FirmwareStubHandler.arcade_states = {
+            "tetris": {
+                "id": "tetris", "active": False, "state": "playing",
+                "score": 0, "highScore": 0, "lines": 0, "level": 1,
+            },
+            "snake": {
+                "id": "snake", "active": False, "state": "ready",
+                "score": 0, "highScore": 0, "length": 5,
+                "speedMs": 175,
+            },
+            "2048": {
+                "id": "2048", "active": False, "state": "playing",
+                "score": 0, "bestScore": 0, "maxTile": 2,
+                "canUndo": False,
+            },
+            "breakout": {
+                "id": "breakout", "active": False, "state": "ready",
+                "score": 0, "highScore": 0, "lives": 3,
+                "level": 1, "bricks": 48,
+            },
+        }
+        FirmwareStubHandler.active_arcade_game = ""
+        FirmwareStubHandler.arcade_actions = []
         FirmwareStubHandler.profile = {
             "deviceName": "MOCHI",
             "bootLine1": "HELLO",
@@ -1122,6 +1575,7 @@ def main() -> int:
                 run_theme_flow(page, stub_mode=not bool(args.device_url))
                 run_config_flow(page, stub_mode=not bool(args.device_url))
                 run_carousel_flow(page, stub_mode=not bool(args.device_url))
+                run_game_arcade_flow(page, stub_mode=not bool(args.device_url))
                 run_market_flow(page, stub_mode=not bool(args.device_url))
                 if device_logs_before is not None:
                     assert_device_logs(

@@ -199,10 +199,9 @@ void SerialCommandService::handleWifiCommand(const String& args) {
         return;
     }
 
-    _wifiService->saveCredentials(ssid.c_str(), password.c_str());
-    if (!_wifiService->connectToWifi(ssid.c_str(), password.c_str())) {
+    if (!_wifiService->configureAndConnect(ssid.c_str(), password.c_str())) {
         Serial.println("WiFi 设置失败: 无法启动连接");
         return;
     }
-    Serial.println("WiFi 凭据已保存，正在连接...");
+    Serial.println("正在验证 WiFi，连接成功后保存...");
 }

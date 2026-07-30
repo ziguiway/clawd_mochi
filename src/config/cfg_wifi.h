@@ -17,8 +17,13 @@
 // WiFi 扫描超时 (ms)
 #define CFG_WIFI_SCAN_TIMEOUT_MS          10000
 
-// 凭据存储路径
-#define CFG_WIFI_CRED_PATH                "/wifi.json"
+// WiFi 凭据存入独立 NVS 命名空间，uploadfs 重写 LittleFS 时不会丢失。
+#define CFG_WIFI_NVS_NAMESPACE            "clawd-wifi"
+#define CFG_WIFI_NVS_SSID_KEY             "ssid"
+#define CFG_WIFI_NVS_PASS_KEY             "password"
+
+// 仅用于从旧固件迁移，迁移成功后删除。
+#define CFG_WIFI_LEGACY_CRED_PATH          "/wifi.json"
 
 // 凭据最大长度
 #define CFG_WIFI_CRED_SSID_MAX_LEN        32

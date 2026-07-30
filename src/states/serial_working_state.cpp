@@ -23,6 +23,8 @@ void SerialWorkingState::onUpdate() {
     _ctx->serial()->update();
     _ctx->display()->update();
 
+    if (_ctx->display()->isGameActive()) return;
+
     if (!_ctx->display()->isClaudeStatusEnabled()) {
         static_cast<AppStateMachine*>(_ctx)->transitionTo(AppStateMachine::SERIAL_IDLE);
         return;

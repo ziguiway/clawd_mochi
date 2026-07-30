@@ -11,6 +11,13 @@ void PreferenceService::init() {
     if (!isStartupViewAllowed(_startupView)) _startupView = VIEW_EYES_NORMAL;
     _brightnessPercent = constrain(_prefs.getUChar("bright", _brightnessPercent), 0, 100);
     _claudeStatusEnabled = _prefs.getBool("ccstatus", _claudeStatusEnabled);
+    _dinoHighScore = _prefs.getUInt("dinohi", _dinoHighScore);
+    _sokobanLevel = constrain(_prefs.getUChar("sokolevel", _sokobanLevel), 0, 7);
+    _sokobanCompletedMask = _prefs.getUInt("sokomask", _sokobanCompletedMask);
+    _tetrisHighScore = _prefs.getUInt("tetrishi", _tetrisHighScore);
+    _snakeHighScore = _prefs.getUInt("snakehi", _snakeHighScore);
+    _game2048BestScore = _prefs.getUInt("2048best", _game2048BestScore);
+    _breakoutHighScore = _prefs.getUInt("breakhi", _breakoutHighScore);
     _displayTheme = _prefs.getUChar("theme", _displayTheme);
     if (_displayTheme >= THEME_COUNT) {
         _displayTheme = THEME_ORANGE_WHITE;
@@ -158,6 +165,46 @@ void PreferenceService::setBrightnessPercent(uint8_t percent) {
 void PreferenceService::setClaudeStatusEnabled(bool enabled) {
     _claudeStatusEnabled = enabled;
     _prefs.putBool("ccstatus", _claudeStatusEnabled);
+}
+
+void PreferenceService::setDinoHighScore(uint32_t score) {
+    if (score <= _dinoHighScore) return;
+    _dinoHighScore = score;
+    _prefs.putUInt("dinohi", _dinoHighScore);
+}
+
+void PreferenceService::setSokobanLevel(uint8_t level) {
+    _sokobanLevel = constrain(level, 0, 7);
+    _prefs.putUChar("sokolevel", _sokobanLevel);
+}
+
+void PreferenceService::setSokobanCompletedMask(uint32_t mask) {
+    _sokobanCompletedMask = mask;
+    _prefs.putUInt("sokomask", _sokobanCompletedMask);
+}
+
+void PreferenceService::setTetrisHighScore(uint32_t score) {
+    if (score <= _tetrisHighScore) return;
+    _tetrisHighScore = score;
+    _prefs.putUInt("tetrishi", score);
+}
+
+void PreferenceService::setSnakeHighScore(uint32_t score) {
+    if (score <= _snakeHighScore) return;
+    _snakeHighScore = score;
+    _prefs.putUInt("snakehi", score);
+}
+
+void PreferenceService::setGame2048BestScore(uint32_t score) {
+    if (score <= _game2048BestScore) return;
+    _game2048BestScore = score;
+    _prefs.putUInt("2048best", score);
+}
+
+void PreferenceService::setBreakoutHighScore(uint32_t score) {
+    if (score <= _breakoutHighScore) return;
+    _breakoutHighScore = score;
+    _prefs.putUInt("breakhi", score);
 }
 
 void PreferenceService::setDisplayTheme(uint8_t theme) {

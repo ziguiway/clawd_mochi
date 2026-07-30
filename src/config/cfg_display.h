@@ -45,6 +45,12 @@
 #define VIEW_WEATHER    8
 #define VIEW_CRYPTO     9
 #define VIEW_MARKET     10
+#define VIEW_DINO       11
+#define VIEW_SOKOBAN    12
+#define VIEW_TETRIS     13
+#define VIEW_SNAKE      14
+#define VIEW_2048       15
+#define VIEW_BREAKOUT   16
 #define CAROUSEL_VIEW_COUNT 4
 
 // 系统显示主题

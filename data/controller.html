@@ -78,6 +78,71 @@ body{background:#1c1c20;font-family:'Courier New',monospace;color:#e8e4dc;
 .vbtn[data-v="3"].active{border-color:#38343a;background:#201c18}
 .vbtn[data-v="6"].active,.vbtn[data-v="7"].active{border-color:#f0a060;background:#22140a}
   .vbtn[data-v="8"].active,.vbtn[data-v="9"].active,.vbtn[data-v="10"].active{border-color:#f0a060;background:#22140a}
+.vbtn[data-v="11"].active{border-color:#fff;background:#c96a3e}
+.vbtn[data-v="11"].active .ic,.vbtn[data-v="11"].active .nm,.vbtn[data-v="11"].active .ht{color:#171418}
+.arcade{position:fixed;inset:0;z-index:50;background:#111115;display:none;
+  overflow:auto;padding:18px 14px 40px}
+.arcade.open{display:block}
+.arcade-panel{width:100%;max-width:420px;margin:0 auto;display:flex;
+  flex-direction:column;gap:14px}
+.arcade-head{display:flex;align-items:center;justify-content:space-between;
+  border-bottom:2px solid #c96a3e;padding:4px 0 13px}
+.arcade-title{font-size:20px;color:#f0ece4;font-weight:900;letter-spacing:2px}
+.arcade-title small{display:block;color:#8a8278;font-size:9px;letter-spacing:1px;
+  margin-top:4px}
+.arcade-close{width:42px;height:42px;background:#242328;border:1.5px solid #4a454c;
+  border-radius:8px;color:#fff;font:900 18px 'Courier New',monospace;cursor:pointer}
+.arcade-home{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.game-card{min-height:178px;background:#1a181c;border:1.5px solid #3f393f;
+  border-radius:13px;color:#eee8df;font-family:'Courier New',monospace;
+  padding:16px 13px;text-align:left;cursor:pointer;display:flex;
+  flex-direction:column;justify-content:space-between}
+.game-card:active{transform:scale(.98)}
+.game-card:hover,.game-card:focus{border-color:#c96a3e}
+.game-no{font-size:10px;color:#c96a3e;letter-spacing:2px}
+.game-mark{font-size:29px;color:#fff;font-weight:900;line-height:1;
+  letter-spacing:-2px;margin:15px 0 8px;display:inline-block}
+.game-name{font-size:15px;color:#fff;font-weight:900;letter-spacing:1px;
+  margin-left:7px}
+.game-desc{font-size:9px;color:#8a8278;line-height:1.5;margin-top:5px;
+  display:block}
+.game-meta{font-size:9px;color:#c96a3e;border-top:1px solid #493021;
+  padding-top:10px;margin-top:12px}
+.game-card:nth-child(3) .game-mark{color:#33c8ff}
+.game-card:nth-child(4) .game-mark{color:#56d98b}
+.game-card:nth-child(5) .game-mark{color:#edc452}
+.game-card:nth-child(6) .game-mark{color:#f06d67}
+.swrap{width:100%;background:#171418;border:1.5px solid #c96a3e;
+  border-radius:12px;padding:14px;display:none;flex-direction:column;gap:12px}
+.swrap.open{display:flex}
+.sprogress{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.sprogress div{background:#21150f;border:1px solid #55301f;border-radius:8px;
+  color:#8a8278;font-size:8px;letter-spacing:1px;padding:8px}
+.sprogress strong{display:block;color:#fff;font-size:17px;margin-top:4px}
+.slevel{display:flex;gap:7px;align-items:center}
+.slevel .cbtn{padding:10px 4px}
+.slevelname{flex:1;text-align:center;color:#fff;font-size:12px;font-weight:bold}
+.dpad{width:246px;max-width:100%;margin:2px auto;display:grid;
+  grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,72px);gap:7px}
+.dbtn{background:#c96a3e;border:2px solid #fff;border-radius:10px;color:#171418;
+  font:900 27px 'Courier New',monospace;cursor:pointer;touch-action:manipulation}
+.dbtn:active{transform:scale(.94);background:#e17a49}
+.dbtn.up{grid-column:2;grid-row:1}.dbtn.left{grid-column:1;grid-row:2}
+.dbtn.down{grid-column:2;grid-row:3}.dbtn.right{grid-column:3;grid-row:2}
+.dcenter{grid-column:2;grid-row:2;border:1px solid #3e312b;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;color:#765847;
+  font-size:9px;line-height:1.4;text-align:center}
+.arcade-controls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.arcade-key{min-height:64px;background:#242127;border:1.5px solid #5c535c;
+  border-radius:10px;color:#fff;font:900 18px 'Courier New',monospace;
+  cursor:pointer;touch-action:manipulation}
+.arcade-key.primary{background:#c96a3e;border-color:#fff;color:#171418}
+.arcade-key.wide{grid-column:span 2}
+.arcade-key:active{transform:scale(.95);filter:brightness(1.15)}
+.game-help{color:#8a8278;font-size:9px;line-height:1.5;text-align:center}
+.paddle-control{display:flex;align-items:center;gap:10px;background:#211d22;
+  border:1px solid #413941;border-radius:10px;padding:12px}
+.paddle-control input{width:100%;height:32px;accent-color:#c96a3e}
 .speed-row{width:100%;max-width:390px;display:flex;align-items:center;gap:10px}
 .sl{font-size:10px;color:#6a6058;white-space:nowrap;min-width:36px}
 input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
@@ -180,6 +245,46 @@ input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
   transition:transform .08s,opacity .08s}.ritem:last-child{border-bottom:0}.ritem.dragging{opacity:.75;background:#2d201a;z-index:3}
   .rindex{font-size:10px;color:#746b63;min-width:16px}.rname{flex:1;color:#f0ece4;font-size:12px;font-weight:bold}
   .rdrag:disabled{opacity:.25;cursor:default}
+.gwrap{width:100%;max-width:390px;background:#171418;border:1.5px solid #c96a3e;
+  border-radius:12px;padding:14px;display:none;flex-direction:column;gap:12px}
+.gwrap.open{display:flex}
+.ghead{display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid #55301f;padding-bottom:10px}
+.gtitle{color:#fff;font-size:15px;font-weight:bold;letter-spacing:1.5px}
+.gstate{color:#c96a3e;font-size:10px;letter-spacing:1px}
+.gscore{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gscore div{background:#21150f;border:1px solid #55301f;border-radius:8px;
+  padding:9px 10px;color:#8a8278;font-size:9px;letter-spacing:1px}
+.gscore strong{display:block;color:#fff;font-size:20px;margin-top:4px}
+.gjump{width:100%;min-height:178px;background:#c96a3e;border:2px solid #fff;
+  border-radius:12px;color:#171418;font:900 34px 'Courier New',monospace;
+  letter-spacing:4px;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.gjump span{display:block;font-size:10px;letter-spacing:2px;margin-top:10px}
+.gjump:active{transform:scale(.98);background:#e17a49}
+.gactions{display:flex;gap:8px}
+.gactions .cbtn{font-size:11px}
+.wwrap{width:100%;max-width:390px;background:#151418;border:1.5px solid #3a3028;
+  border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:11px}
+.whead{display:flex;align-items:flex-start;gap:10px}
+.wdot{width:10px;height:10px;border-radius:50%;background:#c96a3e;flex:none;margin-top:3px}
+.wdot.connected{background:#28b878}.wdot.connecting{background:#e0b341}
+.wstatus{min-width:0;flex:1;color:#f0ece4;font-size:12px;line-height:1.45}
+.wstatus small{display:block;color:#8a8278;font-size:9px;margin-top:3px;word-break:break-word}
+.wrescue{background:#20140e;border-left:3px solid #c96a3e;padding:9px 10px;
+  color:#b9afa5;font-size:9px;line-height:1.5}
+.wrescue strong{color:#f0ece4}
+.wsetup{display:none;flex-direction:column;gap:9px;border-top:1px solid #4b372c;padding-top:11px}
+.wsetup.open{display:flex}
+.whint{color:#a79e94;font-size:9px;line-height:1.5}
+.wlist{display:none;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
+.wnet{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  width:100%;background:#201f23;border:1px solid #3d393f;border-radius:8px;
+  color:#f0ece4;font:700 11px 'Courier New',monospace;padding:10px;text-align:left}
+.wnet:hover,.wnet:focus{border-color:#c96a3e}.wnet small{color:#8a8278;font-size:9px}
+.wform{display:flex;flex-direction:column;gap:8px}
+.wform .tin{background:#0c1018;border-color:#3a3028;color:#e8e4dc}
+.wform-actions{display:flex;gap:8px}.wform-actions .cbtn{font-size:11px}
+.wconnect{background:#c96a3e!important;border-color:#f0a060!important;color:#140c08!important}
 .cwrap{width:100%;max-width:390px;background:#222028;border:1.5px solid #38343a;
   border-radius:12px;padding:12px;flex-direction:column;gap:10px;display:none}
 .cwrap.open{display:flex}
@@ -264,19 +369,33 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <span>pink</span>
   </button>
 </div>
-<div class="sec">// wifi setup</div>
-<div id="wwrap" style="width:100%;max-width:390px;display:flex;flex-direction:column;gap:10px">
-  <div id="wstatus" style="font-size:11px;color:#8a8278;text-align:center;padding:4px">checking...</div>
-  <div id="wlist" style="display:none;flex-direction:column;gap:6px"></div>
-  <div id="wform" style="display:none;flex-direction:column;gap:8px">
-    <input class="tin" id="wssid" type="text" placeholder="SSID"
-           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-           style="background:#0c1018;border:1.5px solid #1a2820;color:#c8c4bc">
-    <input class="tin" id="wpass" type="password" placeholder="password"
-           style="background:#0c1018;border:1.5px solid #1a2820;color:#c8c4bc">
-    <button class="tgo" onclick="connectWifi()" style="font-size:14px;padding:11px">&#128246; connect</button>
+<div class="sec">// network</div>
+<div class="wwrap" id="wwrap">
+  <div class="whead">
+    <span class="wdot connecting" id="wdot"></span>
+    <div class="wstatus" id="wstatus">checking network...</div>
   </div>
-  <button class="cbtn" onclick="loadWifiList()" id="wscanBtn">&#128269; scan networks</button>
+  <div class="wrescue">
+    RECOVERY ACCESS IS ALWAYS ON<br>
+    Join <strong>ClaWD-Mochi</strong>, then open <strong>192.168.4.1</strong>.
+  </div>
+  <button class="cbtn on" onclick="toggleWifiSetup()" id="wscanBtn">CONNECT WIFI</button>
+  <div class="wsetup" id="wsetup">
+    <div class="whint">Choose a nearby network or type its name. The current saved network is kept until the new connection succeeds.</div>
+    <button class="cbtn" onclick="loadWifiList()" id="wrescanBtn">SCAN NEARBY NETWORKS</button>
+    <div class="wlist" id="wlist"></div>
+    <div class="wform" id="wform">
+    <input class="tin" id="wssid" type="text" placeholder="SSID"
+           maxlength="32" autocomplete="off" autocorrect="off"
+           autocapitalize="off" spellcheck="false">
+    <input class="tin" id="wpass" type="password" maxlength="64"
+           placeholder="password (empty for open WiFi)">
+    <div class="wform-actions">
+      <button class="cbtn wconnect" id="wconnectBtn" onclick="connectWifi()">CONNECT</button>
+      <button class="cbtn" onclick="closeWifiSetup()">CANCEL</button>
+    </div>
+    </div>
+  </div>
 </div>
 <div class="sec">// serial mode</div>
 <div class="ctrl">
@@ -319,6 +438,167 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <span class="nm">Market</span>
     <span class="ht">China stocks & indices</span>
   </button>
+  <button class="vbtn" data-v="11" id="dinoViewBtn" onclick="openArcade()">
+    <span class="ic">PLAY</span>
+    <span class="nm">Game Arcade</span>
+    <span class="ht">choose a game</span>
+  </button>
+</div>
+<div class="arcade" id="arcadeWrap">
+  <div class="arcade-panel">
+    <div class="arcade-head">
+      <div class="arcade-title">GAME ARCADE<small>CLAWD MOCHI / POCKET GAMES</small></div>
+      <button class="arcade-close" id="arcadeClose" type="button" onclick="closeArcade()" aria-label="Close game arcade">X</button>
+    </div>
+    <div class="arcade-home" id="arcadeHome">
+      <button class="game-card" id="arcadeDinoCard" type="button" onclick="openDinoGame()">
+        <span class="game-no">GAME 01</span>
+        <span><span class="game-mark">RUN_</span><span class="game-name">DINO.RUN</span>
+        <span class="game-desc">Single-tap endless runner. Jump over classic cactus groups.</span></span>
+        <span class="game-meta">TAP / SPACE</span>
+      </button>
+      <button class="game-card" id="arcadeSokobanCard" type="button" onclick="openSokobanGame()">
+        <span class="game-no">GAME 02</span>
+        <span><span class="game-mark">BOX+</span><span class="game-name">BOX.PUSH</span>
+        <span class="game-desc">Classic warehouse puzzles. Push every box onto a target.</span></span>
+        <span class="game-meta">8 CLASSIC LEVELS</span>
+      </button>
+      <button class="game-card" id="arcadeTetrisCard" type="button" onclick="openArcadeGame('tetris')">
+        <span class="game-no">GAME 03</span>
+        <span><span class="game-mark">TET_</span><span class="game-name">TETRIS</span>
+        <span class="game-desc">Seven-bag pieces, ghost landing, levels and classic line scoring.</span></span>
+        <span class="game-meta">MOVE / ROTATE / DROP</span>
+      </button>
+      <button class="game-card" id="arcadeSnakeCard" type="button" onclick="openArcadeGame('snake')">
+        <span class="game-no">GAME 04</span>
+        <span><span class="game-mark">SSS~</span><span class="game-name">SNAKE</span>
+        <span class="game-desc">Responsive grid movement with rising speed and persistent score.</span></span>
+        <span class="game-meta">4-WAY CONTROL</span>
+      </button>
+      <button class="game-card" id="arcade2048Card" type="button" onclick="openArcadeGame('2048')">
+        <span class="game-no">GAME 05</span>
+        <span><span class="game-mark">2+2</span><span class="game-name">2048</span>
+        <span class="game-desc">Original merge-once rules, undo support and classic tile palette.</span></span>
+        <span class="game-meta">SWIPE / ARROW KEYS</span>
+      </button>
+      <button class="game-card" id="arcadeBreakoutCard" type="button" onclick="openArcadeGame('breakout')">
+        <span class="game-no">GAME 06</span>
+        <span><span class="game-mark">O|=</span><span class="game-name">BREAKOUT</span>
+        <span class="game-desc">Angle-based paddle physics, lives, levels and durable bricks.</span></span>
+        <span class="game-meta">SLIDE / LAUNCH</span>
+      </button>
+    </div>
+    <div class="gwrap" id="dinoWrap">
+      <div class="ghead">
+        <span class="gtitle">DINO.RUN</span>
+        <span class="gstate" id="dinoState">READY</span>
+      </div>
+      <div class="gscore">
+        <div>SCORE<strong id="dinoScore">0000</strong></div>
+        <div>HI SCORE<strong id="dinoHighScore">0000</strong></div>
+      </div>
+      <button class="gjump" id="dinoJump" type="button">
+        JUMP
+        <span>TAP / SPACE</span>
+      </button>
+      <div class="gactions">
+        <button class="cbtn" id="dinoRestart" onclick="restartDinoGame()">RESTART</button>
+        <button class="cbtn" id="dinoExit" onclick="exitDinoGame()">BACK TO ARCADE</button>
+      </div>
+    </div>
+    <div class="swrap" id="sokobanWrap">
+      <div class="ghead">
+        <span class="gtitle">BOX.PUSH</span>
+        <span class="gstate" id="sokobanState">PLAYING</span>
+      </div>
+      <div class="sprogress">
+        <div>LEVEL<strong id="sokobanLevel">01/08</strong></div>
+        <div>MOVES<strong id="sokobanMoves">000</strong></div>
+        <div>BOXES<strong id="sokobanBoxes">0/0</strong></div>
+      </div>
+      <div class="slevel">
+        <button class="cbtn" id="sokobanPrev" onclick="changeSokobanLevel(-1)">PREV</button>
+        <span class="slevelname" id="sokobanLevelName">CLASSIC 01</span>
+        <button class="cbtn" id="sokobanNext" onclick="changeSokobanLevel(1)">NEXT</button>
+      </div>
+      <div class="dpad" id="sokobanPad">
+        <button class="dbtn up" data-direction="up" type="button" aria-label="Move up">&#8593;</button>
+        <button class="dbtn left" data-direction="left" type="button" aria-label="Move left">&#8592;</button>
+        <div class="dcenter">PUSH<br>BOXES</div>
+        <button class="dbtn right" data-direction="right" type="button" aria-label="Move right">&#8594;</button>
+        <button class="dbtn down" data-direction="down" type="button" aria-label="Move down">&#8595;</button>
+      </div>
+      <div class="gactions">
+        <button class="cbtn" id="sokobanUndo" onclick="undoSokoban()">UNDO</button>
+        <button class="cbtn" id="sokobanRestart" onclick="restartSokoban()">RESTART</button>
+        <button class="cbtn" id="sokobanExit" onclick="exitSokobanGame()">ARCADE</button>
+      </div>
+    </div>
+    <div class="swrap" id="tetrisWrap" data-game-panel="tetris">
+      <div class="ghead"><span class="gtitle">TETRIS</span><span class="gstate" id="tetrisState">PLAYING</span></div>
+      <div class="sprogress">
+        <div>SCORE<strong id="tetrisScore">000000</strong></div>
+        <div>LINES<strong id="tetrisLines">000</strong></div>
+        <div>LEVEL<strong id="tetrisLevel">01</strong></div>
+      </div>
+      <div class="arcade-controls">
+        <button class="arcade-key" data-arcade-action="left" type="button">LEFT</button>
+        <button class="arcade-key primary" data-arcade-action="rotate" type="button">ROTATE</button>
+        <button class="arcade-key" data-arcade-action="right" type="button">RIGHT</button>
+        <button class="arcade-key" data-arcade-action="down" type="button">DOWN</button>
+        <button class="arcade-key primary wide" data-arcade-action="drop" type="button">HARD DROP</button>
+      </div>
+      <div class="game-help">Keyboard: arrows to move / rotate, space to hard drop.</div>
+      <div class="gactions"><button class="cbtn" onclick="arcadeAction('restart')">RESTART</button><button class="cbtn" onclick="arcadeAction('pause')">PAUSE</button><button class="cbtn" onclick="exitArcadeGame()">ARCADE</button></div>
+    </div>
+    <div class="swrap" id="snakeWrap" data-game-panel="snake">
+      <div class="ghead"><span class="gtitle">SNAKE</span><span class="gstate" id="snakeState">READY</span></div>
+      <div class="sprogress">
+        <div>SCORE<strong id="snakeScore">000</strong></div>
+        <div>LENGTH<strong id="snakeLength">005</strong></div>
+        <div>SPEED<strong id="snakeSpeed">175</strong></div>
+      </div>
+      <div class="dpad">
+        <button class="dbtn up" data-arcade-action="up" type="button" aria-label="Snake up">&#8593;</button>
+        <button class="dbtn left" data-arcade-action="left" type="button" aria-label="Snake left">&#8592;</button>
+        <div class="dcenter">SNAKE<br>CONTROL</div>
+        <button class="dbtn right" data-arcade-action="right" type="button" aria-label="Snake right">&#8594;</button>
+        <button class="dbtn down" data-arcade-action="down" type="button" aria-label="Snake down">&#8595;</button>
+      </div>
+      <div class="gactions"><button class="cbtn" onclick="arcadeAction('restart')">RESTART</button><button class="cbtn" onclick="arcadeAction('pause')">PAUSE</button><button class="cbtn" onclick="exitArcadeGame()">ARCADE</button></div>
+    </div>
+    <div class="swrap" id="game2048Wrap" data-game-panel="2048">
+      <div class="ghead"><span class="gtitle">2048</span><span class="gstate" id="game2048State">PLAYING</span></div>
+      <div class="sprogress">
+        <div>SCORE<strong id="game2048Score">00000</strong></div>
+        <div>BEST<strong id="game2048Best">00000</strong></div>
+        <div>MAX<strong id="game2048Max">0002</strong></div>
+      </div>
+      <div class="dpad">
+        <button class="dbtn up" data-arcade-action="up" type="button" aria-label="2048 up">&#8593;</button>
+        <button class="dbtn left" data-arcade-action="left" type="button" aria-label="2048 left">&#8592;</button>
+        <div class="dcenter">MERGE<br>TILES</div>
+        <button class="dbtn right" data-arcade-action="right" type="button" aria-label="2048 right">&#8594;</button>
+        <button class="dbtn down" data-arcade-action="down" type="button" aria-label="2048 down">&#8595;</button>
+      </div>
+      <div class="gactions"><button class="cbtn" id="game2048Undo" onclick="arcadeAction('undo')">UNDO</button><button class="cbtn" onclick="arcadeAction('restart')">RESTART</button><button class="cbtn" onclick="exitArcadeGame()">ARCADE</button></div>
+    </div>
+    <div class="swrap" id="breakoutWrap" data-game-panel="breakout">
+      <div class="ghead"><span class="gtitle">BREAKOUT</span><span class="gstate" id="breakoutState">READY</span></div>
+      <div class="sprogress">
+        <div>SCORE<strong id="breakoutScore">00000</strong></div>
+        <div>LEVEL<strong id="breakoutLevel">01</strong></div>
+        <div>LIVES<strong id="breakoutLives">3</strong></div>
+      </div>
+      <div class="paddle-control"><span class="sl">LEFT</span><input id="breakoutPaddle" type="range" min="0" max="1000" value="500"><span class="sl">RIGHT</span></div>
+      <button class="gjump" id="breakoutLaunch" type="button" onclick="arcadeAction('launch')">LAUNCH<span>TAP / SPACE</span></button>
+      <div class="arcade-controls">
+        <button class="arcade-key" data-arcade-action="left" type="button">LEFT</button>
+        <button class="arcade-key primary wide" data-arcade-action="right" type="button">RIGHT</button>
+      </div>
+      <div class="gactions"><button class="cbtn" onclick="arcadeAction('restart')">RESTART</button><button class="cbtn" onclick="arcadeAction('pause')">PAUSE</button><button class="cbtn" onclick="exitArcadeGame()">ARCADE</button></div>
+    </div>
+  </div>
 </div>
 <div class="sec">// idle display</div>
 <button class="cbtn idle-open" id="carouselPanelBtn" onclick="toggleCarouselPanel()"><span>↻ idle display settings</span><span id="carouselPanelState">open</span></button>
@@ -422,7 +702,7 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
 </div>
 <div class="toast" id="toast"></div>
 <script>
-let activeView=0,termOpen=false,canvasOpen=false,blOn=true,claudeStatusOn=true,displayTheme=1,isBusy=false,drawing=false,initialLoadComplete=false;
+let activeView=0,termOpen=false,canvasOpen=false,arcadeOpen=false,dinoOpen=false,dinoPollTimer=null,dinoJumpPending=false,sokobanOpen=false,sokobanMovePending=false,sokobanStateData=null,arcadeGameOpen='',arcadeGameState=null,arcadeGamePending=false,arcadeGamePollTimer=null,breakoutPositionTimer=null,wifiSetupOpen=false,wifiConnecting=false,lastWifiStatus=null,blOn=true,claudeStatusOn=true,displayTheme=1,isBusy=false,drawing=false,initialLoadComplete=false;
 const testMode=new URLSearchParams(location.search).has('test');
 let expressionState={mode:'manual',selected:'normal',rendered:'normal'};
 let lastX=0,lastY=0,tt;
@@ -456,6 +736,36 @@ async function resetProfile(){try{const r=await fetch('/profile/reset',{method:'
 async function exportConfig(){try{const r=await fetch('/config/export',{cache:'no-store'});if(!r.ok)throw new Error();const blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='clawd-mochi-config.json';a.click();URL.revokeObjectURL(url);toast('config exported');}catch(e){toast('config export failed',false);}}
 async function importConfig(file){if(!file)return;try{const text=await file.text();JSON.parse(text);const r=await fetch('/config/import',{method:'POST',headers:{'Content-Type':'application/json'},body:text});const result=await r.json();if(!r.ok)throw new Error(result.error||'invalid config');await loadProfile();await loadPrefs();await loadExpressions();toast('config imported');}catch(e){toast(e.message||'config import failed',false);}finally{document.getElementById('configFile').value='';}}
 async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e',9:'m',10:'k'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);document.getElementById('mwrap').classList.toggle('open',v===9);document.getElementById('swrap').classList.toggle('open',v===10);if(v===9){await loadMarketConfig();loadMarketDirectory();toast('crypto open');return;}if(v===10){await loadStockConfig();toast('market open');return;}if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
+function applyDinoState(state){document.getElementById('dinoState').textContent=String(state.state||'ready').replace('_',' ').toUpperCase();document.getElementById('dinoScore').textContent=String(state.score||0).padStart(4,'0').slice(-4);document.getElementById('dinoHighScore').textContent=String(state.highScore||0).padStart(4,'0').slice(-4);}
+async function dinoPost(path){try{const r=await fetch(path,{method:'POST',cache:'no-store'});const state=await r.json();if(!r.ok)throw new Error(state.error||'game request failed');applyDinoState(state);return true;}catch(e){toast(e.message||'game unavailable',false);return false;}}
+function lockViewsForDino(locked){document.querySelectorAll('.vbtn').forEach(button=>{button.disabled=locked&&Number(button.dataset.v)!==11;});}
+function openArcade(){if(isBusy||termOpen||canvasOpen)return;arcadeOpen=true;document.getElementById('arcadeWrap').classList.add('open');document.getElementById('arcadeHome').style.display='grid';document.body.style.overflow='hidden';lockViewsForDino(true);}
+async function closeArcade(){if(dinoOpen)await exitDinoGame();if(sokobanOpen)await exitSokobanGame();if(arcadeGameOpen)await exitArcadeGame();arcadeOpen=false;document.getElementById('arcadeWrap').classList.remove('open');document.body.style.overflow='';lockViewsForDino(false);}
+function showArcadeHome(){document.getElementById('arcadeHome').style.display='grid';document.getElementById('dinoWrap').classList.remove('open');document.getElementById('sokobanWrap').classList.remove('open');document.querySelectorAll('[data-game-panel]').forEach(panel=>panel.classList.remove('open'));activeView=0;}
+async function openDinoGame(){if(isBusy||termOpen||canvasOpen||dinoOpen)return;if(!arcadeOpen)openArcade();if(!await dinoPost('/game/dino/start'))return;dinoOpen=true;activeView=11;document.getElementById('arcadeHome').style.display='none';document.getElementById('dinoWrap').classList.add('open');document.querySelectorAll('.vbtn').forEach(button=>button.classList.toggle('active',Number(button.dataset.v)===11));clearInterval(dinoPollTimer);dinoPollTimer=setInterval(pollDinoState,500);toast('dino game ready');}
+async function jumpDino(){if(!dinoOpen||dinoJumpPending)return;dinoJumpPending=true;await dinoPost('/game/dino/action?action=jump');setTimeout(()=>{dinoJumpPending=false;},55);}
+async function restartDinoGame(){if(await dinoPost('/game/dino/restart'))toast('game reset');}
+async function pollDinoState(){if(!dinoOpen)return;try{const r=await fetch('/game/dino/state',{cache:'no-store'});if(r.ok)applyDinoState(await r.json());}catch(e){}}
+async function exitDinoGame(){if(!dinoOpen)return;await dinoPost('/game/dino/exit');dinoOpen=false;clearInterval(dinoPollTimer);dinoPollTimer=null;document.querySelectorAll('.vbtn').forEach(button=>button.classList.remove('active'));showArcadeHome();toast('back to arcade');}
+document.getElementById('dinoJump').addEventListener('pointerdown',e=>{e.preventDefault();jumpDino();});
+function applySokobanState(state){sokobanStateData=state;document.getElementById('sokobanState').textContent=String(state.state||'playing').toUpperCase();document.getElementById('sokobanLevel').textContent=String(state.level||1).padStart(2,'0')+'/'+String(state.levelCount||8).padStart(2,'0');document.getElementById('sokobanMoves').textContent=String(state.moves||0).padStart(3,'0').slice(-3);document.getElementById('sokobanBoxes').textContent=String(state.boxesOnGoals||0)+'/'+String(state.boxes||0);document.getElementById('sokobanLevelName').textContent='CLASSIC '+String(state.level||1).padStart(2,'0');document.getElementById('sokobanUndo').disabled=!state.canUndo;document.getElementById('sokobanPrev').disabled=Number(state.level)<=1;document.getElementById('sokobanNext').disabled=Number(state.level)>=Number(state.levelCount);}
+async function sokobanPost(path){try{const r=await fetch(path,{method:'POST',cache:'no-store'});const state=await r.json();if(!r.ok)throw new Error(state.error||'game request failed');applySokobanState(state);return true;}catch(e){toast(e.message||'game unavailable',false);return false;}}
+async function openSokobanGame(){if(isBusy||termOpen||canvasOpen||sokobanOpen)return;if(!arcadeOpen)openArcade();if(!await sokobanPost('/game/sokoban/start'))return;sokobanOpen=true;activeView=12;document.getElementById('arcadeHome').style.display='none';document.getElementById('sokobanWrap').classList.add('open');document.querySelectorAll('.vbtn').forEach(button=>button.classList.toggle('active',Number(button.dataset.v)===11));toast('box.push ready');}
+async function moveSokoban(direction){if(!sokobanOpen||sokobanMovePending)return;sokobanMovePending=true;await sokobanPost('/game/sokoban/move?direction='+encodeURIComponent(direction));setTimeout(()=>{sokobanMovePending=false;},55);}
+async function undoSokoban(){if(await sokobanPost('/game/sokoban/undo'))toast('move undone');}
+async function restartSokoban(){if(await sokobanPost('/game/sokoban/restart'))toast('level reset');}
+async function changeSokobanLevel(delta){if(!sokobanStateData)return;const level=Number(sokobanStateData.level)+delta;if(level<1||level>Number(sokobanStateData.levelCount))return;await sokobanPost('/game/sokoban/level?index='+level);}
+async function exitSokobanGame(){if(!sokobanOpen)return;await sokobanPost('/game/sokoban/exit');sokobanOpen=false;document.querySelectorAll('.vbtn').forEach(button=>button.classList.remove('active'));showArcadeHome();toast('back to arcade');}
+document.querySelectorAll('#sokobanPad .dbtn').forEach(button=>button.addEventListener('pointerdown',e=>{e.preventDefault();moveSokoban(button.dataset.direction);}));
+function applyArcadeGameState(state){arcadeGameState=state;const id=state.id||arcadeGameOpen;if(id==='tetris'){document.getElementById('tetrisState').textContent=String(state.state||'playing').replace('_',' ').toUpperCase();document.getElementById('tetrisScore').textContent=String(state.score||0).padStart(6,'0');document.getElementById('tetrisLines').textContent=String(state.lines||0).padStart(3,'0');document.getElementById('tetrisLevel').textContent=String(state.level||1).padStart(2,'0');}else if(id==='snake'){document.getElementById('snakeState').textContent=String(state.state||'ready').replace('_',' ').toUpperCase();document.getElementById('snakeScore').textContent=String(state.score||0).padStart(3,'0');document.getElementById('snakeLength').textContent=String(state.length||5).padStart(3,'0');document.getElementById('snakeSpeed').textContent=String(state.speedMs||175);}else if(id==='2048'){document.getElementById('game2048State').textContent=String(state.state||'playing').replace('_',' ').toUpperCase();document.getElementById('game2048Score').textContent=String(state.score||0).padStart(5,'0');document.getElementById('game2048Best').textContent=String(state.bestScore||0).padStart(5,'0');document.getElementById('game2048Max').textContent=String(state.maxTile||2).padStart(4,'0');document.getElementById('game2048Undo').disabled=!state.canUndo;}else if(id==='breakout'){document.getElementById('breakoutState').textContent=String(state.state||'ready').replace('_',' ').toUpperCase();document.getElementById('breakoutScore').textContent=String(state.score||0).padStart(5,'0');document.getElementById('breakoutLevel').textContent=String(state.level||1).padStart(2,'0');document.getElementById('breakoutLives').textContent=String(state.lives??3);}}
+async function arcadeRequest(path){try{const r=await fetch(path,{method:'POST',cache:'no-store'}),state=await r.json();if(!r.ok)throw new Error(state.error||'game request failed');applyArcadeGameState(state);return true;}catch(e){toast(e.message||'game unavailable',false);return false;}}
+async function openArcadeGame(id){if(isBusy||termOpen||canvasOpen||arcadeGameOpen)return;if(!arcadeOpen)openArcade();if(!await arcadeRequest('/game/start?id='+encodeURIComponent(id)))return;arcadeGameOpen=id;activeView={tetris:13,snake:14,'2048':15,breakout:16}[id];document.getElementById('arcadeHome').style.display='none';document.getElementById(id==='2048'?'game2048Wrap':id+'Wrap').classList.add('open');document.querySelectorAll('.vbtn').forEach(button=>button.classList.toggle('active',Number(button.dataset.v)===11));clearInterval(arcadeGamePollTimer);arcadeGamePollTimer=setInterval(pollArcadeGameState,400);toast(id+' ready');}
+async function arcadeAction(action,value=0){if(!arcadeGameOpen||arcadeGamePending)return false;arcadeGamePending=true;const ok=await arcadeRequest('/game/action?action='+encodeURIComponent(action)+'&value='+encodeURIComponent(value));setTimeout(()=>{arcadeGamePending=false;},45);return ok;}
+async function pollArcadeGameState(){if(!arcadeGameOpen)return;try{const r=await fetch('/game/state?id='+encodeURIComponent(arcadeGameOpen),{cache:'no-store'});if(r.ok)applyArcadeGameState(await r.json());}catch(e){}}
+async function exitArcadeGame(){if(!arcadeGameOpen)return;await fetch('/game/exit',{method:'POST'}).catch(()=>{});arcadeGameOpen='';arcadeGameState=null;clearInterval(arcadeGamePollTimer);arcadeGamePollTimer=null;document.querySelectorAll('.vbtn').forEach(button=>button.classList.remove('active'));showArcadeHome();toast('back to arcade');}
+document.querySelectorAll('[data-arcade-action]').forEach(button=>button.addEventListener('pointerdown',e=>{e.preventDefault();arcadeAction(button.dataset.arcadeAction);}));
+document.getElementById('breakoutPaddle').addEventListener('input',e=>{clearTimeout(breakoutPositionTimer);const value=e.target.value;breakoutPositionTimer=setTimeout(()=>arcadeAction('position',value),35);});
+window.addEventListener('keydown',e=>{if(dinoOpen&&(e.code==='Space'||e.key===' ')){e.preventDefault();jumpDino();return;}if(sokobanOpen){const direction={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'}[e.key];if(direction){e.preventDefault();moveSokoban(direction);}else if(e.key.toLowerCase()==='u'){e.preventDefault();undoSokoban();}else if(e.key.toLowerCase()==='r'){e.preventDefault();restartSokoban();}return;}if(!arcadeGameOpen)return;let action='';if(arcadeGameOpen==='tetris'){action={ArrowLeft:'left',ArrowRight:'right',ArrowDown:'down',ArrowUp:'rotate',Space:'drop'}[e.code]||'';}else if(arcadeGameOpen==='snake'||arcadeGameOpen==='2048'){action={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'}[e.key]||'';}else if(arcadeGameOpen==='breakout'){action={ArrowLeft:'left',ArrowRight:'right',Space:'launch'}[e.code]||'';}if(action){e.preventDefault();arcadeAction(action);}else if(e.key.toLowerCase()==='r'){e.preventDefault();arcadeAction('restart');}});
 function updateBlButton(){const b=document.getElementById('blBtn');b.textContent=blOn?'☀ display on':'○ display off';b.classList.toggle('on',blOn);b.classList.toggle('dim',!blOn);}
 function updateClaudeStatusButton(){const b=document.getElementById('ccStatusBtn');b.textContent=claudeStatusOn?'◆ claude status on':'◇ claude status off';b.classList.toggle('on',claudeStatusOn);b.classList.toggle('dim',!claudeStatusOn);}
 function carouselName(v){return({6:'Clock',8:'Weather',9:'Crypto',10:'Market'})[v]||'Weather';}
@@ -681,10 +991,58 @@ function endStockDrag(){
   stockDrag=null;if(from===to)return;const asset=stockSelected.splice(from,1)[0];stockSelected.splice(to,0,asset);renderStocks();saveStocks();
 }
 async function useSerialMode(){if(!confirm('Switch Claude status input to USB serial? Local Web control stays available.'))return;await req('/serial_mode');toast('serial mode active');}
-async function loadWifiList(){const btn=document.getElementById('wscanBtn');btn.disabled=true;btn.textContent='scanning...';document.getElementById('wstatus').textContent='scanning...';document.getElementById('wlist').style.display='none';document.getElementById('wform').style.display='none';try{const r=await fetch('/wifi/scan');const nets=await r.json();const list=document.getElementById('wlist');list.innerHTML='';if(nets.length===0){document.getElementById('wstatus').textContent='no networks found';}else{nets.sort((a,b)=>b.rssi-a.rssi);nets.forEach(n=>{const btn=document.createElement('button');btn.className='cbtn';btn.style.textAlign='left';btn.style.padding='10px 12px';const sig=n.rssi>-50?'&#128267;':(n.rssi>-70?'&#128266;':'&#128268;');btn.innerHTML='<span style="color:#c96a3e">'+sig+'</span> '+n.ssid+(n.encrypted?' <span style="color:#5a5048">&#128274;</span>':'')+' <span style="color:#5a5048;font-size:9px">'+n.rssi+'dBm</span>';btn.onclick=()=>{document.getElementById('wssid').value=n.ssid;document.getElementById('wpass').focus();};list.appendChild(btn);});document.getElementById('wstatus').textContent='select network or type SSID:';document.getElementById('wlist').style.display='flex';document.getElementById('wform').style.display='flex';}}catch(e){document.getElementById('wstatus').textContent='scan failed';}btn.disabled=false;btn.textContent='🔍 scan networks';}
-function wifiStatusHtml(j){const ap='http://'+(j.apIp||'192.168.4.1');const mdns=j.mdns||'http://clawd-mochi.local';const line='font-size:10px;color:#8a8278;margin-top:3px';if(j.connected){const lan='http://'+(j.lanIp||j.ip);return '<span style="color:#28b878">connected: '+j.ssid+'</span><div style="'+line+'">LAN: '+lan+'</div><div style="'+line+'">Name: '+mdns+'</div><div style="'+line+'">AP: '+ap+' ('+(j.apSsid||'ClaWD-Mochi')+')</div>';}if(j.configured&&j.savedSsid){const failed=j.retryCount>0||j.retryExhausted;const state=failed?(j.lastError||'Connection failed'):(j.phase||'Connecting');const retry=j.retryCount>0?' - retry '+j.retryCount:'';return '<span style="color:#c96a3e">'+state+retry+'</span><div style="'+line+'">saved: '+j.savedSsid+'</div><div style="'+line+'">AP still works: '+ap+'</div>';}return 'not connected - scan to setup<div style="'+line+'">AP: '+ap+' ('+(j.apSsid||'ClaWD-Mochi')+')</div>';}
-async function connectWifi(){const ssid=document.getElementById('wssid').value.trim();const pass=document.getElementById('wpass').value;if(!ssid){toast('enter SSID',false);return;}const fd=new FormData();fd.append('ssid',ssid);fd.append('password',pass);document.getElementById('wstatus').textContent='connecting...';try{await fetch('/wifi/connect',{method:'POST',body:fd});}catch(e){}let ok=false,last=null;for(let i=0;i<30;i++){await new Promise(r=>setTimeout(r,1000));try{const r=await fetch('/wifi/status');last=await r.json();if(last.connected){ok=true;break;}document.getElementById('wstatus').innerHTML=wifiStatusHtml(last);}catch(e){}}if(ok){await pollWifiStatus();document.getElementById('wlist').style.display='none';document.getElementById('wform').style.display='none';toast('wifi connected');}else{if(last)document.getElementById('wstatus').innerHTML=wifiStatusHtml(last);toast((last&&last.lastError)||'wifi failed',false);}}
-async function pollWifiStatus(){try{const r=await fetch('/wifi/status');const j=await r.json();const el=document.getElementById('wstatus');el.innerHTML=wifiStatusHtml(j);if(j.connected){document.getElementById('wlist').style.display='none';document.getElementById('wform').style.display='none';document.getElementById('wscanBtn').style.display='none';}}catch(e){document.getElementById('wstatus').textContent='status unavailable';}}
+function escapeWifiText(value){const span=document.createElement('span');span.textContent=String(value??'');return span.innerHTML;}
+function wifiStatusHtml(j){
+  const ap='http://'+(j.apIp||'192.168.4.1'),mdns=j.mdns||'http://clawd-mochi.local';
+  const line='font-size:9px;color:#8a8278;margin-top:3px';
+  if(j.connected){const lan='http://'+(j.lanIp||j.ip);return '<strong style="color:#28b878">CONNECTED · '+escapeWifiText(j.ssid)+'</strong><small>LAN: '+escapeWifiText(lan)+'<br>Name: '+escapeWifiText(mdns)+'<br>Credentials: NVS (safe from static uploads)</small>';}
+  if(j.changingNetwork)return '<strong style="color:#e0b341">VERIFYING NEW NETWORK</strong><small>Keep this page open. If it disconnects, join ClaWD-Mochi and open '+ap+'.</small>';
+  if(j.configured&&j.savedSsid){const failed=Boolean(j.lastError)||j.retryCount>0||j.retryExhausted;const state=failed?(j.lastError||'Connection failed'):(j.phase||'Connecting'),retry=j.retryCount?' · retry '+j.retryCount:'';return '<strong style="color:#c96a3e">'+escapeWifiText(state+retry)+'</strong><small>Saved network kept: '+escapeWifiText(j.savedSsid)+'<br>Recovery AP: '+ap+'</small>';}
+  return '<strong style="color:#c96a3e">WIFI SETUP NEEDED</strong><small>Join '+escapeWifiText(j.apSsid||'ClaWD-Mochi')+' and open '+ap+', then choose a network below.</small>';
+}
+function renderWifiStatus(j){
+  lastWifiStatus=j;
+  const dot=document.getElementById('wdot'),button=document.getElementById('wscanBtn');
+  document.getElementById('wstatus').innerHTML=wifiStatusHtml(j);
+  dot.className='wdot '+(j.connected?'connected':(j.changingNetwork?'connecting':''));
+  button.style.display='block';
+  button.textContent=j.connected?'CHANGE NETWORK':'CONNECT WIFI';
+  if(!j.connected&&!j.configured){wifiSetupOpen=true;document.getElementById('wsetup').classList.add('open');}
+}
+function toggleWifiSetup(){wifiSetupOpen=!wifiSetupOpen;document.getElementById('wsetup').classList.toggle('open',wifiSetupOpen);if(wifiSetupOpen&&!document.getElementById('wlist').children.length)loadWifiList();}
+function closeWifiSetup(){if(wifiConnecting)return;if(lastWifiStatus&&!lastWifiStatus.connected&&!lastWifiStatus.configured){toast('connect WiFi or use the recovery AP',false);return;}wifiSetupOpen=false;document.getElementById('wsetup').classList.remove('open');}
+async function loadWifiList(){
+  wifiSetupOpen=true;document.getElementById('wsetup').classList.add('open');
+  const button=document.getElementById('wrescanBtn'),list=document.getElementById('wlist');
+  button.disabled=true;button.textContent='SCANNING...';list.style.display='flex';list.textContent='Scanning nearby networks...';
+  try{
+    const r=await fetch('/wifi/scan',{cache:'no-store'}),nets=await r.json();list.innerHTML='';
+    if(!Array.isArray(nets)||!nets.length){list.textContent='No networks found. You can type an SSID manually.';}
+    else nets.sort((a,b)=>b.rssi-a.rssi).forEach(network=>{
+      const row=document.createElement('button');row.type='button';row.className='wnet';
+      const name=document.createElement('span');name.textContent=network.ssid||'(hidden network)';
+      const meta=document.createElement('small');meta.textContent=(network.encrypted?'LOCK · ':'OPEN · ')+network.rssi+' dBm';
+      row.append(name,meta);row.onclick=()=>{document.getElementById('wssid').value=network.ssid||'';document.getElementById('wpass').focus();};list.appendChild(row);
+    });
+  }catch(e){list.textContent='Scan failed. Type the network name manually.';}
+  button.disabled=false;button.textContent='RESCAN';
+}
+async function connectWifi(){
+  const ssid=document.getElementById('wssid').value.trim(),password=document.getElementById('wpass').value,button=document.getElementById('wconnectBtn');
+  if(!ssid){toast('enter a network name',false);return;}
+  if(password.length>0&&password.length<8){toast('password must be at least 8 characters',false);return;}
+  wifiConnecting=true;button.disabled=true;button.textContent='VERIFYING...';
+  document.getElementById('wstatus').innerHTML='<strong style="color:#e0b341">SWITCHING NETWORK</strong><small>If this page disconnects, join ClaWD-Mochi and open 192.168.4.1.</small>';
+  const body=new URLSearchParams({ssid,password});
+  try{const r=await fetch('/wifi/connect',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});const result=await r.json();if(!r.ok)throw new Error(result.error||'could not start connection');}
+  catch(e){wifiConnecting=false;button.disabled=false;button.textContent='CONNECT';toast(e.message||'connection request failed',false);return;}
+  let connected=false;
+  for(let i=0;i<50;i++){await new Promise(resolve=>setTimeout(resolve,1000));try{const r=await fetch('/wifi/status',{cache:'no-store'});if(!r.ok)continue;const status=await r.json();renderWifiStatus(status);if(status.connected&&status.ssid===ssid){connected=true;break;}if(status.connected&&status.ssid!==ssid)break;if(!status.changingNetwork&&status.lastError)break;}catch(e){}}
+  wifiConnecting=false;button.disabled=false;button.textContent='CONNECT';
+  if(connected){document.getElementById('wpass').value='';wifiSetupOpen=false;document.getElementById('wsetup').classList.remove('open');toast('wifi connected');}
+  else toast('new network not connected; saved network was kept',false);
+}
+async function pollWifiStatus(){try{const r=await fetch('/wifi/status',{cache:'no-store'});if(r.ok)renderWifiStatus(await r.json());}catch(e){document.getElementById('wstatus').innerHTML='<strong style="color:#c96a3e">DEVICE UNREACHABLE</strong><small>Join ClaWD-Mochi and open 192.168.4.1.</small>';document.getElementById('wscanBtn').style.display='block';}}
 async function toggleCanvas(){canvasOpen=!canvasOpen;document.getElementById('cwrap').classList.toggle('open',canvasOpen);document.querySelectorAll('.vbtn').forEach(btn=>btn.classList.toggle('active',canvasOpen&&parseInt(btn.dataset.v)===3));await req('/canvas?on='+(canvasOpen?1:0));if(canvasOpen){const bg=document.getElementById('bgCol').value;redrawCanvas(bg);await req('/draw/clear?bg='+encodeURIComponent(bg));document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);toast('canvas active');}else{setBusy(false);toast('canvas off');}}
 const tin=document.getElementById('tin');let lastVal='';
 tin.addEventListener('input',async()=>{const cur=tin.value,prev=lastVal;if(cur.length>prev.length){await req('/char?c='+encodeURIComponent(cur[cur.length-1]));}else if(cur.length<prev.length){await req('/char?c=%08');}lastVal=cur;});

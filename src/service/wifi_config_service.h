@@ -5,6 +5,7 @@
 #include <WebServer.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
+#include <Preferences.h>
 #include "../config/cfg_wifi.h"
 
 class WifiConfigService {
@@ -45,6 +46,7 @@ public:
 
     void startAPMode();
     bool connectToWifi(const char* ssid, const char* password);
+    bool configureAndConnect(const char* ssid, const char* password);
     void saveCredentials(const char* ssid, const char* password);
     void clearCredentials();
     void reset();
@@ -73,6 +75,11 @@ private:
     wifi_power_t _currentTxPower;
     bool _wifiSleepEnabled;
     bool _radioProfileInitialized;
+    Preferences _credentialPrefs;
+    bool _credentialPrefsReady;
+    String _pendingSsid;
+    String _pendingPassword;
+    bool _credentialChangePending;
 
     // 连接阶段(由 WiFi 事件推进): 关联+认证 → 获取 IP
     enum class ConnectPhase : uint8_t { ASSOCIATING, OBTAINING_IP };
@@ -90,6 +97,9 @@ private:
     static void onWifiEvent(arduino_event_id_t event, arduino_event_info_t info);
     void setProvisioningMode(ProvisioningMode mode);
     void loadCredentials();
+    void migrateLegacyCredentials();
+    bool persistCredentials(const String& ssid, const String& password);
+    bool isValidCredentialInput(const String& ssid, const String& password) const;
     void ensureAccessPoint();
     void startMDNS();
     void stopMDNS();

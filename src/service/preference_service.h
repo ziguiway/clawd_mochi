@@ -26,6 +26,23 @@ public:
     bool getClaudeStatusEnabled() const { return _claudeStatusEnabled; }
     void setClaudeStatusEnabled(bool enabled);
 
+    uint32_t getDinoHighScore() const { return _dinoHighScore; }
+    void setDinoHighScore(uint32_t score);
+
+    uint8_t getSokobanLevel() const { return _sokobanLevel; }
+    void setSokobanLevel(uint8_t level);
+    uint32_t getSokobanCompletedMask() const { return _sokobanCompletedMask; }
+    void setSokobanCompletedMask(uint32_t mask);
+
+    uint32_t getTetrisHighScore() const { return _tetrisHighScore; }
+    void setTetrisHighScore(uint32_t score);
+    uint32_t getSnakeHighScore() const { return _snakeHighScore; }
+    void setSnakeHighScore(uint32_t score);
+    uint32_t getGame2048BestScore() const { return _game2048BestScore; }
+    void setGame2048BestScore(uint32_t score);
+    uint32_t getBreakoutHighScore() const { return _breakoutHighScore; }
+    void setBreakoutHighScore(uint32_t score);
+
     uint8_t getDisplayTheme() const { return _displayTheme; }
     void setDisplayTheme(uint8_t theme);
 
@@ -74,6 +91,13 @@ private:
     uint8_t _startupView = 0;
     uint8_t _brightnessPercent = 100;
     bool _claudeStatusEnabled = true;
+    uint32_t _dinoHighScore = 0;
+    uint8_t _sokobanLevel = 0;
+    uint32_t _sokobanCompletedMask = 0;
+    uint32_t _tetrisHighScore = 0;
+    uint32_t _snakeHighScore = 0;
+    uint32_t _game2048BestScore = 0;
+    uint32_t _breakoutHighScore = 0;
     uint8_t _displayTheme = THEME_ORANGE_WHITE;
     bool _carouselEnabled = false;
     uint8_t _carouselSpeedSeconds = 12;

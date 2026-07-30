@@ -23,6 +23,14 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _cryptoService(cryptoService)
     , _marketService(marketService)
     , _ccView(tft), _eyesView(tft)
+    , _dinoGame(tft, preferenceService)
+    , _sokobanGame(tft, preferenceService)
+    , _arcadeCanvas(tft)
+    , _tetrisGame(&_arcadeCanvas, preferenceService)
+    , _snakeGame(&_arcadeCanvas, preferenceService)
+    , _game2048(&_arcadeCanvas, preferenceService)
+    , _breakoutGame(&_arcadeCanvas, preferenceService)
+    , _activeArcadeGame(nullptr)
     , _currentMode(DisplayMode::SETUP), _lastRefreshMs(0)
     , _interactiveView(InteractiveView::EYES_NORMAL), _interactiveActive(false)
     , _busy(false), _animSpeed(1)
@@ -863,6 +871,11 @@ void DisplayService::exitInteractive() {
 }
 
 void DisplayService::setInteractiveView(uint8_t view) {
+    if (_activeArcadeGame &&
+        view != viewForArcadeGame(_activeArcadeGame->id())) {
+        _activeArcadeGame->stop();
+        _activeArcadeGame = nullptr;
+    }
     if (!_interactiveActive) {
         _interactiveActive = true;
     }
@@ -915,6 +928,30 @@ void DisplayService::setInteractiveView(uint8_t view) {
         case InteractiveView::MARKET:
             drawMarketView();
             break;
+        case InteractiveView::DINO_GAME:
+            _dinoGame.begin();
+            _activeArcadeGame = &_dinoGame;
+            break;
+        case InteractiveView::SOKOBAN_GAME:
+            _sokobanGame.begin();
+            _activeArcadeGame = &_sokobanGame;
+            break;
+        case InteractiveView::TETRIS_GAME:
+            _tetrisGame.begin();
+            _activeArcadeGame = &_tetrisGame;
+            break;
+        case InteractiveView::SNAKE_GAME:
+            _snakeGame.begin();
+            _activeArcadeGame = &_snakeGame;
+            break;
+        case InteractiveView::GAME_2048:
+            _game2048.begin();
+            _activeArcadeGame = &_game2048;
+            break;
+        case InteractiveView::BREAKOUT_GAME:
+            _breakoutGame.begin();
+            _activeArcadeGame = &_breakoutGame;
+            break;
     }
 }
 
@@ -931,7 +968,152 @@ void DisplayService::redrawCurrentView() {
         case InteractiveView::WEATHER:     drawWeatherView(); break;
         case InteractiveView::CRYPTO:      drawCryptoView(); break;
         case InteractiveView::MARKET:      drawMarketView(); break;
+        case InteractiveView::DINO_GAME:   _dinoGame.redraw(); break;
+        case InteractiveView::SOKOBAN_GAME: _sokobanGame.redraw(); break;
+        case InteractiveView::TETRIS_GAME: _tetrisGame.redraw(); break;
+        case InteractiveView::SNAKE_GAME: _snakeGame.redraw(); break;
+        case InteractiveView::GAME_2048: _game2048.redraw(); break;
+        case InteractiveView::BREAKOUT_GAME: _breakoutGame.redraw(); break;
     }
+}
+
+void DisplayService::startDinoGame() {
+    startArcadeGame("dino");
+}
+
+void DisplayService::dinoJump() {
+    if (isDinoGameActive()) _dinoGame.jump();
+}
+
+void DisplayService::restartDinoGame() {
+    if (isDinoGameActive()) _dinoGame.restart();
+}
+
+void DisplayService::exitDinoGame() {
+    if (_activeArcadeGame == &_dinoGame) exitArcadeGame();
+}
+
+bool DisplayService::isDinoGameActive() const {
+    return _currentMode == DisplayMode::INTERACTIVE &&
+           _interactiveView == InteractiveView::DINO_GAME &&
+           _dinoGame.isActive();
+}
+
+String DisplayService::getDinoGameStateJson() const {
+    return _dinoGame.getStateJson();
+}
+
+void DisplayService::startSokobanGame() {
+    startArcadeGame("sokoban");
+}
+
+bool DisplayService::moveSokoban(int8_t dx, int8_t dy) {
+    return isSokobanGameActive() && _sokobanGame.move(dx, dy);
+}
+
+bool DisplayService::undoSokoban() {
+    return isSokobanGameActive() && _sokobanGame.undo();
+}
+
+void DisplayService::restartSokoban() {
+    if (isSokobanGameActive()) _sokobanGame.restart();
+}
+
+bool DisplayService::selectSokobanLevel(uint8_t level) {
+    return isSokobanGameActive() && _sokobanGame.selectLevel(level);
+}
+
+void DisplayService::exitSokobanGame() {
+    if (_activeArcadeGame == &_sokobanGame) exitArcadeGame();
+}
+
+IArcadeGame* DisplayService::findArcadeGame(const String& slug) {
+    if (slug == "dino") return &_dinoGame;
+    if (slug == "sokoban") return &_sokobanGame;
+    if (slug == "tetris") return &_tetrisGame;
+    if (slug == "snake") return &_snakeGame;
+    if (slug == "2048") return &_game2048;
+    if (slug == "breakout") return &_breakoutGame;
+    return nullptr;
+}
+
+const IArcadeGame* DisplayService::findArcadeGame(const String& slug) const {
+    return const_cast<DisplayService*>(this)->findArcadeGame(slug);
+}
+
+uint8_t DisplayService::viewForArcadeGame(ArcadeGameId id) const {
+    switch (id) {
+        case ArcadeGameId::DINO: return VIEW_DINO;
+        case ArcadeGameId::SOKOBAN: return VIEW_SOKOBAN;
+        case ArcadeGameId::TETRIS: return VIEW_TETRIS;
+        case ArcadeGameId::SNAKE: return VIEW_SNAKE;
+        case ArcadeGameId::MERGE_2048: return VIEW_2048;
+        case ArcadeGameId::BREAKOUT: return VIEW_BREAKOUT;
+        default: return VIEW_DINO;
+    }
+}
+
+bool DisplayService::startArcadeGame(const String& slug) {
+    IArcadeGame* game = findArcadeGame(slug);
+    if (!game) return false;
+    if (_activeArcadeGame && _activeArcadeGame != game) {
+        _activeArcadeGame->stop();
+    }
+    _activeArcadeGame = game;
+    setInteractiveView(viewForArcadeGame(game->id()));
+    return true;
+}
+
+bool DisplayService::handleArcadeAction(const String& action, int value) {
+    return isGameActive() &&
+           _activeArcadeGame->handleAction(action, value);
+}
+
+void DisplayService::exitArcadeGame() {
+    if (!_activeArcadeGame) return;
+    _activeArcadeGame->stop();
+    _activeArcadeGame = nullptr;
+    const auto status = _ccService->getStatus();
+    const bool codexActive =
+        status == ClaudeCodeService::Status::THINKING ||
+        status == ClaudeCodeService::Status::WORKING ||
+        status == ClaudeCodeService::Status::PERMISSION ||
+        status == ClaudeCodeService::Status::SWEEPING ||
+        status == ClaudeCodeService::Status::SLEEPING;
+    if (_claudeStatusEnabled && codexActive) switchToInfoMode();
+    else switchToIdleDisplay();
+}
+
+String DisplayService::getArcadeGameStateJson(const String& slug) const {
+    const IArcadeGame* game = slug.isEmpty()
+        ? _activeArcadeGame : findArcadeGame(slug);
+    if (!game) return "{\"active\":false,\"state\":\"unavailable\"}";
+    return game->getStateJson();
+}
+
+const char* DisplayService::getActiveArcadeGameSlug() const {
+    return _activeArcadeGame ? _activeArcadeGame->slug() : "";
+}
+
+bool DisplayService::isArcadeGameView() const {
+    return _interactiveView >= InteractiveView::DINO_GAME &&
+           _interactiveView <= InteractiveView::BREAKOUT_GAME;
+}
+
+bool DisplayService::isSokobanGameActive() const {
+    return _currentMode == DisplayMode::INTERACTIVE &&
+           _interactiveView == InteractiveView::SOKOBAN_GAME &&
+           _sokobanGame.isActive();
+}
+
+bool DisplayService::isGameActive() const {
+    return _currentMode == DisplayMode::INTERACTIVE &&
+           isArcadeGameView() && _activeArcadeGame &&
+           _activeArcadeGame->isActive();
+}
+
+String DisplayService::getSokobanStateJson() const {
+    return _sokobanGame.getStateJson();
 }
 
 void DisplayService::drawClear(uint16_t bgColor) {
@@ -1180,6 +1362,10 @@ void DisplayService::update() {
         applyNightDimming();
     }
     if (_currentMode == DisplayMode::INTERACTIVE) {
+        if (isArcadeGameView() && _activeArcadeGame) {
+            _activeArcadeGame->update();
+            return;
+        }
         if (_carouselEnabled && !_carouselSuspended &&
             isCarouselView(static_cast<uint8_t>(_interactiveView)) &&
             now - _carouselPageStartedMs >=
