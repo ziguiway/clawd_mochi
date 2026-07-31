@@ -41,7 +41,9 @@ public:
     uint16_t getWorkDaysX100() const { return _workDaysX100; }
     uint16_t getWorkMinutesPerDay() const { return _workMinutesPerDay; }
     uint32_t getActiveSeconds() const;
+    uint64_t getActiveMilliseconds() const;
     uint64_t getEarnedTenThousandths() const;
+    uint64_t getLiveEarnedTenThousandths() const;
     uint64_t getDailyTargetTenThousandths() const;
     uint32_t getRateTenThousandthsPerSecond() const;
     uint16_t getProgressPermille() const;

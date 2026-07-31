@@ -14,7 +14,13 @@ void TimeService::init() {
 }
 
 void TimeService::update() {
-    if (!_synced) return;
+    if (!_synced) {
+        if (time(nullptr) > 1000000000) {
+            _synced = true;
+            _lastSyncTime = millis();
+        }
+        return;
+    }
     unsigned long now = millis();
     if (now - _lastSyncTime > _syncInterval) {
         syncNow();

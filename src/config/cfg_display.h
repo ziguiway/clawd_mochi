@@ -52,7 +52,7 @@
 #define VIEW_2048       15
 #define VIEW_BREAKOUT   16
 #define VIEW_SALARY     17
-#define CAROUSEL_VIEW_COUNT 4
+#define CAROUSEL_VIEW_COUNT 5
 
 // 系统显示主题
 #define THEME_ORANGE_BLACK 0

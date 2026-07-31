@@ -189,7 +189,7 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
         "theme": 1,
         "carousel": False,
         "carouselSpeed": 12,
-        "carouselOrder": [8, 9, 10, 6],
+        "carouselOrder": [8, 9, 10, 6, 17],
         "carouselFixed": 8,
         "nightDim": False,
         "nightStart": 22,
@@ -255,6 +255,9 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
         "monthlyCents": 1_500_000,
         "workDaysX100": 2_175,
         "workMinutesPerDay": 480,
+        "autoEnabled": True,
+        "startMinutes": 570,
+        "endMinutes": 1140,
     }
     salary_status: dict[str, Any] = {
         "state": "ready",
@@ -461,6 +464,9 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
                 "monthlyCents": monthly_cents,
                 "workDaysX100": work_days_x100,
                 "workMinutesPerDay": work_minutes,
+                "autoEnabled": bool(payload.get("autoEnabled", True)),
+                "startMinutes": int(payload.get("startMinutes", 570)),
+                "endMinutes": int(payload.get("endMinutes", 1140)),
             }
             self.__class__.salary_status = {
                 **self.salary_status,
@@ -1052,8 +1058,10 @@ def run_carousel_flow(page: Page, *, stub_mode: bool) -> None:
     page.wait_for_timeout(350)
     assert page.locator("#carouselFixed").is_disabled()
     order_names = page.locator("#carouselOrder .rname").all_text_contents()
-    assert set(order_names) == {"Weather", "Crypto", "Market", "Clock"}
-    print("PASS  时间页面已加入轮播顺序")
+    assert set(order_names) == {
+        "Weather", "Crypto", "Market", "Clock", "Live Ledger",
+    }
+    print("PASS  时间页面和 Live Ledger 已加入轮播顺序")
     print("PASS  开启信息轮播")
 
     speed = page.locator("#carouselSpeed")
@@ -1119,23 +1127,35 @@ def run_salary_flow(page: Page) -> None:
     assert page.locator("#ypAmount").text_content() == "0.0000"
     print("PASS  Live Ledger 打开并显示 240×240 金额优先预览")
 
+    page.locator("#ySettingsToggle").click()
+    page.locator("#ySettings.open").wait_for(state="visible")
     page.locator("#yMonthlyInput").fill("15000")
     page.locator("#yDaysInput").fill("21.75")
     page.locator("#yHoursInput").fill("8")
+    assert page.locator("#yStartInput").input_value() == "09:30"
+    assert page.locator("#yEndInput").input_value() == "19:00"
+    page.locator("#yAutoInput").select_option("1")
     page.locator("#ySave").click()
     page.get_by_text("salary settings saved", exact=True).wait_for(
         state="visible"
     )
     assert page.locator("#yMonthly").text_content() == "15000"
-    print("PASS  保存月薪、计薪天数和每日工时")
+    assert FirmwareStubHandler.salary_config["startMinutes"] == 570
+    assert FirmwareStubHandler.salary_config["endMinutes"] == 1140
+    assert FirmwareStubHandler.salary_config["autoEnabled"] is True
+    print("PASS  保存工资、09:30–19:00 上下班时间和自动班次")
 
     primary = page.locator("#yPrimary")
     primary.click()
     page.wait_for_function(
-        "() => document.querySelector('#ypState').textContent === 'RUNNING'"
+        "() => document.querySelector('#yState').textContent === 'RUNNING'"
     )
     assert page.locator("#yMonthlyInput").is_disabled()
+    assert page.locator("#yStartInput").is_disabled()
     assert primary.text_content() == "PAUSE"
+    page.wait_for_timeout(180)
+    assert page.locator("#ypAmount").text_content() != "0.0000"
+    print("PASS  RUNNING 金额在秒内连续滚动")
     print("PASS  开始上班后进入 RUNNING 并锁定计薪配置")
 
     primary.click()
@@ -1148,7 +1168,7 @@ def run_salary_flow(page: Page) -> None:
 
     primary.click()
     page.wait_for_function(
-        "() => document.querySelector('#ypState').textContent === 'RUNNING'"
+        "() => document.querySelector('#yState').textContent === 'RUNNING'"
     )
     screenshot = Path("/tmp/clawd_mochi_live_ledger.png")
     preview.screenshot(path=str(screenshot))
@@ -1527,7 +1547,7 @@ def restore_device_market_config(
 
 
 def restore_device_carousel_prefs(base_url: str, prefs: dict[str, Any]) -> None:
-    order = prefs.get("carouselOrder", [8, 9, 10, 6])
+    order = prefs.get("carouselOrder", [8, 9, 10, 6, 17])
     query = urllib.parse.urlencode(
         {
             "carousel": "1" if prefs.get("carousel", False) else "0",
@@ -1622,7 +1642,7 @@ def main() -> int:
             "theme": 1,
             "carousel": False,
             "carouselSpeed": 12,
-            "carouselOrder": [8, 9, 10, 6],
+            "carouselOrder": [8, 9, 10, 6, 17],
             "carouselFixed": 8,
             "nightDim": False,
             "nightStart": 22,
@@ -1678,6 +1698,9 @@ def main() -> int:
             "monthlyCents": 1_500_000,
             "workDaysX100": 2_175,
             "workMinutesPerDay": 480,
+            "autoEnabled": True,
+            "startMinutes": 570,
+            "endMinutes": 1140,
         }
         FirmwareStubHandler.salary_status = {
             "state": "ready",

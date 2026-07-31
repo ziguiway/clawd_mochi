@@ -239,7 +239,8 @@ private:
     uint32_t _pomodoroRemainingAtPauseSec;
     unsigned long _pomodoroStartedMs;
     unsigned long _lastClockRenderSec;
-    unsigned long _lastSalaryRenderSec;
+    unsigned long _lastSalaryRenderMs;
+    unsigned long _lastSalaryScheduleCheckSec;
     uint32_t _lastWeatherVersion;
     uint32_t _lastCryptoVersion;
     uint32_t _lastMarketVersion;
@@ -259,6 +260,10 @@ private:
     char _lastSalaryWorked[24];
     char _lastSalaryState[28];
     uint16_t _lastSalaryProgressPermille;
+    int16_t _lastSalaryAmountX;
+    uint8_t _lastSalaryAmountSize;
+    int16_t _lastSalaryWorkedX;
+    uint8_t _lastSalaryWorkedSize;
 
     IArcadeGame* createArcadeGame(const String& slug);
     void releaseArcadeGame();
@@ -285,6 +290,7 @@ private:
     void drawMarketView();
     void drawSalaryCounterView();
     void drawSalaryCounterLayout();
+    void updateSalarySchedule(unsigned long now);
     void formatMarketPrice(float price, char* output, size_t size);
     void renderTimeScreen(const char* mark, const char* timeText, const char* subText,
                           const char* modeText, const char* hintText,

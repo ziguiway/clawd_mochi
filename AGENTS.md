@@ -93,7 +93,19 @@ All services are owned by `AppStateMachine` and accessed via `IAppContext`:
 - **Language**: Code comments and log messages are in Chinese; UI strings are in English
 - **Two StateMachine classes**: `StateMachine` (in `utils/`) is a generic callback-based framework used by `ClaudeCodeService`. `AppStateMachine` (in `states/`) is the app-level state machine with typed State classes
 - **Service init timing**: In LAN mode, services init in `ProvisioningState::onEnter()`. In SERIAL mode, they init in `SerialIdleState::onEnter()`. Both use `s_*Initialized` static flags to prevent double init
-- **Display anti-flicker**: `DisplayService` and `ClaudeCodeView` use dirty-checking (compare previous values) to skip redundant redraws. Time views use `_timeViewDirty` / `_timeViewLayoutDrawn` flags
+- **Display anti-flicker is mandatory**: dynamic content must never be updated
+  by clearing and redrawing an entire screen, panel, row, or text block on
+  every tick. Keep the static layout drawn once, cache the last rendered
+  value, and redraw only changed characters or the smallest dirty rectangle.
+  Use opaque text backgrounds for in-place glyph replacement, fixed character
+  positions for counters/timers, and a stable bounded refresh cadence. A full
+  region clear is allowed only when the layout, font size, or text width
+  actually changes. Fast counters should use sub-second value interpolation
+  plus per-character dirty updates; timers should update only the digits that
+  changed. `DisplayService` and `ClaudeCodeView` already use dirty-checking,
+  and time views use `_timeViewDirty` / `_timeViewLayoutDrawn` flags. Any new
+  animated or periodically updated screen must be checked on the physical
+  ST7789 for visible flashing before it is considered complete.
 - **RGB565 colors**: All display colors are RGB565 uint16_t. Use `hexToRgb565()` for web hex conversion
 - **LittleFS**: Web assets in `data/` are uploaded separately from firmware via `pio run --target uploadfs`
 - **Global singletons**: `OperationModeService` and `WifiConfigService` use `bind()/current()` pattern for cross-service access without passing through IAppContext

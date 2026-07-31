@@ -39,9 +39,9 @@ void PreferenceService::init() {
             order[index++] = static_cast<uint8_t>(part.toInt());
             start = comma < 0 ? -1 : comma + 1;
         }
-        // 兼容旧版三页轮播配置，保留原顺序并把时钟追加到末尾。
+        // 兼容旧版四页轮播配置，保留原顺序并把 Live Ledger 追加到末尾。
         if (index == CAROUSEL_VIEW_COUNT - 1) {
-            order[index++] = VIEW_CLOCK;
+            order[index++] = VIEW_SALARY;
         }
         if (index == CAROUSEL_VIEW_COUNT) setCarouselOrder(order);
     }
@@ -49,6 +49,17 @@ void PreferenceService::init() {
     _nightStartHour = constrain(_prefs.getUChar("nstart", _nightStartHour), 0, 23);
     _nightEndHour = constrain(_prefs.getUChar("nend", _nightEndHour), 0, 23);
     _nightBrightnessPercent = constrain(_prefs.getUChar("nbright", _nightBrightnessPercent), 0, 100);
+    _salaryAutoEnabled = _prefs.getBool("yauto", _salaryAutoEnabled);
+    _salaryStartMinutes = constrain(
+        _prefs.getUShort("ystart", _salaryStartMinutes), 0, 1439);
+    _salaryEndMinutes = constrain(
+        _prefs.getUShort("yend", _salaryEndMinutes), 1, 1440);
+    if (_salaryStartMinutes >= _salaryEndMinutes) {
+        _salaryStartMinutes = 9 * 60 + 30;
+        _salaryEndMinutes = 19 * 60;
+    }
+    _salaryLastAutoDate = _prefs.getUInt("ydate", 0);
+    _salaryLastAutoEndDate = _prefs.getUInt("yenddate", 0);
 
     _deviceName = _prefs.getString("devname", _deviceName);
     if (!isValidProfileText(_deviceName, 12, false)) _deviceName = "MOCHI";
@@ -232,19 +243,24 @@ bool PreferenceService::setCarouselOrder(
     const uint8_t order[CAROUSEL_VIEW_COUNT]) {
     if (!order) return false;
     bool seenClock = false, seenWeather = false;
-    bool seenCrypto = false, seenMarket = false;
+    bool seenCrypto = false, seenMarket = false, seenSalary = false;
     for (uint8_t i = 0; i < CAROUSEL_VIEW_COUNT; i++) {
         if (order[i] == VIEW_CLOCK) seenClock = true;
         else if (order[i] == VIEW_WEATHER) seenWeather = true;
         else if (order[i] == VIEW_CRYPTO) seenCrypto = true;
         else if (order[i] == VIEW_MARKET) seenMarket = true;
+        else if (order[i] == VIEW_SALARY) seenSalary = true;
         else return false;
     }
-    if (!seenClock || !seenWeather || !seenCrypto || !seenMarket) return false;
+    if (!seenClock || !seenWeather || !seenCrypto || !seenMarket ||
+        !seenSalary) {
+        return false;
+    }
     memcpy(_carouselOrder, order, sizeof(_carouselOrder));
     String serialized = String(_carouselOrder[0]) + "," + String(_carouselOrder[1]) +
                         "," + String(_carouselOrder[2]) + "," +
-                        String(_carouselOrder[3]);
+                        String(_carouselOrder[3]) + "," +
+                        String(_carouselOrder[4]);
     _prefs.putString("corder", serialized);
     return true;
 }
@@ -273,6 +289,34 @@ void PreferenceService::setNightBrightnessPercent(uint8_t percent) {
     _prefs.putUChar("nbright", _nightBrightnessPercent);
 }
 
+bool PreferenceService::setSalarySchedule(bool enabled,
+                                          uint16_t startMinutes,
+                                          uint16_t endMinutes) {
+    if (startMinutes >= 1440 || endMinutes > 1440 ||
+        startMinutes >= endMinutes) {
+        return false;
+    }
+    _salaryAutoEnabled = enabled;
+    _salaryStartMinutes = startMinutes;
+    _salaryEndMinutes = endMinutes;
+    _prefs.putBool("yauto", enabled);
+    _prefs.putUShort("ystart", startMinutes);
+    _prefs.putUShort("yend", endMinutes);
+    return true;
+}
+
+void PreferenceService::setSalaryLastAutoDate(uint32_t dateKey) {
+    if (_salaryLastAutoDate == dateKey) return;
+    _salaryLastAutoDate = dateKey;
+    _prefs.putUInt("ydate", dateKey);
+}
+
+void PreferenceService::setSalaryLastAutoEndDate(uint32_t dateKey) {
+    if (_salaryLastAutoEndDate == dateKey) return;
+    _salaryLastAutoEndDate = dateKey;
+    _prefs.putUInt("yenddate", dateKey);
+}
+
 bool PreferenceService::isNightDimActive(TimeService* timeService) const {
     if (!_nightDimEnabled || !timeService || !timeService->isSynced()) return false;
     const uint8_t hour = constrain(timeService->getHour(), 0, 23);
@@ -295,7 +339,7 @@ String PreferenceService::getJson() const {
     json += ",\"carouselSpeed\":" + String(_carouselSpeedSeconds);
     json += ",\"carouselOrder\":[" + String(_carouselOrder[0]) + "," +
             String(_carouselOrder[1]) + "," + String(_carouselOrder[2]) + "," +
-            String(_carouselOrder[3]) + "]";
+            String(_carouselOrder[3]) + "," + String(_carouselOrder[4]) + "]";
     json += ",\"carouselFixed\":" + String(_carouselFixedView);
     json += ",\"nightDim\":" + String(_nightDimEnabled ? "true" : "false");
     json += ",\"nightStart\":" + String(_nightStartHour);
@@ -327,5 +371,6 @@ bool PreferenceService::isStartupViewAllowed(uint8_t view) const {
 
 bool PreferenceService::isCarouselView(uint8_t view) const {
     return view == VIEW_CLOCK || view == VIEW_WEATHER ||
-           view == VIEW_CRYPTO || view == VIEW_MARKET;
+           view == VIEW_CRYPTO || view == VIEW_MARKET ||
+           view == VIEW_SALARY;
 }

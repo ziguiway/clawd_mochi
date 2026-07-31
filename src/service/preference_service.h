@@ -66,6 +66,19 @@ public:
     uint8_t getNightBrightnessPercent() const { return _nightBrightnessPercent; }
     void setNightBrightnessPercent(uint8_t percent);
 
+    // Live Ledger 自动上下班调度（轻量常驻配置，计薪模块本身仍按需加载）
+    bool getSalaryAutoEnabled() const { return _salaryAutoEnabled; }
+    uint16_t getSalaryStartMinutes() const { return _salaryStartMinutes; }
+    uint16_t getSalaryEndMinutes() const { return _salaryEndMinutes; }
+    uint32_t getSalaryLastAutoDate() const { return _salaryLastAutoDate; }
+    uint32_t getSalaryLastAutoEndDate() const {
+        return _salaryLastAutoEndDate;
+    }
+    bool setSalarySchedule(bool enabled, uint16_t startMinutes,
+                           uint16_t endMinutes);
+    void setSalaryLastAutoDate(uint32_t dateKey);
+    void setSalaryLastAutoEndDate(uint32_t dateKey);
+
     bool isNightDimActive(TimeService* timeService) const;
     String getJson() const;
 
@@ -102,13 +115,18 @@ private:
     bool _carouselEnabled = false;
     uint8_t _carouselSpeedSeconds = 12;
     uint8_t _carouselOrder[CAROUSEL_VIEW_COUNT] = {
-        VIEW_WEATHER, VIEW_CRYPTO, VIEW_MARKET, VIEW_CLOCK
+        VIEW_WEATHER, VIEW_CRYPTO, VIEW_MARKET, VIEW_CLOCK, VIEW_SALARY
     };
     uint8_t _carouselFixedView = VIEW_WEATHER;
     bool _nightDimEnabled = false;
     uint8_t _nightStartHour = 22;
     uint8_t _nightEndHour = 7;
     uint8_t _nightBrightnessPercent = 25;
+    bool _salaryAutoEnabled = true;
+    uint16_t _salaryStartMinutes = 9 * 60 + 30;
+    uint16_t _salaryEndMinutes = 19 * 60;
+    uint32_t _salaryLastAutoDate = 0;
+    uint32_t _salaryLastAutoEndDate = 0;
     String _deviceName = "MOCHI";
     String _bootLine1 = "HELLO";
     String _bootLine2 = "MOCHI";

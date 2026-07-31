@@ -81,14 +81,16 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _nextAutoEventMs(0), _autoReturnMs(0)
     , _expressionPreferred(true)
     , _carouselEnabled(false), _carouselSpeedSeconds(12)
-    , _carouselOrder{VIEW_WEATHER, VIEW_CRYPTO, VIEW_MARKET, VIEW_CLOCK}
+    , _carouselOrder{
+        VIEW_WEATHER, VIEW_CRYPTO, VIEW_MARKET, VIEW_CLOCK, VIEW_SALARY
+    }
     , _carouselFixedView(VIEW_WEATHER), _carouselIndex(0)
     , _carouselPageStartedMs(0), _carouselSuspended(false)
     , _focusMinutes(25), _breakMinutes(5), _pomodoroPhase(PomodoroPhase::FOCUS)
     , _pomodoroRunning(false), _pomodoroPaused(false)
     , _pomodoroDurationSec(25UL * 60UL), _pomodoroRemainingAtPauseSec(25UL * 60UL)
     , _pomodoroStartedMs(0), _lastClockRenderSec(0)
-    , _lastSalaryRenderSec(0)
+    , _lastSalaryRenderMs(0), _lastSalaryScheduleCheckSec(0)
     , _lastWeatherVersion(0)
     , _lastCryptoVersion(0)
     , _lastMarketVersion(0)
@@ -99,6 +101,8 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _lastProgressPermille(0xFFFF), _lastLightProgress(false)
     , _lastSalaryAmount{0}, _lastSalaryWorked{0}, _lastSalaryState{0}
     , _lastSalaryProgressPermille(0xFFFF)
+    , _lastSalaryAmountX(0), _lastSalaryAmountSize(0)
+    , _lastSalaryWorkedX(0), _lastSalaryWorkedSize(0)
     , _termMode(false), _termRow(0), _termCol(0)
 {
 }
@@ -1516,11 +1520,15 @@ bool DisplayService::showSalaryCounter() {
     _interactiveView = InteractiveView::SALARY_COUNTER;
     _expressionPreferred = false;
     _termMode = false;
-    _lastSalaryRenderSec = 0;
+    _lastSalaryRenderMs = 0;
     _lastSalaryAmount[0] = '\0';
     _lastSalaryWorked[0] = '\0';
     _lastSalaryState[0] = '\0';
     _lastSalaryProgressPermille = 0xFFFF;
+    _lastSalaryAmountX = 0;
+    _lastSalaryAmountSize = 0;
+    _lastSalaryWorkedX = 0;
+    _lastSalaryWorkedSize = 0;
     drawSalaryCounterLayout();
     drawSalaryCounterView();
     return true;
@@ -1551,13 +1559,20 @@ void DisplayService::drawSalaryCounterLayout() {
     const uint16_t foreground = _themeForeground;
     _tft->fillScreen(COLOR_ORANGE);
     _tft->drawText(10, 12, "CNY TODAY", foreground, COLOR_ORANGE, 2);
-    const int16_t liveX =
-        CFG_DISPLAY_WIDTH - _tft->getTextWidth("LIVE", 2) - 10;
-    _tft->drawText(liveX, 12, "LIVE", foreground, COLOR_ORANGE, 2);
     _tft->fillRect(10, 35, 220, 2, foreground);
-    _tft->drawTextCentered(118, "EARNED", foreground, COLOR_ORANGE, 2);
-    _tft->drawRect(20, 177, 200, 12, foreground);
-    _tft->fillRect(10, 208, 220, 3, foreground);
+    _tft->drawRect(20, 168, 200, 12, foreground);
+
+    char scheduleText[18];
+    const uint16_t startMinutes = _preferenceService
+        ? _preferenceService->getSalaryStartMinutes() : 570;
+    const uint16_t endMinutes = _preferenceService
+        ? _preferenceService->getSalaryEndMinutes() : 1140;
+    snprintf(scheduleText, sizeof(scheduleText),
+             "%02u:%02u  >  %02u:%02u",
+             startMinutes / 60, startMinutes % 60,
+             endMinutes / 60, endMinutes % 60);
+    _tft->drawTextCentered(214, scheduleText, foreground,
+                           COLOR_ORANGE, 1);
 }
 
 void DisplayService::drawSalaryCounterView() {
@@ -1565,7 +1580,7 @@ void DisplayService::drawSalaryCounterView() {
     if (!counter) return;
 
     const uint16_t foreground = _themeForeground;
-    const uint64_t earned = counter->getEarnedTenThousandths();
+    const uint64_t earned = counter->getLiveEarnedTenThousandths();
     char amountText[20];
     snprintf(amountText, sizeof(amountText), "%llu.%04llu",
              static_cast<unsigned long long>(earned / 10000ULL),
@@ -1588,61 +1603,157 @@ void DisplayService::drawSalaryCounterView() {
     }
 
     if (strcmp(amountText, _lastSalaryAmount) != 0) {
-        _tft->fillRect(0, 52, CFG_DISPLAY_WIDTH, 60, COLOR_ORANGE);
         const size_t length = strlen(amountText);
         const uint8_t amountSize = length <= 7 ? 5 : (length <= 9 ? 4 : 3);
-        _tft->drawTextCentered(63, amountText, foreground,
-                               COLOR_ORANGE, amountSize);
+        const int16_t amountX =
+            (CFG_DISPLAY_WIDTH - _tft->getTextWidth(amountText, amountSize)) / 2;
+        const bool layoutChanged =
+            _lastSalaryAmount[0] == '\0' ||
+            strlen(_lastSalaryAmount) != length ||
+            _lastSalaryAmountX != amountX ||
+            _lastSalaryAmountSize != amountSize;
+        if (layoutChanged) {
+            _tft->fillRect(0, 52, CFG_DISPLAY_WIDTH, 60, COLOR_ORANGE);
+            _tft->drawText(amountX, 63, amountText, foreground,
+                           COLOR_ORANGE, amountSize);
+        } else {
+            const int16_t charWidth = _tft->getTextWidth("0", amountSize);
+            char glyph[2] = {'\0', '\0'};
+            for (size_t i = 0; i < length; i++) {
+                if (_lastSalaryAmount[i] == amountText[i]) continue;
+                glyph[0] = amountText[i];
+                _tft->drawText(amountX + static_cast<int16_t>(i) * charWidth,
+                               63, glyph, foreground, COLOR_ORANGE,
+                               amountSize);
+            }
+        }
         strncpy(_lastSalaryAmount, amountText,
                 sizeof(_lastSalaryAmount) - 1);
         _lastSalaryAmount[sizeof(_lastSalaryAmount) - 1] = '\0';
+        _lastSalaryAmountX = amountX;
+        _lastSalaryAmountSize = amountSize;
     }
 
     if (strcmp(workedText, _lastSalaryWorked) != 0) {
-        _tft->fillRect(0, 143, CFG_DISPLAY_WIDTH, 25, COLOR_ORANGE);
-        _tft->drawTextCentered(147, workedText, foreground,
-                               COLOR_ORANGE, 2);
+        constexpr uint8_t workedSize = 2;
+        const int16_t workedX =
+            (CFG_DISPLAY_WIDTH - _tft->getTextWidth(
+                workedText, workedSize)) / 2;
+        const size_t workedLength = strlen(workedText);
+        const bool layoutChanged =
+            _lastSalaryWorked[0] == '\0' ||
+            strlen(_lastSalaryWorked) != workedLength ||
+            _lastSalaryWorkedX != workedX ||
+            _lastSalaryWorkedSize != workedSize;
+        if (layoutChanged) {
+            _tft->fillRect(0, 130, CFG_DISPLAY_WIDTH, 28, COLOR_ORANGE);
+            _tft->drawText(workedX, 136, workedText, foreground,
+                           COLOR_ORANGE, workedSize);
+        } else {
+            const int16_t charWidth =
+                _tft->getTextWidth("0", workedSize);
+            char glyph[2] = {'\0', '\0'};
+            for (size_t i = 0; i < workedLength; i++) {
+                if (_lastSalaryWorked[i] == workedText[i]) continue;
+                glyph[0] = workedText[i];
+                _tft->drawText(
+                    workedX + static_cast<int16_t>(i) * charWidth,
+                    136, glyph, foreground, COLOR_ORANGE, workedSize);
+            }
+        }
         strncpy(_lastSalaryWorked, workedText,
                 sizeof(_lastSalaryWorked) - 1);
         _lastSalaryWorked[sizeof(_lastSalaryWorked) - 1] = '\0';
+        _lastSalaryWorkedX = workedX;
+        _lastSalaryWorkedSize = workedSize;
     }
 
     const uint16_t progress = counter->getProgressPermille();
     if (progress != _lastSalaryProgressPermille) {
         const int16_t fillWidth = 196 * progress / 1000;
-        _tft->fillRect(22, 179, 196, 8, COLOR_ORANGE);
+        _tft->fillRect(22, 170, 196, 8, COLOR_ORANGE);
         if (fillWidth > 0) {
-            _tft->fillRect(22, 179, fillWidth, 8, foreground);
+            _tft->fillRect(22, 170, fillWidth, 8, foreground);
         }
-        _tft->drawRect(20, 177, 200, 12, foreground);
+        _tft->drawRect(20, 168, 200, 12, foreground);
         _lastSalaryProgressPermille = progress;
     }
 
-    const uint32_t rate = counter->getRateTenThousandthsPerSecond();
-    char footerKey[28];
-    snprintf(footerKey, sizeof(footerKey), "%s|%lu", stateText,
-             static_cast<unsigned long>(rate));
-    if (strcmp(footerKey, _lastSalaryState) != 0) {
-        _tft->fillRect(0, 212, CFG_DISPLAY_WIDTH, 28, COLOR_ORANGE);
-
-        char rateText[18];
-        if (rate < 10000UL) {
-            snprintf(rateText, sizeof(rateText), "RATE .%04lu/S",
-                     static_cast<unsigned long>(rate));
-        } else {
-            snprintf(rateText, sizeof(rateText), "RATE %lu.%04lu/S",
-                     static_cast<unsigned long>(rate / 10000UL),
-                     static_cast<unsigned long>(rate % 10000UL));
-        }
-        _tft->drawText(10, 218, rateText, foreground, COLOR_ORANGE, 1);
+    if (strcmp(stateText, _lastSalaryState) != 0) {
+        _tft->fillRect(130, 8, 110, 25, COLOR_ORANGE);
         const int16_t stateX =
-            CFG_DISPLAY_WIDTH - _tft->getTextWidth(stateText, 1) - 10;
-        _tft->drawText(stateX, 218, stateText, foreground,
-                       COLOR_ORANGE, 1);
+            CFG_DISPLAY_WIDTH - _tft->getTextWidth(stateText, 2) - 10;
+        _tft->drawText(stateX, 12, stateText, foreground,
+                       COLOR_ORANGE, 2);
 
-        strncpy(_lastSalaryState, footerKey,
+        strncpy(_lastSalaryState, stateText,
                 sizeof(_lastSalaryState) - 1);
         _lastSalaryState[sizeof(_lastSalaryState) - 1] = '\0';
+    }
+}
+
+void DisplayService::updateSalarySchedule(unsigned long now) {
+    if (!_preferenceService || !_timeService ||
+        !_preferenceService->getSalaryAutoEnabled() ||
+        !_timeService->isSynced()) {
+        return;
+    }
+    const unsigned long second = now / 1000UL;
+    if (second == _lastSalaryScheduleCheckSec) return;
+    _lastSalaryScheduleCheckSec = second;
+
+    const uint16_t minutesNow =
+        static_cast<uint16_t>(_timeService->getHour() * 60 +
+                              _timeService->getMinute());
+    const uint16_t startMinutes =
+        _preferenceService->getSalaryStartMinutes();
+    const uint16_t endMinutes =
+        _preferenceService->getSalaryEndMinutes();
+    const uint32_t today =
+        static_cast<uint32_t>(_timeService->getYear()) * 10000UL +
+        static_cast<uint32_t>(_timeService->getMonth()) * 100UL +
+        static_cast<uint32_t>(_timeService->getDay());
+    const bool inWorkWindow =
+        minutesNow >= startMinutes && minutesNow < endMinutes;
+    const uint32_t lastAutoDate =
+        _preferenceService->getSalaryLastAutoDate();
+
+    if (inWorkWindow && lastAutoDate != today) {
+        SalaryCounterService* counter = salaryCounter();
+        if (!counter || !counter->isConfigured()) return;
+        if (counter->isSessionActive() ||
+            counter->start(_timeService->getEpoch())) {
+            _preferenceService->setSalaryLastAutoDate(today);
+            if (_currentMode != DisplayMode::INFO &&
+                _currentMode != DisplayMode::PROVISIONING &&
+                !isGameActive()) {
+                showSalaryCounter();
+            }
+            LOG_INFO("Salary", "自动上班触发 date=%lu",
+                     static_cast<unsigned long>(today));
+        }
+        return;
+    }
+
+    if (minutesNow >= endMinutes && lastAutoDate == today &&
+        _preferenceService->getSalaryLastAutoEndDate() != today) {
+        SalaryCounterService* counter = _salaryCounter;
+        if (!counter) counter = salaryCounter();
+        if (counter && counter->isSessionActive() && counter->finish()) {
+            refreshSalaryCounter();
+            LOG_INFO("Salary", "自动下班触发 date=%lu",
+                     static_cast<unsigned long>(today));
+            if (_interactiveView != InteractiveView::SALARY_COUNTER) {
+                releaseSalaryCounterIfIdle(
+                    static_cast<uint8_t>(_interactiveView));
+            }
+        }
+        _preferenceService->setSalaryLastAutoEndDate(today);
+        if (counter && !counter->isSessionActive() &&
+            _interactiveView != InteractiveView::SALARY_COUNTER) {
+            releaseSalaryCounterIfIdle(
+                static_cast<uint8_t>(_interactiveView));
+        }
     }
 }
 
@@ -1699,7 +1810,8 @@ void DisplayService::applyIdleDefaultView() {
 
 bool DisplayService::isCarouselView(uint8_t view) const {
     return view == VIEW_CLOCK || view == VIEW_WEATHER ||
-           view == VIEW_CRYPTO || view == VIEW_MARKET;
+           view == VIEW_CRYPTO || view == VIEW_MARKET ||
+           view == VIEW_SALARY;
 }
 
 void DisplayService::loadIdleDisplayPreferences() {
@@ -1731,12 +1843,12 @@ void DisplayService::showCarouselCurrentView() {
 }
 
 void DisplayService::switchToIdleDisplay() {
-    if (_salaryCounter && _salaryCounter->isSessionActive()) {
-        showSalaryCounter();
-        return;
-    }
     if (_carouselEnabled) {
         showCarouselCurrentView();
+        return;
+    }
+    if (_salaryCounter && _salaryCounter->isSessionActive()) {
+        showSalaryCounter();
         return;
     }
     _carouselSuspended = false;
@@ -1768,6 +1880,7 @@ void DisplayService::update() {
         if (_weatherService) _weatherService->update();
         if (_cryptoService) _cryptoService->update();
         if (_marketService) _marketService->update();
+        updateSalarySchedule(now);
     }
     if (now - _lastNightDimCheckMs > 30000UL) {
         _lastNightDimCheckMs = now;
@@ -1817,8 +1930,8 @@ void DisplayService::update() {
         }
         const unsigned long sec = now / 1000UL;
         if (_interactiveView == InteractiveView::SALARY_COUNTER) {
-            if (sec == _lastSalaryRenderSec) return;
-            _lastSalaryRenderSec = sec;
+            if (now - _lastSalaryRenderMs < 40UL) return;
+            _lastSalaryRenderMs = now;
             drawSalaryCounterView();
             return;
         }

@@ -193,15 +193,14 @@ input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
 .yphead{height:27px;border-bottom:2px solid var(--device-fg);
   display:flex;align-items:flex-start;justify-content:space-between;
   font-size:12px;letter-spacing:.5px;flex:none}
-.ypamount{height:76px;display:flex;align-items:flex-end;justify-content:center;
+.ypamount{height:95px;display:flex;align-items:flex-end;justify-content:center;
   font-size:43px;letter-spacing:-3px;white-space:nowrap;line-height:1;flex:none}
-.ypearned{text-align:center;font-size:12px;line-height:22px;flex:none}
-.ypworked{text-align:center;font-size:15px;line-height:34px;flex:none}
+.ypworked{text-align:center;font-size:15px;line-height:38px;flex:none}
 .ypprogress{height:12px;border:2px solid var(--device-fg);margin:1px 10px 0;flex:none}
 .ypprogress span{display:block;height:100%;width:0;background:var(--device-fg)}
-.ypfoot{margin-top:auto;border-top:3px solid var(--device-fg);height:31px;
-  display:flex;align-items:center;justify-content:space-between;font-size:9px;flex:none}
-.ymetrics{display:grid;grid-template-columns:repeat(3,1fr);
+.ypfoot{margin-top:auto;height:31px;display:flex;align-items:center;
+  justify-content:center;font-size:11px;letter-spacing:1px;flex:none}
+.ymetrics{display:grid;grid-template-columns:repeat(2,1fr);
   border:1px solid #51301f;border-radius:9px;overflow:hidden}
 .ymetric{padding:10px 8px;border-left:1px solid #51301f;color:#8a8278;
   font-size:8px;letter-spacing:1px}
@@ -222,10 +221,10 @@ input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
 .ysettings.open{display:flex}
 .yfield{display:grid;grid-template-columns:95px 1fr;align-items:center;gap:8px}
 .yfield label{color:#8a8278;font-size:9px;letter-spacing:1px}
-.yfield input{width:100%;background:#0e0e11;border:1.5px solid #494249;
+.yfield input,.yfield select{width:100%;background:#0e0e11;border:1.5px solid #494249;
   border-radius:8px;color:#eee8df;font:700 13px 'Courier New',monospace;
   padding:10px;outline:none}
-.yfield input:focus{border-color:#c96a3e}
+.yfield input:focus,.yfield select:focus{border-color:#c96a3e}
 .yprivacy{color:#6f675f;font-size:8px;letter-spacing:1px;text-align:center}
 .mwrap{width:100%;max-width:390px;background:#151418;border:1.5px solid #3a3028;
   border-radius:14px;padding:14px;display:none;flex-direction:column;gap:12px}
@@ -657,7 +656,7 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
 <button class="cbtn idle-open" id="carouselPanelBtn" onclick="toggleCarouselPanel()"><span>↻ idle display settings</span><span id="carouselPanelState">open</span></button>
 <div class="rwrap" id="carouselWrap">
   <div class="rhead"><span class="rttl">INFO CAROUSEL</span><button class="cbtn rtoggle" id="carouselToggle" onclick="toggleCarousel()">○ carousel off</button></div>
-  <div class="rrow"><span class="mlabel">FIXED PAGE</span><select class="rselect" id="carouselFixed" onchange="setCarouselFixed(this.value)"><option value="6">Clock</option><option value="8">Weather</option><option value="9">Crypto</option><option value="10">Market</option></select></div>
+  <div class="rrow"><span class="mlabel">FIXED PAGE</span><select class="rselect" id="carouselFixed" onchange="setCarouselFixed(this.value)"><option value="6">Clock</option><option value="8">Weather</option><option value="9">Crypto</option><option value="10">Market</option><option value="17">Live Ledger</option></select></div>
   <div class="rrow"><span class="mlabel">INTERVAL</span><input class="rrange" id="carouselSpeed" type="range" min="5" max="60" step="1" oninput="setCarouselSpeed(this.value)"><span class="rtime" id="carouselSpeedV">12s</span></div>
   <div class="mlabel">ROTATION ORDER</div>
   <div class="rorder" id="carouselOrder"></div>
@@ -690,27 +689,28 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
   <div class="ypreview" id="ypreview">
     <div class="yphead"><span>CNY TODAY</span><span id="ypLive">READY</span></div>
     <div class="ypamount" id="ypAmount">0.0000</div>
-    <div class="ypearned">EARNED</div>
     <div class="ypworked" id="ypWorked">00:00:00 WORKED</div>
     <div class="ypprogress"><span id="ypProgress"></span></div>
-    <div class="ypfoot"><span id="ypRate">RATE .0000/S</span><span id="ypState">READY</span></div>
+    <div class="ypfoot"><span id="ypSchedule">09:30 &gt; 19:00</span></div>
   </div>
   <div class="ymetrics">
     <div class="ymetric">MONTHLY<strong id="yMonthly">--</strong></div>
-    <div class="ymetric">RATE / SEC<strong id="yRate">0.0000</strong></div>
-    <div class="ymetric">TARGET<strong id="yTarget">0.00</strong></div>
+    <div class="ymetric">TODAY TARGET<strong id="yTarget">0.00</strong></div>
   </div>
   <div class="yactions">
     <button class="ybtn primary" id="yPrimary" onclick="salaryPrimary()">START WORK</button>
     <button class="ybtn" id="yFinish" onclick="salaryFinish()" disabled>CLOCK OUT</button>
   </div>
   <button class="ysettings-toggle" id="ySettingsToggle" onclick="toggleSalarySettings()">
-    <span>SALARY SETTINGS</span><span id="ySettingsState">CLOSE</span>
+    <span>SALARY SETTINGS</span><span id="ySettingsState">OPEN</span>
   </button>
-  <div class="ysettings open" id="ySettings">
+  <div class="ysettings" id="ySettings">
     <div class="yfield"><label>MONTHLY CNY</label><input id="yMonthlyInput" type="number" min="1" max="1000000" step="0.01" value="15000"></div>
     <div class="yfield"><label>PAID DAYS</label><input id="yDaysInput" type="number" min="1" max="31" step="0.01" value="21.75"></div>
     <div class="yfield"><label>HOURS / DAY</label><input id="yHoursInput" type="number" min="1" max="24" step="0.5" value="8"></div>
+    <div class="yfield"><label>START TIME</label><input id="yStartInput" type="time" value="09:30"></div>
+    <div class="yfield"><label>END TIME</label><input id="yEndInput" type="time" value="19:00"></div>
+    <div class="yfield"><label>AUTO SHIFT</label><select id="yAutoInput"><option value="1">ON</option><option value="0">OFF</option></select></div>
     <div class="ctrl"><button class="cbtn on" id="ySave" onclick="saveSalaryConfig()">SAVE SETTINGS</button><button class="cbtn" id="yReset" onclick="salaryReset()">RESET TODAY</button></div>
   </div>
   <div class="yprivacy">LOCAL DEVICE ONLY · ESTIMATED EARNINGS</div>
@@ -792,8 +792,8 @@ let expressionState={mode:'manual',selected:'normal',rendered:'normal'};
 let lastX=0,lastY=0,tt;
 let marketSelected=[],marketDirectory=[],marketLoaded=false,marketSaving=false,marketSaveQueued=false,marketUpdatedAt=null,marketDrag=null;
 let stockSelected=[],stockSaving=false,stockSaveQueued=false,stockUpdatedAt=null,stockDrag=null,stockSearchTimer=null,stockSearchSeq=0;
-let carouselConfig={enabled:false,speed:12,order:[8,9,10,6],fixed:8},carouselSpeedTimer=null,carouselPanelOpen=false,carouselDrag=null;
-let salaryState=null,salaryConfigured=false,salarySettingsOpen=true,salaryRequestPending=false,lastSalaryStatus=null;
+let carouselConfig={enabled:false,speed:12,order:[8,9,10,6,17],fixed:8},carouselSpeedTimer=null,carouselPanelOpen=false,carouselDrag=null;
+let salaryState=null,salaryConfigured=false,salarySettingsOpen=false,salaryRequestPending=false,lastSalaryStatus=null,salaryMotionBase=0,salaryMotionAt=0;
 const spdLabels=['','slow','normal','fast'];
 function toast(msg,ok=true){const el=document.getElementById('toast');el.textContent=msg;el.style.borderColor=ok?'#28b878':'#c96a3e';el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),1300);}
 function setBusy(b){isBusy=b;document.getElementById('busy').classList.toggle('show',b);const locked=b||termOpen;document.querySelectorAll('.vbtn').forEach(el=>{el.disabled=canvasOpen?parseInt(el.dataset.v)!==3:locked;});document.querySelectorAll('.ebtn').forEach(el=>{el.disabled=locked||canvasOpen;});document.querySelectorAll('.cbtn').forEach(el=>{if(el.id!=='blBtn'&&el.id!=='ccStatusBtn')el.disabled=locked;});}
@@ -853,11 +853,11 @@ document.getElementById('breakoutPaddle').addEventListener('input',e=>{clearTime
 window.addEventListener('keydown',e=>{if(dinoOpen&&(e.code==='Space'||e.key===' ')){e.preventDefault();jumpDino();return;}if(sokobanOpen){const direction={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'}[e.key];if(direction){e.preventDefault();moveSokoban(direction);}else if(e.key.toLowerCase()==='u'){e.preventDefault();undoSokoban();}else if(e.key.toLowerCase()==='r'){e.preventDefault();restartSokoban();}return;}if(!arcadeGameOpen)return;let action='';if(arcadeGameOpen==='tetris'){action={ArrowLeft:'left',ArrowRight:'right',ArrowDown:'down',ArrowUp:'rotate',Space:'drop'}[e.code]||'';}else if(arcadeGameOpen==='snake'||arcadeGameOpen==='2048'){action={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'}[e.key]||'';}else if(arcadeGameOpen==='breakout'){action={ArrowLeft:'left',ArrowRight:'right',Space:'launch'}[e.code]||'';}if(action){e.preventDefault();arcadeAction(action);}else if(e.key.toLowerCase()==='r'){e.preventDefault();arcadeAction('restart');}});
 function updateBlButton(){const b=document.getElementById('blBtn');b.textContent=blOn?'☀ display on':'○ display off';b.classList.toggle('on',blOn);b.classList.toggle('dim',!blOn);}
 function updateClaudeStatusButton(){const b=document.getElementById('ccStatusBtn');b.textContent=claudeStatusOn?'◆ claude status on':'◇ claude status off';b.classList.toggle('on',claudeStatusOn);b.classList.toggle('dim',!claudeStatusOn);}
-function carouselName(v){return({6:'Clock',8:'Weather',9:'Crypto',10:'Market'})[v]||'Weather';}
+function carouselName(v){return({6:'Clock',8:'Weather',9:'Crypto',10:'Market',17:'Live Ledger'})[v]||'Weather';}
 function applyCarouselPrefs(p){
   carouselConfig.enabled=p.carousel===true;carouselConfig.speed=Math.max(5,Math.min(60,Number(p.carouselSpeed)||12));
-  carouselConfig.order=Array.isArray(p.carouselOrder)&&p.carouselOrder.length===4?p.carouselOrder.map(Number):[8,9,10,6];
-  carouselConfig.fixed=[6,8,9,10].includes(Number(p.carouselFixed))?Number(p.carouselFixed):8;renderCarousel();
+  carouselConfig.order=Array.isArray(p.carouselOrder)&&p.carouselOrder.length===5?p.carouselOrder.map(Number):[8,9,10,6,17];
+  carouselConfig.fixed=[6,8,9,10,17].includes(Number(p.carouselFixed))?Number(p.carouselFixed):8;renderCarousel();
 }
 function renderCarousel(){
   const enabled=carouselConfig.enabled,toggle=document.getElementById('carouselToggle'),fixed=document.getElementById('carouselFixed'),speed=document.getElementById('carouselSpeed');
@@ -904,27 +904,40 @@ async function resetTimer(){await fetch('/timer/reset');await pollTimer();toast(
 async function configTimer(){const f=document.getElementById('focusMin').value||25,b=document.getElementById('breakMin').value||5;await fetch('/timer/config?focus='+encodeURIComponent(f)+'&break='+encodeURIComponent(b));await pollTimer();}
 function salaryClock(seconds){seconds=Math.max(0,Number(seconds)||0);const h=Math.floor(seconds/3600),m=Math.floor(seconds/60)%60,s=Math.floor(seconds)%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}
 function salaryMoney4(units){return((Number(units)||0)/10000).toFixed(4);}
+function salaryTime(minutes){minutes=Math.max(0,Math.min(1440,Number(minutes)||0));const h=Math.floor(minutes/60)%24,m=minutes%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
+function salaryMinutes(value){const parts=String(value||'').split(':');return parts.length===2?Number(parts[0])*60+Number(parts[1]):NaN;}
+function animateSalaryAmount(now){
+  if(activeView===17&&salaryState==='running'&&lastSalaryStatus){
+    const elapsed=Math.max(0,now-salaryMotionAt)/1000;
+    const units=salaryMotionBase+(Number(lastSalaryStatus.rateTenThousandths)||0)*elapsed;
+    document.getElementById('ypAmount').textContent=salaryMoney4(units);
+  }
+  requestAnimationFrame(animateSalaryAmount);
+}
 function applySalaryStatus(j){
   lastSalaryStatus=j;
   salaryState=j.state||'unconfigured';salaryConfigured=j.configured===true;
   const state=salaryState.toUpperCase(),running=salaryState==='running',paused=salaryState==='paused',active=running||paused;
   const amount=salaryMoney4(j.earnedTenThousandths),worked=salaryClock(j.activeSeconds);
+  salaryMotionBase=Number(j.earnedTenThousandths)||0;salaryMotionAt=performance.now();
   document.getElementById('yState').textContent=state;document.getElementById('ypLive').textContent=running?'LIVE':state;
   document.getElementById('ypAmount').textContent=amount;document.getElementById('ypWorked').textContent=worked+' WORKED';
   document.getElementById('ypProgress').style.width=Math.max(0,Math.min(100,(Number(j.progressPermille)||0)/10))+'%';
-  document.getElementById('ypRate').textContent='RATE '+(Number(j.rateTenThousandths||0)<10000?'.'+String(Number(j.rateTenThousandths||0)).padStart(4,'0'):(Number(j.rateTenThousandths||0)/10000).toFixed(4))+'/S';
-  document.getElementById('ypState').textContent=state;document.getElementById('yRate').textContent=(Number(j.rateTenThousandths||0)/10000).toFixed(4);
   document.getElementById('yTarget').textContent=((Number(j.dailyTargetTenThousandths)||0)/10000).toFixed(2);
   const primary=document.getElementById('yPrimary');primary.textContent=running?'PAUSE':(paused?'RESUME':'START WORK');
   primary.disabled=salaryRequestPending||(!salaryConfigured&&active);document.getElementById('yFinish').disabled=!active||salaryRequestPending;
   document.getElementById('yReset').disabled=active||salaryRequestPending;
-  ['yMonthlyInput','yDaysInput','yHoursInput','ySave'].forEach(id=>document.getElementById(id).disabled=active||salaryRequestPending);
+  ['yMonthlyInput','yDaysInput','yHoursInput','yStartInput','yEndInput','yAutoInput','ySave'].forEach(id=>document.getElementById(id).disabled=active||salaryRequestPending);
   if(!salaryConfigured)toggleSalarySettings(true);
 }
 async function loadSalaryConfig(){
   try{const r=await fetch('/salary/config',{cache:'no-store'}),j=await r.json();if(!r.ok)throw new Error(j.error||'config unavailable');
     document.getElementById('yMonthlyInput').value=j.monthlyCents?Number(j.monthlyCents)/100:15000;
     document.getElementById('yDaysInput').value=(Number(j.workDaysX100)||2175)/100;document.getElementById('yHoursInput').value=(Number(j.workMinutesPerDay)||480)/60;
+    document.getElementById('yStartInput').value=salaryTime(j.startMinutes??570);
+    document.getElementById('yEndInput').value=salaryTime(j.endMinutes??1140);
+    document.getElementById('ypSchedule').textContent=salaryTime(j.startMinutes??570)+'  >  '+salaryTime(j.endMinutes??1140);
+    document.getElementById('yAutoInput').value=j.autoEnabled===false?'0':'1';
     document.getElementById('yMonthly').textContent=j.monthlyCents?(Number(j.monthlyCents)/100).toFixed(0):'--';
   }catch(e){toast(e.message||'salary config unavailable',false);}
 }
@@ -937,8 +950,9 @@ async function salaryPost(path,payload={}){
 }
 async function saveSalaryConfig(){
   const monthly=Number(document.getElementById('yMonthlyInput').value),days=Number(document.getElementById('yDaysInput').value),hours=Number(document.getElementById('yHoursInput').value);
-  if(!Number.isFinite(monthly)||monthly<=0||!Number.isFinite(days)||days<1||days>31||!Number.isFinite(hours)||hours<1||hours>24){toast('check salary settings',false);return false;}
-  const result=await salaryPost('/salary/config',{monthlyCents:Math.round(monthly*100),workDaysX100:Math.round(days*100),workMinutesPerDay:Math.round(hours*60)});
+  const startMinutes=salaryMinutes(document.getElementById('yStartInput').value),endMinutes=salaryMinutes(document.getElementById('yEndInput').value),autoEnabled=document.getElementById('yAutoInput').value==='1';
+  if(!Number.isFinite(monthly)||monthly<=0||!Number.isFinite(days)||days<1||days>31||!Number.isFinite(hours)||hours<1||hours>24||!Number.isFinite(startMinutes)||!Number.isFinite(endMinutes)||startMinutes>=endMinutes){toast('check salary settings and work time',false);return false;}
+  const result=await salaryPost('/salary/config',{monthlyCents:Math.round(monthly*100),workDaysX100:Math.round(days*100),workMinutesPerDay:Math.round(hours*60),autoEnabled,startMinutes,endMinutes});
   if(!result)return false;document.getElementById('yMonthly').textContent=monthly.toFixed(0);toast('salary settings saved');return true;
 }
 async function salaryPrimary(){
@@ -1191,7 +1205,7 @@ async function endDraw(e){if(!drawing)return;drawing=false;if(!canvasOpen||strok
 cvs.addEventListener('mousedown',startDraw);cvs.addEventListener('mousemove',moveDraw);cvs.addEventListener('mouseup',endDraw);cvs.addEventListener('mouseleave',endDraw);
 cvs.addEventListener('touchstart',startDraw,{passive:false});cvs.addEventListener('touchmove',moveDraw,{passive:false});cvs.addEventListener('touchend',endDraw);
 async function clearAll(){const bg=document.getElementById('bgCol').value;redrawCanvas(bg);await req('/draw/clear?bg='+encodeURIComponent(bg));toast('cleared');}
-(async()=>{await loadExpressions();await loadProfile();await loadPrefs();try{const r=await fetch('/state');const j=await r.json();const bv=typeof j.brightness==='number'?j.brightness:(j.bl===false?0:100);document.getElementById('bright').value=bv;document.getElementById('brightV').textContent=bv+'%';blOn=bv>0;updateBlButton();}catch(e){}initialLoadComplete=true;if(!testMode){pollWifiStatus();pollTimer();setInterval(pollTimer,1000);setInterval(pollSalary,1000);setInterval(()=>{if(activeView===9&&!marketSaving&&!marketDrag)loadMarketConfig();if(activeView===10&&!stockSaving&&!stockDrag)loadStockConfig();},30000);}})();
+(async()=>{requestAnimationFrame(animateSalaryAmount);await loadExpressions();await loadProfile();await loadPrefs();try{const r=await fetch('/state');const j=await r.json();const bv=typeof j.brightness==='number'?j.brightness:(j.bl===false?0:100);document.getElementById('bright').value=bv;document.getElementById('brightV').textContent=bv+'%';blOn=bv>0;updateBlButton();}catch(e){}initialLoadComplete=true;if(!testMode){pollWifiStatus();pollTimer();setInterval(pollTimer,1000);setInterval(pollSalary,1000);setInterval(()=>{if(activeView===9&&!marketSaving&&!marketDrag)loadMarketConfig();if(activeView===10&&!stockSaving&&!stockDrag)loadStockConfig();},30000);}})();
 </script>
 </body>
 </html>

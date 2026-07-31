@@ -503,7 +503,7 @@ void WebService::sendSalaryStatus(int statusCode) {
     json += ",\"activeSeconds\":";
     json += counter->getActiveSeconds();
     json += ",\"earnedTenThousandths\":";
-    appendUInt64(json, counter->getEarnedTenThousandths());
+    appendUInt64(json, counter->getLiveEarnedTenThousandths());
     json += ",\"dailyTargetTenThousandths\":";
     appendUInt64(json, counter->getDailyTargetTenThousandths());
     json += ",\"rateTenThousandths\":";
@@ -533,6 +533,13 @@ void WebService::handleSalaryConfig() {
         json += counter->getWorkDaysX100();
         json += ",\"workMinutesPerDay\":";
         json += counter->getWorkMinutesPerDay();
+        json += ",\"autoEnabled\":";
+        json += _preferenceService->getSalaryAutoEnabled()
+            ? "true" : "false";
+        json += ",\"startMinutes\":";
+        json += _preferenceService->getSalaryStartMinutes();
+        json += ",\"endMinutes\":";
+        json += _preferenceService->getSalaryEndMinutes();
         json += ",\"locked\":";
         json += counter->isSessionActive() ? "true" : "false";
         json += "}";
@@ -551,11 +558,26 @@ void WebService::handleSalaryConfig() {
     const uint32_t monthlyCents = doc["monthlyCents"] | 0UL;
     const uint16_t workDaysX100 = doc["workDaysX100"] | 0;
     const uint16_t workMinutes = doc["workMinutesPerDay"] | 0;
+    const bool autoEnabled = doc["autoEnabled"].is<bool>()
+        ? doc["autoEnabled"].as<bool>()
+        : _preferenceService->getSalaryAutoEnabled();
+    const uint16_t startMinutes = doc["startMinutes"] |
+        _preferenceService->getSalaryStartMinutes();
+    const uint16_t endMinutes = doc["endMinutes"] |
+        _preferenceService->getSalaryEndMinutes();
+    if (startMinutes >= 1440 || endMinutes > 1440 ||
+        startMinutes >= endMinutes) {
+        _server.send(400, "application/json",
+                     "{\"error\":\"invalid work schedule\"}");
+        return;
+    }
     if (!counter->configure(monthlyCents, workDaysX100, workMinutes)) {
         _server.send(409, "application/json",
                      "{\"error\":\"invalid or locked salary config\"}");
         return;
     }
+    _preferenceService->setSalarySchedule(
+        autoEnabled, startMinutes, endMinutes);
     _displayService->showSalaryCounter();
     _preferenceService->setStartupView(VIEW_SALARY);
     sendSalaryStatus();
@@ -729,7 +751,8 @@ void WebService::handlePrefs() {
         _preferenceService->setCarouselFixedView(fixedView);
         // 关闭轮播时，“固定页”就是用户期望下次上电恢复的页面。
         if (fixedView == VIEW_CLOCK || fixedView == VIEW_WEATHER ||
-            fixedView == VIEW_CRYPTO || fixedView == VIEW_MARKET) {
+            fixedView == VIEW_CRYPTO || fixedView == VIEW_MARKET ||
+            fixedView == VIEW_SALARY) {
             _preferenceService->setStartupView(fixedView);
         }
     }

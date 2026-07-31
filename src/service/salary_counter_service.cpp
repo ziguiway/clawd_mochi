@@ -131,11 +131,15 @@ const char* SalaryCounterService::getStateName() const {
 }
 
 uint32_t SalaryCounterService::getActiveSeconds() const {
-    if (_state != SalaryCounterState::RUNNING) {
-        return _accumulatedSeconds;
+    return static_cast<uint32_t>(getActiveMilliseconds() / 1000ULL);
+}
+
+uint64_t SalaryCounterService::getActiveMilliseconds() const {
+    uint64_t active = static_cast<uint64_t>(_accumulatedSeconds) * 1000ULL;
+    if (_state == SalaryCounterState::RUNNING) {
+        active += static_cast<uint32_t>(millis() - _segmentStartedMs);
     }
-    return _accumulatedSeconds +
-           static_cast<uint32_t>((millis() - _segmentStartedMs) / 1000UL);
+    return active;
 }
 
 uint64_t SalaryCounterService::getEarnedTenThousandths() const {
@@ -143,6 +147,21 @@ uint64_t SalaryCounterService::getEarnedTenThousandths() const {
     if (denominator == 0) return 0;
     return static_cast<uint64_t>(_monthlyCents) *
            getActiveSeconds() * 10000ULL / denominator;
+}
+
+uint64_t SalaryCounterService::getLiveEarnedTenThousandths() const {
+    const uint64_t denominator = monthlyPaidSecondsX100();
+    if (denominator == 0) return 0;
+    const uint64_t activeMs = getActiveMilliseconds();
+    const uint64_t wholeSeconds = activeMs / 1000ULL;
+    const uint64_t remainderMs = activeMs % 1000ULL;
+    const uint64_t whole =
+        static_cast<uint64_t>(_monthlyCents) * wholeSeconds *
+        10000ULL / denominator;
+    const uint64_t fraction =
+        static_cast<uint64_t>(_monthlyCents) * remainderMs *
+        10ULL / denominator;
+    return whole + fraction;
 }
 
 uint64_t SalaryCounterService::getDailyTargetTenThousandths() const {
