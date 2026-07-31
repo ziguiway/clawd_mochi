@@ -23,32 +23,6 @@
 #define EYE_OY  40
 
 namespace {
-bool isLeapYear(int year) {
-    return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
-}
-
-uint8_t weeksInIsoYear(int year) {
-    struct tm firstDay = {};
-    firstDay.tm_year = year - 1900;
-    firstDay.tm_mon = 0;
-    firstDay.tm_mday = 1;
-    firstDay.tm_isdst = -1;
-    mktime(&firstDay);
-    const int isoWeekday = firstDay.tm_wday == 0 ? 7 : firstDay.tm_wday;
-    return (isoWeekday == 4 || (isoWeekday == 3 && isLeapYear(year)))
-        ? 53 : 52;
-}
-
-uint8_t isoWeekNumber(const struct tm& current) {
-    const int year = current.tm_year + 1900;
-    const int dayOfYear = current.tm_yday + 1;
-    const int isoWeekday = current.tm_wday == 0 ? 7 : current.tm_wday;
-    int week = (dayOfYear - isoWeekday + 10) / 7;
-    if (week < 1) return weeksInIsoYear(year - 1);
-    if (week > weeksInIsoYear(year)) return 1;
-    return static_cast<uint8_t>(week);
-}
-
 void prepareTimetableText(U8G2_FOR_ADAFRUIT_GFX& text,
                           const uint8_t* font, uint16_t foreground) {
     text.setFont(font);
@@ -460,24 +434,23 @@ void DisplayService::renderTimeScreen(const char* mark, const char* timeText, co
 
 void DisplayService::drawClockView() {
     static const char* WEEKDAYS[] = {
-        "SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"
+        "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY",
+        "THURSDAY", "FRIDAY", "SATURDAY"
     };
     static const char* MONTHS[] = {
         "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
         "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
     };
 
-    const uint16_t background =
-        _displayTheme == THEME_DARK_ORANGE ? COLOR_DARKBG : COLOR_ORANGE;
+    const uint16_t background = COLOR_ORANGE;
+    const uint16_t foreground = COLOR_WHITE;
     const bool timeValid =
         _timeService && _timeService->getEpoch() > 1000000000UL;
 
     char timeText[8] = "--:--";
     char secondText[4] = "--";
     char dateText[18] = "WAITING FOR TIME";
-    char weekdayText[4] = "---";
-    char leftMeta[12] = "NTP SYNC";
-    char rightMeta[12] = "";
+    const char* weekdayText = "WAITING";
     char holidayName[24] = {0};
     bool holidayLayout = false;
 
@@ -489,16 +462,10 @@ void DisplayService::drawClockView() {
         snprintf(timeText, sizeof(timeText), "%02d:%02d",
                  current.tm_hour, current.tm_min);
         snprintf(secondText, sizeof(secondText), "%02d", current.tm_sec);
-        strncpy(weekdayText, WEEKDAYS[current.tm_wday],
-                sizeof(weekdayText) - 1);
-        weekdayText[sizeof(weekdayText) - 1] = '\0';
+        weekdayText = WEEKDAYS[current.tm_wday];
         snprintf(dateText, sizeof(dateText), "%02d %s %04d",
                  current.tm_mday, MONTHS[current.tm_mon],
                  current.tm_year + 1900);
-        snprintf(leftMeta, sizeof(leftMeta), "WEEK %02u",
-                 isoWeekNumber(current));
-        snprintf(rightMeta, sizeof(rightMeta), "DAY %03d",
-                 current.tm_yday + 1);
 
         holidayLayout = _holidayService &&
                         _holidayService->isHolidayToday();
@@ -519,37 +486,51 @@ void DisplayService::drawClockView() {
     if (layoutChanged) {
         _tft->fillScreen(background);
 
-        // 星期缩写使用小面积反色标签：容易扫到，但不参与主层级竞争。
-        _tft->fillRect(12, 12, 30, 18, _themeForeground);
-        _tft->drawText(18, 17, weekdayText, background,
-                       _themeForeground, FONT_SMALL);
+        _tft->drawText(12, 14, "LOCAL TIME", foreground,
+                       background, FONT_SMALL);
+        const int16_t zoneX = CFG_DISPLAY_WIDTH -
+                              _tft->getTextWidth("UTC+8", FONT_SMALL) - 12;
+        _tft->drawText(zoneX, 14, "UTC+8", foreground,
+                       background, FONT_SMALL);
+        _tft->fillRect(12, 35, 216, 2, foreground);
 
-        const int16_t dateX =
-            CFG_DISPLAY_WIDTH - _tft->getTextWidth(dateText, FONT_SMALL) - 12;
-        _tft->drawText(dateX < 50 ? 50 : dateX, 17, dateText,
-                       _themeForeground, background, FONT_SMALL);
+        const int16_t secondsLabelX = CFG_DISPLAY_WIDTH -
+                                      _tft->getTextWidth("SEC", FONT_SMALL) - 12;
+        _tft->drawText(secondsLabelX, 115, "SEC", foreground,
+                       background, FONT_SMALL);
 
         if (holidayLayout) {
-            _tft->fillRect(12, 116, 216, 2, _themeForeground);
-            _tft->drawText(12, 130, "TODAY", _themeForeground,
+            _tft->drawText(12, 145, weekdayText, foreground,
+                           background, FONT_MEDIUM);
+            const int16_t dateX = CFG_DISPLAY_WIDTH -
+                                  _tft->getTextWidth(dateText, FONT_SMALL) - 12;
+            _tft->drawText(dateX, 149, dateText, foreground,
                            background, FONT_SMALL);
-
-            const uint8_t holidaySize =
-                strlen(holidayName) <= 17 ? FONT_MEDIUM : FONT_SMALL;
-            _tft->drawText(12, holidaySize == FONT_MEDIUM ? 151 : 155,
-                           holidayName, _themeForeground,
-                           background, holidaySize);
-            _tft->fillRect(12, 185, 216, 1, _themeForeground);
+            _tft->drawText(12, 173, "TODAY / HOLIDAY", foreground,
+                           background, FONT_SMALL);
+            _tft->drawText(12, 190, holidayName, foreground,
+                           background, FONT_MEDIUM);
+            _tft->fillRect(12, 215, 216, 2, foreground);
+            _tft->drawText(12, 224, "MOCHI CLOCK", foreground,
+                           background, FONT_SMALL);
+            const int16_t statusX = CFG_DISPLAY_WIDTH -
+                                    _tft->getTextWidth("HOLIDAY", FONT_SMALL) - 12;
+            _tft->drawText(statusX, 224, "HOLIDAY", foreground,
+                           background, FONT_SMALL);
         } else {
-            _tft->fillRect(12, 185, 216, 2, _themeForeground);
+            _tft->drawText(12, 150, weekdayText, foreground,
+                           background, FONT_LARGE);
+            _tft->drawText(12, 181, dateText, foreground,
+                           background, FONT_SMALL);
+            _tft->fillRect(12, 207, 216, 2, foreground);
+            _tft->drawText(12, 221, "MOCHI CLOCK", foreground,
+                           background, FONT_SMALL);
+            const char* statusText = timeValid ? "TIME SYNCED" : "SYNCING TIME";
+            const int16_t statusX = CFG_DISPLAY_WIDTH -
+                                    _tft->getTextWidth(statusText, FONT_SMALL) - 12;
+            _tft->drawText(statusX, 221, statusText, foreground,
+                           background, FONT_SMALL);
         }
-
-        _tft->drawText(12, 207, leftMeta, _themeForeground,
-                       background, FONT_SMALL);
-        const int16_t rightX =
-            CFG_DISPLAY_WIDTH - _tft->getTextWidth(rightMeta, FONT_SMALL) - 12;
-        _tft->drawText(rightX, 207, rightMeta, _themeForeground,
-                       background, FONT_SMALL);
 
         strncpy(_lastClockLayoutKey, layoutKey,
                 sizeof(_lastClockLayoutKey) - 1);
@@ -560,23 +541,59 @@ void DisplayService::drawClockView() {
         _timeViewLayoutDrawn = true;
     }
 
-    const int16_t timeY = holidayLayout ? 53 : 76;
-    const int16_t secondsY = holidayLayout ? 99 : 122;
+    const int16_t timeY = 58;
+    const int16_t secondsY = 115;
+    const char* timeSlotText = timeValid ? "88:88" : timeText;
+    const char* secondsSlotText = timeValid ? "88" : secondText;
+    const int16_t timeX = (CFG_DISPLAY_WIDTH -
+                           _tft->getTextWidth(timeSlotText, 6)) / 2;
+    const int16_t secondsLabelWidth =
+        _tft->getTextWidth("SEC", FONT_SMALL);
+    const int16_t secondsX = CFG_DISPLAY_WIDTH - secondsLabelWidth -
+                             _tft->getTextWidth(" ", FONT_SMALL) -
+                             _tft->getTextWidth(secondsSlotText, FONT_SMALL) - 12;
+
     if (strcmp(timeText, _lastTimeText) != 0) {
-        _tft->fillRect(0, timeY - 5, CFG_DISPLAY_WIDTH, 68, background);
-        const int16_t timeX =
-            (CFG_DISPLAY_WIDTH - _tft->getTextWidth(timeText, 6)) / 2;
-        _tft->drawText(timeX, timeY, timeText,
-                       _themeForeground, background, 6);
+        if (_lastTimeText[0] == '\0' ||
+            strlen(timeText) != strlen(_lastTimeText)) {
+            _tft->drawText(timeX, timeY, timeText, foreground,
+                           background, 6);
+        } else {
+            char prefix[8] = {0};
+            for (size_t i = 0; timeText[i] != '\0'; ++i) {
+                if (timeText[i] != _lastTimeText[i]) {
+                    char glyph[2] = {timeText[i], '\0'};
+                    prefix[i] = '\0';
+                    const int16_t glyphX = timeX +
+                        _tft->getTextWidth(prefix, 6);
+                    _tft->drawText(glyphX, timeY, glyph, foreground,
+                                   background, 6);
+                }
+                prefix[i] = timeText[i];
+            }
+        }
         strncpy(_lastTimeText, timeText, sizeof(_lastTimeText) - 1);
         _lastTimeText[sizeof(_lastTimeText) - 1] = '\0';
-        _lastHintText[0] = '\0';
     }
 
     if (strcmp(secondText, _lastHintText) != 0) {
-        _tft->fillRect(201, secondsY, 27, 17, background);
-        _tft->drawText(204, secondsY, secondText, _themeForeground,
-                       background, FONT_MEDIUM);
+        if (_lastHintText[0] == '\0') {
+            _tft->drawText(secondsX, secondsY, secondText, foreground,
+                           background, FONT_SMALL);
+        } else {
+            char prefix[4] = {0};
+            for (size_t i = 0; secondText[i] != '\0'; ++i) {
+                if (secondText[i] != _lastHintText[i]) {
+                    char glyph[2] = {secondText[i], '\0'};
+                    prefix[i] = '\0';
+                    const int16_t glyphX = secondsX +
+                        _tft->getTextWidth(prefix, FONT_SMALL);
+                    _tft->drawText(glyphX, secondsY, glyph, foreground,
+                                   background, FONT_SMALL);
+                }
+                prefix[i] = secondText[i];
+            }
+        }
         strncpy(_lastHintText, secondText, sizeof(_lastHintText) - 1);
         _lastHintText[sizeof(_lastHintText) - 1] = '\0';
     }
