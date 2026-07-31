@@ -24,8 +24,9 @@ public:
     bool start(uint32_t clientEpoch = 0);
     bool pause();
     bool resume(uint32_t clientEpoch = 0);
-    bool finish();
+    bool finish(uint32_t maxActiveSeconds = 0);
     bool reset();
+    bool rolloverToDate(uint32_t dateKey);
 
     SalaryCounterState getState() const { return _state; }
     const char* getStateName() const;
@@ -40,6 +41,7 @@ public:
     uint32_t getMonthlyCents() const { return _monthlyCents; }
     uint16_t getWorkDaysX100() const { return _workDaysX100; }
     uint16_t getWorkMinutesPerDay() const { return _workMinutesPerDay; }
+    uint32_t getRecordDateKey() const { return _recordDateKey; }
     uint32_t getActiveSeconds() const;
     uint64_t getActiveMilliseconds() const;
     uint64_t getEarnedTenThousandths() const;
@@ -61,8 +63,10 @@ private:
     uint32_t _accumulatedSeconds;
     uint32_t _segmentStartedMs;
     uint32_t _segmentStartedEpoch;
+    uint32_t _recordDateKey;
 
     uint32_t currentEpoch(uint32_t clientEpoch = 0) const;
+    uint32_t currentDateKey(uint32_t clientEpoch = 0) const;
     uint32_t paidSecondsPerDay() const;
     uint64_t monthlyPaidSecondsX100() const;
     void restoreRunningSession();

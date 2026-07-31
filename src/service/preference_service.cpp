@@ -317,6 +317,25 @@ void PreferenceService::setSalaryLastAutoEndDate(uint32_t dateKey) {
     _prefs.putUInt("yenddate", dateKey);
 }
 
+uint16_t PreferenceService::getSalaryScheduleProgressPermille(
+    TimeService* timeService) const {
+    if (!timeService || !timeService->isSynced()) return 0;
+
+    const uint32_t nowSeconds =
+        static_cast<uint32_t>(timeService->getHour()) * 3600UL +
+        static_cast<uint32_t>(timeService->getMinute()) * 60UL +
+        static_cast<uint32_t>(timeService->getSecond());
+    const uint32_t startSeconds =
+        static_cast<uint32_t>(_salaryStartMinutes) * 60UL;
+    const uint32_t endSeconds =
+        static_cast<uint32_t>(_salaryEndMinutes) * 60UL;
+    if (nowSeconds <= startSeconds) return 0;
+    if (nowSeconds >= endSeconds) return 1000;
+    return static_cast<uint16_t>(
+        (nowSeconds - startSeconds) * 1000UL /
+        (endSeconds - startSeconds));
+}
+
 bool PreferenceService::isNightDimActive(TimeService* timeService) const {
     if (!_nightDimEnabled || !timeService || !timeService->isSynced()) return false;
     const uint8_t hour = constrain(timeService->getHour(), 0, 23);

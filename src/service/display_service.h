@@ -18,6 +18,8 @@
 #include "timetable_service.h"
 #include "../config/cfg_display.h"
 
+class U8G2_FOR_ADAFRUIT_GFX;
+
 enum class DisplayMode {
     SETUP,
     EXPRESSION,
@@ -299,8 +301,12 @@ private:
     void drawMarketView();
     void drawSalaryCounterView();
     void drawTimetableView();
-    void drawTimetableHeader(const TimetableSnapshot& snapshot, const char* title);
-    void drawTimetableCourseName(const TimetableCourseSnapshot& course, int16_t firstY);
+    void drawTimetableHeader(U8G2_FOR_ADAFRUIT_GFX& text,
+                             const TimetableSnapshot& snapshot,
+                             const char* title);
+    void drawTimetableCourseName(U8G2_FOR_ADAFRUIT_GFX& text,
+                                 const TimetableCourseSnapshot& course,
+                                 int16_t firstBaseline);
     const char* timetableWeekday(uint8_t weekday) const;
     void drawSalaryCounterLayout();
     void updateSalarySchedule(unsigned long now);

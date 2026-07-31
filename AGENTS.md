@@ -107,6 +107,28 @@ All services are owned by `AppStateMachine` and accessed via `IAppContext`:
   animated or periodically updated screen must be checked on the physical
   ST7789 for visible flashing before it is considered complete.
 - **RGB565 colors**: All display colors are RGB565 uint16_t. Use `hexToRgb565()` for web hex conversion
+- **Device color compensation is not a Web color**: the physical ST7789 has a
+  visible color cast, so firmware/default preferences intentionally use the
+  darker orange `#aa4818` (converted to RGB565) to make the panel appear like
+  the intended product orange. Browser previews do not have that panel color
+  cast and must never reuse or derive their background from the compensated
+  device value. Timetable, Salary, Crypto, Market, and future Web previews must
+  use the shared design-target `--preview-bg` (`#fb6b10`) so their perceived
+  color matches each other and the design. Hardware color calibration belongs
+  only in the firmware/device preference layer; keep Web preview colors stable.
+- **All device UI designs and Web previews must be pixel-accurate**: every UI
+  design mockup, review image, and browser-based device preview must reproduce
+  the intended ESP32 output at the native 240x240 coordinate grid. Use the
+  exact firmware font bitmap data, glyph metrics, baselines, text sizes,
+  wrapping rules, coordinates, spacing, strokes, and assets. Browser/system
+  substitute fonts or visually similar CSS fonts are not acceptable for device
+  previews. Device rendering and Web preview rendering must consume the same
+  source-of-truth layout and typography definitions, or generated artifacts
+  derived from those definitions. A UI change is incomplete until the design
+  reference, Web preview, and headless/device render agree by pixel comparison;
+  dynamic screens must additionally be checked on the physical ST7789. The only
+  permitted non-pixel-identical difference is documented hardware color and
+  brightness compensation as described above.
 - **LittleFS**: Web assets in `data/` are uploaded separately from firmware via `pio run --target uploadfs`
 - **Global singletons**: `OperationModeService` and `WifiConfigService` use `bind()/current()` pattern for cross-service access without passing through IAppContext
 

@@ -78,6 +78,8 @@ public:
                            uint16_t endMinutes);
     void setSalaryLastAutoDate(uint32_t dateKey);
     void setSalaryLastAutoEndDate(uint32_t dateKey);
+    uint16_t getSalaryScheduleProgressPermille(
+        TimeService* timeService) const;
 
     bool isNightDimActive(TimeService* timeService) const;
     String getJson() const;

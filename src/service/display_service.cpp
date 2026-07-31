@@ -11,6 +11,7 @@
 #include "../view/tetris_game.h"
 #include "../utils/logger.h"
 #include "../utils/memory_monitor.h"
+#include <U8g2_for_Adafruit_GFX.h>
 #include <qrcode.h>
 #include <time.h>
 #include <new>
@@ -46,6 +47,35 @@ uint8_t isoWeekNumber(const struct tm& current) {
     if (week < 1) return weeksInIsoYear(year - 1);
     if (week > weeksInIsoYear(year)) return 1;
     return static_cast<uint8_t>(week);
+}
+
+void prepareTimetableText(U8G2_FOR_ADAFRUIT_GFX& text,
+                          const uint8_t* font, uint16_t foreground) {
+    text.setFont(font);
+    text.setFontMode(1);
+    text.setFontDirection(0);
+    text.setForegroundColor(foreground);
+}
+
+int16_t timetableTextWidth(U8G2_FOR_ADAFRUIT_GFX& text,
+                           const uint8_t* font, const char* value) {
+    text.setFont(font);
+    return text.getUTF8Width(value);
+}
+
+void drawTimetableText(U8G2_FOR_ADAFRUIT_GFX& text,
+                       const uint8_t* font, int16_t x, int16_t baseline,
+                       const char* value, uint16_t foreground) {
+    prepareTimetableText(text, font, foreground);
+    text.drawUTF8(x, baseline, value);
+}
+
+void drawTimetableTextCentered(U8G2_FOR_ADAFRUIT_GFX& text,
+                               const uint8_t* font, int16_t baseline,
+                               const char* value, uint16_t foreground) {
+    const int16_t width = timetableTextWidth(text, font, value);
+    drawTimetableText(text, font, (CFG_DISPLAY_WIDTH - width) / 2,
+                      baseline, value, foreground);
 }
 }
 
@@ -1524,6 +1554,15 @@ SalaryCounterService* DisplayService::salaryCounter() {
         return nullptr;
     }
     _salaryCounter->init();
+    if (_preferenceService && _timeService &&
+        _preferenceService->getSalaryAutoEnabled() &&
+        _timeService->isSynced()) {
+        const uint32_t today =
+            static_cast<uint32_t>(_timeService->getYear()) * 10000UL +
+            static_cast<uint32_t>(_timeService->getMonth()) * 100UL +
+            static_cast<uint32_t>(_timeService->getDay());
+        _salaryCounter->rolloverToDate(today);
+    }
     MemoryMonitor::logSnapshot("salary load");
     return _salaryCounter;
 }
@@ -1571,65 +1610,59 @@ void DisplayService::releaseSalaryCounterIfIdle(uint8_t nextView) {
 }
 
 void DisplayService::drawSalaryCounterLayout() {
-    const uint16_t foreground = _themeForeground;
+    constexpr uint16_t foreground = COLOR_WHITE;
     _tft->fillScreen(COLOR_ORANGE);
 
-    // 与 CRYPTO / MARKET 页面共用同一套标题层级和基线。
-    _tft->drawText(8, 8, "CNY TODAY", foreground, COLOR_ORANGE,
+    // 橙白账本式布局：静态内容只在进入页面时绘制一次。
+    _tft->drawText(12, 8, "CNY TODAY", foreground, COLOR_ORANGE,
                    FONT_MEDIUM);
-    Adafruit_ST7789& screen = _tft->getTft();
-    screen.setTextSize(FONT_MEDIUM);
-    screen.setTextColor(foreground);
-    screen.setCursor(9, 8);
-    screen.print("CNY TODAY");
-    _tft->fillRect(0, 30, CFG_DISPLAY_WIDTH, 2, foreground);
-    _tft->drawRect(10, 168, 220, 12, foreground);
+    _tft->fillRect(12, 30, 216, 2, foreground);
 
-    char scheduleText[18];
+    _tft->drawText(14, 108, "TODAY'S EARNINGS", foreground,
+                   COLOR_ORANGE, FONT_SMALL);
+
+    _tft->fillRect(12, 124, 216, 1, foreground);
+    _tft->drawText(192, 143, "WORKED", foreground, COLOR_ORANGE,
+                   FONT_SMALL);
+
+    char startText[6];
+    char endText[6];
     const uint16_t startMinutes = _preferenceService
         ? _preferenceService->getSalaryStartMinutes() : 570;
     const uint16_t endMinutes = _preferenceService
         ? _preferenceService->getSalaryEndMinutes() : 1140;
-    snprintf(scheduleText, sizeof(scheduleText),
-             "%02u:%02u  ~  %02u:%02u",
-             startMinutes / 60, startMinutes % 60,
+    snprintf(startText, sizeof(startText), "%02u:%02u",
+             startMinutes / 60, startMinutes % 60);
+    snprintf(endText, sizeof(endText), "%02u:%02u",
              endMinutes / 60, endMinutes % 60);
-    _tft->drawTextCentered(214, scheduleText, foreground,
-                           COLOR_ORANGE, 1);
+    _tft->drawText(12, 168, startText, foreground, COLOR_ORANGE,
+                   FONT_SMALL);
+    const int16_t endX = 228 - _tft->getTextWidth(endText, FONT_SMALL);
+    _tft->drawText(endX, 168, endText, foreground, COLOR_ORANGE,
+                   FONT_SMALL);
+
+    // 最简连续进度条：白色外框保持静态，内部按进度增量填充。
+    _tft->drawRect(12, 182, 216, 8, foreground);
+    _tft->fillRect(12, 207, 216, 1, foreground);
+    _tft->drawTextCentered(219, "EVERY SECOND COUNTS", foreground,
+                           COLOR_ORANGE, FONT_SMALL);
 }
 
 void DisplayService::drawSalaryCounterView() {
     SalaryCounterService* counter = salaryCounter();
     if (!counter) return;
 
-    const uint16_t foreground = _themeForeground;
+    constexpr uint16_t foreground = COLOR_WHITE;
     const uint64_t earned = counter->getLiveEarnedTenThousandths();
     const uint64_t integerPart = earned / 10000ULL;
-    uint8_t integerDigits = 1;
-    for (uint64_t value = integerPart; value >= 10ULL; value /= 10ULL) {
-        integerDigits++;
-    }
-    const uint8_t decimalPlaces = integerDigits >= 8
-        ? 0 : min<uint8_t>(4, 8 - integerDigits);
-    uint64_t fractionDivisor = 1;
-    for (uint8_t i = decimalPlaces; i < 4; i++) {
-        fractionDivisor *= 10ULL;
-    }
     char amountText[20];
-    if (decimalPlaces == 0) {
-        snprintf(amountText, sizeof(amountText), "%llu",
-                 static_cast<unsigned long long>(integerPart));
-    } else {
-        snprintf(amountText, sizeof(amountText), "%llu.%0*llu",
-                 static_cast<unsigned long long>(integerPart),
-                 decimalPlaces,
-                 static_cast<unsigned long long>(
-                     (earned % 10000ULL) / fractionDivisor));
-    }
+    snprintf(amountText, sizeof(amountText), "%llu.%03llu",
+             static_cast<unsigned long long>(integerPart),
+             static_cast<unsigned long long>((earned % 10000ULL) / 10ULL));
 
     const uint32_t elapsed = counter->getActiveSeconds();
     char workedText[24];
-    snprintf(workedText, sizeof(workedText), "%02lu:%02lu:%02lu WORKED",
+    snprintf(workedText, sizeof(workedText), "%02lu:%02lu:%02lu",
              static_cast<unsigned long>(elapsed / 3600UL),
              static_cast<unsigned long>((elapsed / 60UL) % 60UL),
              static_cast<unsigned long>(elapsed % 60UL));
@@ -1645,17 +1678,32 @@ void DisplayService::drawSalaryCounterView() {
 
     if (strcmp(amountText, _lastSalaryAmount) != 0) {
         const size_t length = strlen(amountText);
-        const uint8_t amountSize = length <= 7 ? 5 : (length <= 9 ? 4 : 3);
-        const int16_t amountX =
-            (CFG_DISPLAY_WIDTH - _tft->getTextWidth(amountText, amountSize)) / 2;
+        const uint8_t amountSize = length <= 6 ? 5
+            : (length <= 8 ? 4
+            : (length <= 10 ? 3
+            : (length <= 16 ? 2 : 1)));
+        const int16_t amountWidth =
+            _tft->getTextWidth(amountText, amountSize);
+        const int16_t amountX = 32 + (196 - amountWidth) / 2;
         const bool layoutChanged =
             _lastSalaryAmount[0] == '\0' ||
             strlen(_lastSalaryAmount) != length ||
             _lastSalaryAmountX != amountX ||
             _lastSalaryAmountSize != amountSize;
         if (layoutChanged) {
-            _tft->fillRect(0, 52, CFG_DISPLAY_WIDTH, 60, COLOR_ORANGE);
-            _tft->drawText(amountX, 63, amountText, foreground,
+            _tft->fillRect(12, 52, 228, 54, COLOR_ORANGE);
+            // 符号跟随金额左边缘，位数变化时仍保持紧凑间距。
+            const int16_t currencyX = amountX - 19;
+            _tft->drawLine(currencyX, 56, currencyX + 4, 61, foreground);
+            _tft->drawLine(currencyX + 8, 56, currencyX + 4, 61,
+                           foreground);
+            _tft->drawLine(currencyX + 4, 61, currencyX + 4, 69,
+                           foreground);
+            _tft->drawLine(currencyX + 1, 63, currencyX + 7, 63,
+                           foreground);
+            _tft->drawLine(currencyX + 1, 66, currencyX + 7, 66,
+                           foreground);
+            _tft->drawText(amountX, 58, amountText, foreground,
                            COLOR_ORANGE, amountSize);
         } else {
             const int16_t charWidth = _tft->getTextWidth("0", amountSize);
@@ -1664,7 +1712,7 @@ void DisplayService::drawSalaryCounterView() {
                 if (_lastSalaryAmount[i] == amountText[i]) continue;
                 glyph[0] = amountText[i];
                 _tft->drawText(amountX + static_cast<int16_t>(i) * charWidth,
-                               63, glyph, foreground, COLOR_ORANGE,
+                               58, glyph, foreground, COLOR_ORANGE,
                                amountSize);
             }
         }
@@ -1676,10 +1724,8 @@ void DisplayService::drawSalaryCounterView() {
     }
 
     if (strcmp(workedText, _lastSalaryWorked) != 0) {
-        constexpr uint8_t workedSize = 1;
-        const int16_t workedX =
-            (CFG_DISPLAY_WIDTH - _tft->getTextWidth(
-                workedText, workedSize)) / 2;
+        constexpr uint8_t workedSize = FONT_LARGE;
+        constexpr int16_t workedX = 14;
         const size_t workedLength = strlen(workedText);
         const bool layoutChanged =
             _lastSalaryWorked[0] == '\0' ||
@@ -1687,8 +1733,8 @@ void DisplayService::drawSalaryCounterView() {
             _lastSalaryWorkedX != workedX ||
             _lastSalaryWorkedSize != workedSize;
         if (layoutChanged) {
-            _tft->fillRect(0, 130, CFG_DISPLAY_WIDTH, 28, COLOR_ORANGE);
-            _tft->drawText(workedX, 142, workedText, foreground,
+            _tft->fillRect(12, 132, 174, 28, COLOR_ORANGE);
+            _tft->drawText(workedX, 136, workedText, foreground,
                            COLOR_ORANGE, workedSize);
         } else {
             const int16_t charWidth =
@@ -1699,7 +1745,7 @@ void DisplayService::drawSalaryCounterView() {
                 glyph[0] = workedText[i];
                 _tft->drawText(
                     workedX + static_cast<int16_t>(i) * charWidth,
-                    142, glyph, foreground, COLOR_ORANGE, workedSize);
+                    136, glyph, foreground, COLOR_ORANGE, workedSize);
             }
         }
         strncpy(_lastSalaryWorked, workedText,
@@ -1709,39 +1755,41 @@ void DisplayService::drawSalaryCounterView() {
         _lastSalaryWorkedSize = workedSize;
     }
 
-    const uint16_t progress = counter->getProgressPermille();
+    const uint16_t progress = _preferenceService
+        ? _preferenceService->getSalaryScheduleProgressPermille(_timeService)
+        : counter->getProgressPermille();
     if (progress != _lastSalaryProgressPermille) {
-        const int16_t fillWidth = 216 * progress / 1000;
-        if (_lastSalaryProgressPermille == 0xFFFF) {
-            _tft->fillRect(12, 170, 216, 8, COLOR_ORANGE);
-            if (fillWidth > 0) {
-                _tft->fillRect(12, 170, fillWidth, 8, foreground);
-            }
-        } else {
-            const int16_t previousFillWidth =
-                216 * _lastSalaryProgressPermille / 1000;
-            if (fillWidth > previousFillWidth) {
-                _tft->fillRect(12 + previousFillWidth, 170,
-                               fillWidth - previousFillWidth, 8, foreground);
-            } else if (fillWidth < previousFillWidth) {
-                _tft->fillRect(12 + fillWidth, 170,
-                               previousFillWidth - fillWidth, 8, COLOR_ORANGE);
-            }
+        char progressText[6];
+        snprintf(progressText, sizeof(progressText), "%u%%",
+                 static_cast<unsigned>((progress + 5) / 10));
+        _tft->fillRect(99, 164, 42, 13, COLOR_ORANGE);
+        const int16_t progressX =
+            (CFG_DISPLAY_WIDTH -
+             _tft->getTextWidth(progressText, FONT_SMALL)) / 2;
+        _tft->drawText(progressX, 168, progressText, foreground,
+                       COLOR_ORANGE, FONT_SMALL);
+
+        const int16_t previousWidth =
+            _lastSalaryProgressPermille == 0xFFFF
+                ? 0 : 214 * _lastSalaryProgressPermille / 1000;
+        const int16_t fillWidth = 214 * progress / 1000;
+        if (fillWidth > previousWidth) {
+            _tft->fillRect(13 + previousWidth, 183,
+                           fillWidth - previousWidth, 6, foreground);
+        } else if (fillWidth < previousWidth) {
+            _tft->fillRect(13 + fillWidth, 183,
+                           previousWidth - fillWidth, 6, COLOR_ORANGE);
         }
         _lastSalaryProgressPermille = progress;
     }
 
     if (strcmp(stateText, _lastSalaryState) != 0) {
-        _tft->fillRect(135, 8, 105, 20, COLOR_ORANGE);
+        _tft->fillRect(150, 8, 90, 20, COLOR_ORANGE);
         const int16_t stateX = CFG_DISPLAY_WIDTH -
             _tft->getTextWidth(stateText, FONT_SMALL) - 8;
         _tft->drawText(stateX, 12, stateText, foreground,
                        COLOR_ORANGE, FONT_SMALL);
-        Adafruit_ST7789& screen = _tft->getTft();
-        screen.setTextSize(FONT_SMALL);
-        screen.setTextColor(foreground);
-        screen.setCursor(stateX + 1, 12);
-        screen.print(stateText);
+        _tft->fillRect(stateX - 13, 12, 7, 7, foreground);
 
         strncpy(_lastSalaryState, stateText,
                 sizeof(_lastSalaryState) - 1);
@@ -1774,11 +1822,31 @@ void DisplayService::updateSalarySchedule(unsigned long now) {
         minutesNow >= startMinutes && minutesNow < endMinutes;
     const uint32_t lastAutoDate =
         _preferenceService->getSalaryLastAutoDate();
+    SalaryCounterService* counter = _salaryCounter;
+    if (counter && counter->rolloverToDate(today)) {
+        refreshSalaryCounter();
+    }
 
-    if (inWorkWindow && lastAutoDate != today) {
-        SalaryCounterService* counter = salaryCounter();
+    if (minutesNow < startMinutes) {
+        if (counter && counter->isSessionActive()) {
+            counter->reset();
+            refreshSalaryCounter();
+            LOG_INFO("Salary", "班次开始前清除遗留计薪 date=%lu",
+                     static_cast<unsigned long>(today));
+        }
+        return;
+    }
+
+    if (inWorkWindow) {
+        if (!counter) counter = salaryCounter();
         if (!counter || !counter->isConfigured()) return;
-        if (counter->isSessionActive() ||
+        counter->rolloverToDate(today);
+        if (counter->isRunning()) {
+            _preferenceService->setSalaryLastAutoDate(today);
+            return;
+        }
+        if (counter->getState() == SalaryCounterState::READY &&
+            lastAutoDate != today &&
             counter->start(_timeService->getEpoch())) {
             _preferenceService->setSalaryLastAutoDate(today);
             if (_currentMode != DisplayMode::INFO &&
@@ -1792,11 +1860,11 @@ void DisplayService::updateSalarySchedule(unsigned long now) {
         return;
     }
 
-    if (minutesNow >= endMinutes && lastAutoDate == today &&
-        _preferenceService->getSalaryLastAutoEndDate() != today) {
-        SalaryCounterService* counter = _salaryCounter;
-        if (!counter) counter = salaryCounter();
-        if (counter && counter->isSessionActive() && counter->finish()) {
+    if (minutesNow >= endMinutes) {
+        const uint32_t scheduleSeconds =
+            static_cast<uint32_t>(endMinutes - startMinutes) * 60UL;
+        if (counter && counter->isSessionActive() &&
+            counter->finish(scheduleSeconds)) {
             refreshSalaryCounter();
             LOG_INFO("Salary", "自动下班触发 date=%lu",
                      static_cast<unsigned long>(today));
@@ -1805,7 +1873,9 @@ void DisplayService::updateSalarySchedule(unsigned long now) {
                     static_cast<uint8_t>(_interactiveView));
             }
         }
-        _preferenceService->setSalaryLastAutoEndDate(today);
+        if (_preferenceService->getSalaryLastAutoEndDate() != today) {
+            _preferenceService->setSalaryLastAutoEndDate(today);
+        }
         if (counter && !counter->isSessionActive() &&
             _interactiveView != InteractiveView::SALARY_COUNTER) {
             releaseSalaryCounterIfIdle(
@@ -1824,48 +1894,54 @@ const char* DisplayService::timetableWeekday(uint8_t weekday) const {
     return weekday >= 1 && weekday <= 7 ? DAYS[weekday - 1] : "---";
 }
 
-void DisplayService::drawTimetableHeader(const TimetableSnapshot& snapshot,
+void DisplayService::drawTimetableHeader(U8G2_FOR_ADAFRUIT_GFX& text,
+                                         const TimetableSnapshot& snapshot,
                                          const char* title) {
-    const uint16_t bg = _animBgColor;
     const uint16_t fg = _themeForeground;
-    _tft->drawText(14, 12, title, fg, bg, FONT_MEDIUM);
+    drawTimetableText(text, u8g2_font_t0_11b_tr, 14, 22, title, fg);
     char right[16];
     snprintf(right, sizeof(right), "%s · W%02u",
              timetableWeekday(snapshot.weekday),
              snapshot.academicWeek);
-    const int width = _tft->getTextWidth(right, FONT_SMALL);
-    _tft->drawText(226 - width, 14, right, fg, bg, FONT_SMALL);
+    const int width = timetableTextWidth(text, u8g2_font_5x8_tf, right);
+    drawTimetableText(text, u8g2_font_5x8_tf, 226 - width, 22, right, fg);
     _tft->fillRect(14, 30, 212, 2, fg);
 }
 
 void DisplayService::drawTimetableCourseName(
-    const TimetableCourseSnapshot& course, int16_t firstY) {
-    const uint16_t bg = _animBgColor;
+    U8G2_FOR_ADAFRUIT_GFX& text, const TimetableCourseSnapshot& course,
+    int16_t firstBaseline) {
     const uint16_t fg = _themeForeground;
     char name[44];
     snprintf(name, sizeof(name), "%s", course.name);
-    if (_tft->getTextWidth(name, 4) <= 212) {
-        _tft->drawText(14, firstY, name, fg, bg, 4);
+    if (timetableTextWidth(text, u8g2_font_courB24_tr, name) <= 212) {
+        drawTimetableText(text, u8g2_font_courB24_tr, 14,
+                          firstBaseline, name, fg);
         return;
     }
     int split = -1;
     for (int i = strlen(name) - 1; i > 0; --i) {
         if (name[i] != ' ') continue;
         name[i] = '\0';
-        if (_tft->getTextWidth(name, 4) <= 212 &&
-            _tft->getTextWidth(name + i + 1, 4) <= 212) {
+        if (timetableTextWidth(text, u8g2_font_courB24_tr, name) <= 212 &&
+            timetableTextWidth(text, u8g2_font_courB24_tr,
+                               name + i + 1) <= 212) {
             split = i;
             break;
         }
         name[i] = ' ';
     }
     if (split > 0) {
-        _tft->drawText(14, firstY, name, fg, bg, 4);
-        _tft->drawText(14, firstY + 30, name + split + 1, fg, bg, 4);
+        drawTimetableText(text, u8g2_font_courB24_tr, 14,
+                          firstBaseline, name, fg);
+        drawTimetableText(text, u8g2_font_courB24_tr, 14,
+                          firstBaseline + 30, name + split + 1, fg);
     } else {
         const char* fallback = course.shortName[0] ? course.shortName : course.name;
-        _tft->drawText(14, firstY, fallback, fg, bg,
-                       _tft->getTextWidth(fallback, 3) <= 212 ? 3 : 2);
+        const uint8_t* font =
+            timetableTextWidth(text, u8g2_font_courB18_tr, fallback) <= 212
+                ? u8g2_font_courB18_tr : u8g2_font_courB14_tr;
+        drawTimetableText(text, font, 14, firstBaseline, fallback, fg);
     }
 }
 
@@ -1877,6 +1953,8 @@ void DisplayService::drawTimetableView() {
     }
     const uint16_t bg = _animBgColor;
     const uint16_t fg = _themeForeground;
+    U8G2_FOR_ADAFRUIT_GFX text;
+    text.begin(_tft->getTft());
     const bool courseChanged =
         strncmp(_lastTimetableCourse, snapshot.course.name,
                 sizeof(_lastTimetableCourse)) != 0;
@@ -1887,30 +1965,36 @@ void DisplayService::drawTimetableView() {
         (snapshot.state == TimetableState::NEXT_CLASS ||
          snapshot.state == TimetableState::IN_CLASS)) {
         if (snapshot.minutesRemaining == _lastTimetableMinutes) return;
-        _tft->fillRect(112, 179, 114, 28, bg);
+        _tft->fillRect(88, 176, 138, 29, bg);
         char countdown[16];
         snprintf(countdown, sizeof(countdown), "%u MIN", snapshot.minutesRemaining);
-        const int width = _tft->getTextWidth(countdown, 4);
-        _tft->drawText(226 - width, 179, countdown, fg, bg, 4);
+        const int width = timetableTextWidth(text, u8g2_font_courB24_tr,
+                                             countdown);
+        drawTimetableText(text, u8g2_font_courB24_tr, 226 - width, 201,
+                          countdown, fg);
         _lastTimetableMinutes = snapshot.minutesRemaining;
         return;
     }
 
     _tft->fillScreen(bg);
     if (snapshot.state == TimetableState::NOT_CONFIGURED) {
-        drawTimetableHeader(snapshot, "TIMETABLE");
-        _tft->drawTextCentered(84, "NO SCHEDULE", fg, bg, FONT_LARGE);
-        _tft->drawTextCentered(122, "OPEN CONTROLLER", fg, bg, FONT_MEDIUM);
-        _tft->drawTextCentered(148, "TO IMPORT CLASSES", fg, bg, FONT_MEDIUM);
+        drawTimetableHeader(text, snapshot, "TIMETABLE");
+        drawTimetableTextCentered(text, u8g2_font_courB18_tr, 106,
+                                  "NO SCHEDULE", fg);
+        drawTimetableTextCentered(text, u8g2_font_t0_12b_tr, 136,
+                                  "OPEN CONTROLLER", fg);
+        drawTimetableTextCentered(text, u8g2_font_t0_12b_tr, 158,
+                                  "TO IMPORT CLASSES", fg);
     } else if (snapshot.state == TimetableState::NEXT_CLASS ||
                snapshot.state == TimetableState::IN_CLASS) {
-        drawTimetableHeader(snapshot,
+        drawTimetableHeader(text, snapshot,
             snapshot.state == TimetableState::IN_CLASS ? "IN CLASS" : "NEXT CLASS");
         char timeRange[20];
         snprintf(timeRange, sizeof(timeRange), "%s - %s",
                  snapshot.course.start, snapshot.course.end);
-        _tft->drawText(14, 52, timeRange, fg, bg, FONT_MEDIUM);
-        drawTimetableCourseName(snapshot.course, 76);
+        drawTimetableText(text, u8g2_font_t0_11b_tr, 14, 63,
+                          timeRange, fg);
+        drawTimetableCourseName(text, snapshot.course, 100);
         char detail[48];
         if (snapshot.course.teacher[0]) {
             snprintf(detail, sizeof(detail), "%s / %s",
@@ -1918,15 +2002,20 @@ void DisplayService::drawTimetableView() {
         } else {
             snprintf(detail, sizeof(detail), "%s", snapshot.course.room);
         }
-        _tft->drawText(14, 145, detail, fg, bg, FONT_MEDIUM);
+        const uint8_t* detailFont =
+            timetableTextWidth(text, u8g2_font_t0_12b_tr, detail) <= 212
+                ? u8g2_font_t0_12b_tr : u8g2_font_t0_11b_tr;
+        drawTimetableText(text, detailFont, 14, 154, detail, fg);
         _tft->fillRect(14, 169, 212, 1, fg);
-        _tft->drawText(14, 184,
+        drawTimetableText(text, u8g2_font_t0_11b_tr, 14, 197,
             snapshot.state == TimetableState::IN_CLASS ? "ENDS IN" : "STARTS IN",
-            fg, bg, FONT_MEDIUM);
+            fg);
         char countdown[16];
         snprintf(countdown, sizeof(countdown), "%u MIN", snapshot.minutesRemaining);
-        const int width = _tft->getTextWidth(countdown, 4);
-        _tft->drawText(226 - width, 179, countdown, fg, bg, 4);
+        const int width = timetableTextWidth(text, u8g2_font_courB24_tr,
+                                             countdown);
+        drawTimetableText(text, u8g2_font_courB24_tr, 226 - width, 201,
+                          countdown, fg);
         _tft->drawRect(14, 218, 212, 7, fg);
         int startHour = 0, startMinute = 0, endHour = 0, endMinute = 0;
         sscanf(snapshot.course.start, "%d:%d", &startHour, &startMinute);
@@ -1943,9 +2032,9 @@ void DisplayService::drawTimetableView() {
                  snapshot.state == TimetableState::IN_CLASS
                      ? max(0, snapshot.remainingToday - 1)
                      : snapshot.remainingToday);
-        _tft->drawText(14, 230, footer, fg, bg, FONT_SMALL);
+        drawTimetableText(text, u8g2_font_5x7_tr, 14, 237, footer, fg);
     } else {
-        drawTimetableHeader(snapshot, "TODAY");
+        drawTimetableHeader(text, snapshot, "TODAY");
         if (snapshot.state == TimetableState::ALL_DONE) {
             // 与设计稿一致的双层八边形完成章和方角勾。
             _tft->drawLine(96,45,144,45,fg); _tft->drawLine(144,45,158,59,fg);
@@ -1956,15 +2045,20 @@ void DisplayService::drawTimetableView() {
                 _tft->drawLine(99,80+i,113,94+i,fg);
                 _tft->drawLine(113,94+i,142,64+i,fg);
             }
-            _tft->drawTextCentered(128, "ALL CLASSES", fg, bg, FONT_LARGE);
-            _tft->drawTextCentered(153, "COMPLETE", fg, bg, FONT_LARGE);
+            drawTimetableTextCentered(text, u8g2_font_courB18_tr, 139,
+                                      "ALL CLASSES", fg);
+            drawTimetableTextCentered(text, u8g2_font_courB18_tr, 160,
+                                      "COMPLETE", fg);
             _tft->fillRect(14, 174, 212, 2, fg);
             char total[12];
             snprintf(total, sizeof(total), "%u / %u",
                      snapshot.todayCompleted, snapshot.todayTotal);
-            _tft->drawText(14, 185, "TODAY", fg, bg, FONT_MEDIUM);
-            _tft->drawText(226 - _tft->getTextWidth(total, FONT_MEDIUM),
-                           185, total, fg, bg, FONT_MEDIUM);
+            drawTimetableText(text, u8g2_font_courB10_tr, 14, 194,
+                              "TODAY", fg);
+            const int16_t totalWidth = timetableTextWidth(
+                text, u8g2_font_courB12_tr, total);
+            drawTimetableText(text, u8g2_font_courB12_tr,
+                              226 - totalWidth, 194, total, fg);
         } else {
             _tft->drawRect(70, 58, 100, 70, fg);
             _tft->fillRect(70, 73, 100, 4, fg);
@@ -1977,8 +2071,10 @@ void DisplayService::drawTimetableView() {
             }
             for (int i = 0; i < 5; ++i)
                 _tft->drawLine(82,124+i,158,58+i,fg);
-            _tft->drawTextCentered(145, "NO CLASSES", fg, bg, FONT_LARGE);
-            _tft->drawTextCentered(171, "TODAY", fg, bg, FONT_LARGE);
+            drawTimetableTextCentered(text, u8g2_font_courB18_tr, 155,
+                                      "NO CLASSES", fg);
+            drawTimetableTextCentered(text, u8g2_font_courB18_tr, 177,
+                                      "TODAY", fg);
             _tft->fillRect(14, 190, 212, 2, fg);
         }
         if (snapshot.hasNextCourse) {
@@ -1986,14 +2082,15 @@ void DisplayService::drawTimetableView() {
             snprintf(next, sizeof(next), "NEXT · %s %s",
                      timetableWeekday(snapshot.nextCourse.weekday),
                      snapshot.nextCourse.start);
-            _tft->drawText(14, 207, next, fg, bg, FONT_SMALL);
-            _tft->drawText(14, 224,
-                snapshot.nextCourse.shortName[0]
-                    ? snapshot.nextCourse.shortName : snapshot.nextCourse.name,
-                fg, bg, FONT_SMALL);
-            const int roomWidth = _tft->getTextWidth(snapshot.nextCourse.room, FONT_SMALL);
-            _tft->drawText(226 - roomWidth, 224, snapshot.nextCourse.room,
-                           fg, bg, FONT_SMALL);
+            drawTimetableText(text, u8g2_font_5x8_tr, 14, 211, next, fg);
+            const char* nextName = snapshot.nextCourse.shortName[0]
+                ? snapshot.nextCourse.shortName : snapshot.nextCourse.name;
+            drawTimetableText(text, u8g2_font_courB10_tr, 14, 229,
+                              nextName, fg);
+            const int roomWidth = timetableTextWidth(
+                text, u8g2_font_5x8_tr, snapshot.nextCourse.room);
+            drawTimetableText(text, u8g2_font_5x8_tr, 226 - roomWidth,
+                              229, snapshot.nextCourse.room, fg);
         }
     }
     _timetableLayoutDrawn = true;
@@ -2125,8 +2222,9 @@ void DisplayService::update() {
         if (_weatherService) _weatherService->update();
         if (_cryptoService) _cryptoService->update();
         if (_marketService) _marketService->update();
-        updateSalarySchedule(now);
     }
+    // 自动上下班属于时间边界，不应被游戏或网络刷新暂停。
+    updateSalarySchedule(now);
     if (now - _lastNightDimCheckMs > 30000UL) {
         _lastNightDimCheckMs = now;
         applyNightDimming();

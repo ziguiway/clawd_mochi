@@ -528,7 +528,8 @@ void WebService::sendSalaryStatus(int statusCode) {
     json += ",\"rateTenThousandths\":";
     json += counter->getRateTenThousandthsPerSecond();
     json += ",\"progressPermille\":";
-    json += counter->getProgressPermille();
+    json += _preferenceService->getSalaryScheduleProgressPermille(
+        _timeService);
     json += "}";
     _server.send(statusCode, "application/json", json);
 }
@@ -1318,6 +1319,7 @@ void WebService::handleTimetableStatus() {
     }
     doc["state"] = state;
     doc["week"] = snapshot.academicWeek;
+    doc["weekday"] = snapshot.weekday;
     doc["todayTotal"] = snapshot.todayTotal;
     doc["todayCompleted"] = snapshot.todayCompleted;
     doc["remainingToday"] = snapshot.remainingToday;
@@ -1331,6 +1333,17 @@ void WebService::handleTimetableStatus() {
         course["start"] = snapshot.course.start;
         course["end"] = snapshot.course.end;
         course["day"] = snapshot.course.weekday;
+    }
+    doc["hasNextCourse"] = snapshot.hasNextCourse;
+    if (snapshot.hasNextCourse) {
+        JsonObject nextCourse = doc["nextCourse"].to<JsonObject>();
+        nextCourse["name"] = snapshot.nextCourse.name;
+        nextCourse["shortName"] = snapshot.nextCourse.shortName;
+        nextCourse["room"] = snapshot.nextCourse.room;
+        nextCourse["teacher"] = snapshot.nextCourse.teacher;
+        nextCourse["start"] = snapshot.nextCourse.start;
+        nextCourse["end"] = snapshot.nextCourse.end;
+        nextCourse["day"] = snapshot.nextCourse.weekday;
     }
     String payload;
     serializeJson(doc, payload);

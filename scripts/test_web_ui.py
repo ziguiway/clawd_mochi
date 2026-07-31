@@ -478,8 +478,14 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
         elif path == "/timetable/status":
             self.send_json({
                 "configured": True, "ready": True, "state": "next_class",
-                "week": 1, "todayTotal": 1, "todayCompleted": 0,
-                "remainingToday": 1, "minutesRemaining": 42,
+                "week": 1, "weekday": 1, "todayTotal": 1,
+                "todayCompleted": 0, "remainingToday": 1,
+                "minutesRemaining": 42, "hasNextCourse": False,
+                "course": {
+                    "name": "MACHINE LEARNING", "shortName": "ML",
+                    "room": "N301", "teacher": "PROF. CHEN",
+                    "start": "08:30", "end": "10:05", "day": 1,
+                },
             })
         else:
             self.send_json({"ok": True})
@@ -1183,6 +1189,22 @@ def run_timetable_import_flow(page: Page, *, stub_mode: bool) -> None:
     open_controller(page)
     page.locator('button[data-v="18"]').click()
     page.locator("#uwrap.open").wait_for(state="visible")
+    preview = page.locator("#utPreview")
+    box = preview.bounding_box()
+    assert box is not None
+    assert round(box["width"]) == 240 and round(box["height"]) == 240, (
+        f"Timetable preview should be 240x240, got "
+        f"{box['width']:.0f}x{box['height']:.0f}"
+    )
+    assert preview.locator(".utp-head").text_content() == "NEXT CLASS"
+    assert preview.locator(".utp-course").text_content() == "MACHINE\nLEARNING"
+    assert preview.locator(".utp-count").text_content() == "42 MIN"
+    page.wait_for_function(
+        "() => !document.querySelector('#toast').classList.contains('show')"
+    )
+    page.wait_for_timeout(250)
+    preview.screenshot(path="/tmp/clawd_mochi_timetable.png")
+    print("PASS  Timetable opens with a live 240x240 device preview")
     page.get_by_role("button", name="IMPORT CLASSES").click()
     page.locator("#uImporter.open").wait_for(state="visible")
     print("PASS  打开手机课表 App 导入向导")
@@ -1194,7 +1216,7 @@ def run_timetable_import_flow(page: Page, *, stub_mode: bool) -> None:
                 {"node": 1, "startTime": "08:30", "endTime": "09:15"},
                 {"node": 2, "startTime": "09:20", "endTime": "10:05"},
             ]),
-            json.dumps({"startDate": "2026-09-07"}),
+            json.dumps({"settings": {"start_date": "2026/9/9 00:00:00"}}),
             json.dumps([{"id": 7, "courseName": "机器学习"}]),
             json.dumps([{
                 "id": 7, "day": 1, "startNode": 1, "step": 2,
@@ -1215,9 +1237,7 @@ def run_timetable_import_flow(page: Page, *, stub_mode: bool) -> None:
     assert page.locator("#uPreviewSource").text_content() == "WAKEUP"
     assert page.locator("#uPreviewCount").text_content() == "1"
     assert page.locator("#uPreviewReview").text_content() == "0"
-    assert page.locator("#uReview").get_by_text(
-        "MACHINE LEARNING", exact=True
-    ).is_visible()
+    assert page.locator("#uReview input").input_value() == "MACHINE LEARNING"
     assert page.locator("#uPreviewTerm").input_value() == "2026-09-07"
     print("PASS  WakeUp 口令自动识别、研究生课程映射和预览")
 
@@ -1243,9 +1263,35 @@ def run_salary_flow(page: Page) -> None:
         f"Live Ledger 预览应为 240×240，实际为 "
         f"{box['width']:.0f}×{box['height']:.0f}"
     )
-    assert page.locator("#ypAmount").text_content() == "0.0000"
-    assert page.evaluate("salaryMoney(99999999)") == "9999.9999"
+    assert page.locator("#ypAmount").text_content() == "0.000"
+    assert page.evaluate("salaryMoney(99999999)") == "9999.999"
     assert page.evaluate("salaryMoney(100000000)") == "10000.000"
+    layout = page.evaluate("""
+        () => {
+          const preview = document.querySelector('#ypreview').getBoundingClientRect();
+          const rect = selector => {
+            const box = document.querySelector(selector).getBoundingClientRect();
+            return [Math.round(box.x-preview.x), Math.round(box.y-preview.y),
+                    Math.round(box.width), Math.round(box.height)];
+          };
+          return {
+            title: rect('.yptitle'), headRule: rect('.yprule.head'),
+            currency: rect('.ypcurrency'), amount: rect('#ypAmount'),
+            earnings: rect('.ypearnings'), middleRule: rect('.yprule.middle'),
+            worked: rect('#ypWorked'), schedule: rect('#ypSchedule'),
+            progress: rect('.ypprogress'), footerRule: rect('.yprule.footer'),
+            footer: rect('.ypfoot')
+          };
+        }
+    """)
+    assert layout == {
+        "title": [12, 8, 108, 16], "headRule": [12, 30, 216, 2],
+        "currency": [36, 56, 9, 14], "amount": [32, 58, 196, 40],
+        "earnings": [14, 108, 96, 8], "middleRule": [12, 124, 216, 1],
+        "worked": [14, 136, 144, 24], "schedule": [12, 168, 216, 8],
+        "progress": [12, 182, 216, 8], "footerRule": [12, 207, 216, 1],
+        "footer": [12, 219, 216, 8],
+    }
     print("PASS  Live Ledger 打开并显示 240×240 金额优先预览")
 
     page.locator("#ySettingsToggle").click()
@@ -1255,7 +1301,8 @@ def run_salary_flow(page: Page) -> None:
     page.locator("#yHoursInput").fill("8")
     assert page.locator("#yStartInput").input_value() == "09:30"
     assert page.locator("#yEndInput").input_value() == "19:00"
-    assert page.locator("#ypSchedule").text_content() == "09:30  ~  19:00"
+    assert page.locator("#ypStart").text_content() == "09:30"
+    assert page.locator("#ypEnd").text_content() == "19:00"
     page.locator("#yAutoInput").select_option("1")
     page.locator("#ySave").click()
     page.get_by_text("salary settings saved", exact=True).wait_for(
@@ -1272,11 +1319,12 @@ def run_salary_flow(page: Page) -> None:
     page.wait_for_function(
         "() => document.querySelector('#yState').textContent === 'RUNNING'"
     )
+    assert page.locator("#ypLive").text_content() == "RUNNING"
     assert page.locator("#yMonthlyInput").is_disabled()
     assert page.locator("#yStartInput").is_disabled()
     assert primary.text_content() == "PAUSE"
     page.wait_for_timeout(180)
-    assert page.locator("#ypAmount").text_content() != "0.0000"
+    assert page.locator("#ypAmount").text_content() != "0.000"
     print("PASS  RUNNING 金额在秒内连续滚动")
     print("PASS  开始上班后进入 RUNNING 并锁定计薪配置")
 
@@ -1285,7 +1333,7 @@ def run_salary_flow(page: Page) -> None:
         "() => document.querySelector('#ypLive').textContent === 'PAUSED'"
     )
     assert primary.text_content() == "RESUME"
-    assert page.locator("#ypAmount").text_content() == "12.3456"
+    assert page.locator("#ypAmount").text_content() == "12.345"
     print("PASS  暂停后冻结当前金额")
 
     primary.click()
@@ -1300,7 +1348,7 @@ def run_salary_flow(page: Page) -> None:
     page.once("dialog", lambda dialog: dialog.accept())
     page.locator("#yFinish").click()
     page.wait_for_function(
-        "() => document.querySelector('#ypLive').textContent === 'FINISHED'"
+        "() => document.querySelector('#ypLive').textContent === 'DONE'"
     )
     assert not page.locator("#yMonthlyInput").is_disabled()
     print("PASS  继续计时并完成下班结算")

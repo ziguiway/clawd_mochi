@@ -1,5 +1,7 @@
 #include "salary_counter_service.h"
 
+#include <time.h>
+
 #include "../utils/logger.h"
 
 SalaryCounterService::SalaryCounterService(TimeService* timeService)
@@ -12,6 +14,7 @@ SalaryCounterService::SalaryCounterService(TimeService* timeService)
     , _accumulatedSeconds(0)
     , _segmentStartedMs(0)
     , _segmentStartedEpoch(0)
+    , _recordDateKey(0)
 {
 }
 
@@ -31,6 +34,7 @@ void SalaryCounterService::init() {
         _preferences.getUShort("workmin", 480), 60, 1440);
     _accumulatedSeconds = _preferences.getUInt("elapsed", 0);
     _segmentStartedEpoch = _preferences.getUInt("started", 0);
+    _recordDateKey = _preferences.getUInt("date", 0);
 
     const uint8_t storedState = _preferences.getUChar(
         "state", static_cast<uint8_t>(SalaryCounterState::READY));
@@ -68,6 +72,7 @@ bool SalaryCounterService::start(uint32_t clientEpoch) {
     _accumulatedSeconds = 0;
     _segmentStartedMs = millis();
     _segmentStartedEpoch = currentEpoch(clientEpoch);
+    _recordDateKey = currentDateKey(clientEpoch);
     _state = SalaryCounterState::RUNNING;
     persistSession();
     LOG_INFO("Salary", "计薪会话开始");
@@ -96,10 +101,14 @@ bool SalaryCounterService::resume(uint32_t clientEpoch) {
     return true;
 }
 
-bool SalaryCounterService::finish() {
+bool SalaryCounterService::finish(uint32_t maxActiveSeconds) {
     if (!isSessionActive()) return false;
     if (_state == SalaryCounterState::RUNNING) {
         _accumulatedSeconds = getActiveSeconds();
+    }
+    if (maxActiveSeconds > 0 &&
+        _accumulatedSeconds > maxActiveSeconds) {
+        _accumulatedSeconds = maxActiveSeconds;
     }
     _segmentStartedMs = 0;
     _segmentStartedEpoch = 0;
@@ -114,9 +123,35 @@ bool SalaryCounterService::reset() {
     _accumulatedSeconds = 0;
     _segmentStartedMs = 0;
     _segmentStartedEpoch = 0;
+    const uint32_t today = currentDateKey();
+    if (today != 0) _recordDateKey = today;
     _state = SalaryCounterState::READY;
     persistSession();
     LOG_INFO("Salary", "今日计薪已重置");
+    return true;
+}
+
+bool SalaryCounterService::rolloverToDate(uint32_t dateKey) {
+    if (dateKey < 20000101UL || dateKey > 20991231UL ||
+        _recordDateKey == dateKey) {
+        return false;
+    }
+
+    if (_recordDateKey == 0) {
+        // 兼容升级前已有的当日记录，首次只补日期，不清除正在计薪的数据。
+        _recordDateKey = dateKey;
+        persistSession();
+        return false;
+    }
+
+    _accumulatedSeconds = 0;
+    _segmentStartedMs = 0;
+    _segmentStartedEpoch = 0;
+    _recordDateKey = dateKey;
+    _state = SalaryCounterState::READY;
+    persistSession();
+    LOG_INFO("Salary", "新工作日已重置 date=%lu",
+             static_cast<unsigned long>(dateKey));
     return true;
 }
 
@@ -192,6 +227,17 @@ uint32_t SalaryCounterService::currentEpoch(uint32_t clientEpoch) const {
     return clientEpoch > 1000000000UL ? clientEpoch : 0;
 }
 
+uint32_t SalaryCounterService::currentDateKey(uint32_t clientEpoch) const {
+    const uint32_t epoch = currentEpoch(clientEpoch);
+    if (epoch <= 1000000000UL) return 0;
+    const time_t timestamp = static_cast<time_t>(epoch);
+    const struct tm* local = localtime(&timestamp);
+    if (!local) return 0;
+    return static_cast<uint32_t>(local->tm_year + 1900) * 10000UL +
+           static_cast<uint32_t>(local->tm_mon + 1) * 100UL +
+           static_cast<uint32_t>(local->tm_mday);
+}
+
 uint32_t SalaryCounterService::paidSecondsPerDay() const {
     return static_cast<uint32_t>(_workMinutesPerDay) * 60UL;
 }
@@ -244,4 +290,5 @@ void SalaryCounterService::persistSession() {
     _preferences.putUChar("state", static_cast<uint8_t>(_state));
     _preferences.putUInt("elapsed", _accumulatedSeconds);
     _preferences.putUInt("started", _segmentStartedEpoch);
+    _preferences.putUInt("date", _recordDateKey);
 }
