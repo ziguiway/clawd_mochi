@@ -62,6 +62,7 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _cryptoService(cryptoService)
     , _marketService(marketService)
     , _holidayService(holidayService)
+    , _salaryCounter(nullptr)
     , _ccView(tft), _eyesView(tft)
     , _monoGameBuffer(nullptr)
     , _arcadeCanvas(nullptr)
@@ -87,6 +88,7 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _pomodoroRunning(false), _pomodoroPaused(false)
     , _pomodoroDurationSec(25UL * 60UL), _pomodoroRemainingAtPauseSec(25UL * 60UL)
     , _pomodoroStartedMs(0), _lastClockRenderSec(0)
+    , _lastSalaryRenderSec(0)
     , _lastWeatherVersion(0)
     , _lastCryptoVersion(0)
     , _lastMarketVersion(0)
@@ -95,8 +97,15 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _lastTimeText{0}, _lastSubText{0}, _lastHintText{0}
     , _lastClockLayoutKey{0}
     , _lastProgressPermille(0xFFFF), _lastLightProgress(false)
+    , _lastSalaryAmount{0}, _lastSalaryWorked{0}, _lastSalaryState{0}
+    , _lastSalaryProgressPermille(0xFFFF)
     , _termMode(false), _termRow(0), _termCol(0)
 {
+}
+
+DisplayService::~DisplayService() {
+    delete _salaryCounter;
+    _salaryCounter = nullptr;
 }
 
 void DisplayService::init() {
@@ -1010,6 +1019,7 @@ void DisplayService::enterInteractive() {
 
 void DisplayService::exitInteractive() {
     releaseArcadeGame();
+    releaseSalaryCounterIfIdle(VIEW_EYES_NORMAL);
     _interactiveActive = false;
     _termMode = false;
     _currentMode = DisplayMode::EXPRESSION;
@@ -1030,6 +1040,7 @@ void DisplayService::setInteractiveView(uint8_t view) {
         view != viewForArcadeGame(_activeArcadeGame->id())) {
         releaseArcadeGame();
     }
+    releaseSalaryCounterIfIdle(view);
     if (!_interactiveActive) {
         _interactiveActive = true;
     }
@@ -1082,6 +1093,9 @@ void DisplayService::setInteractiveView(uint8_t view) {
         case InteractiveView::MARKET:
             drawMarketView();
             break;
+        case InteractiveView::SALARY_COUNTER:
+            showSalaryCounter();
+            break;
         case InteractiveView::DINO_GAME:
         case InteractiveView::SOKOBAN_GAME:
         case InteractiveView::TETRIS_GAME:
@@ -1106,6 +1120,7 @@ void DisplayService::redrawCurrentView() {
         case InteractiveView::WEATHER:     drawWeatherView(); break;
         case InteractiveView::CRYPTO:      drawCryptoView(); break;
         case InteractiveView::MARKET:      drawMarketView(); break;
+        case InteractiveView::SALARY_COUNTER: drawSalaryCounterView(); break;
         case InteractiveView::DINO_GAME:
         case InteractiveView::SOKOBAN_GAME:
         case InteractiveView::TETRIS_GAME:
@@ -1481,6 +1496,156 @@ uint32_t DisplayService::getPomodoroDurationSec() const {
     return _pomodoroDurationSec == 0 ? 1 : _pomodoroDurationSec;
 }
 
+SalaryCounterService* DisplayService::salaryCounter() {
+    if (_salaryCounter) return _salaryCounter;
+
+    _salaryCounter = new (std::nothrow) SalaryCounterService(_timeService);
+    if (!_salaryCounter) {
+        LOG_ERROR("Salary", "计薪模块内存分配失败");
+        return nullptr;
+    }
+    _salaryCounter->init();
+    MemoryMonitor::logSnapshot("salary load");
+    return _salaryCounter;
+}
+
+bool DisplayService::showSalaryCounter() {
+    if (!salaryCounter()) return false;
+    _interactiveActive = true;
+    _currentMode = DisplayMode::INTERACTIVE;
+    _interactiveView = InteractiveView::SALARY_COUNTER;
+    _expressionPreferred = false;
+    _termMode = false;
+    _lastSalaryRenderSec = 0;
+    _lastSalaryAmount[0] = '\0';
+    _lastSalaryWorked[0] = '\0';
+    _lastSalaryState[0] = '\0';
+    _lastSalaryProgressPermille = 0xFFFF;
+    drawSalaryCounterLayout();
+    drawSalaryCounterView();
+    return true;
+}
+
+void DisplayService::refreshSalaryCounter() {
+    if (_currentMode == DisplayMode::INTERACTIVE &&
+        _interactiveView == InteractiveView::SALARY_COUNTER) {
+        drawSalaryCounterView();
+    }
+}
+
+bool DisplayService::isSalarySessionActive() const {
+    return _salaryCounter && _salaryCounter->isSessionActive();
+}
+
+void DisplayService::releaseSalaryCounterIfIdle(uint8_t nextView) {
+    if (!_salaryCounter || nextView == VIEW_SALARY ||
+        _salaryCounter->isSessionActive()) {
+        return;
+    }
+    delete _salaryCounter;
+    _salaryCounter = nullptr;
+    MemoryMonitor::logSnapshot("salary release");
+}
+
+void DisplayService::drawSalaryCounterLayout() {
+    const uint16_t foreground = _themeForeground;
+    _tft->fillScreen(COLOR_ORANGE);
+    _tft->drawText(10, 12, "CNY TODAY", foreground, COLOR_ORANGE, 2);
+    const int16_t liveX =
+        CFG_DISPLAY_WIDTH - _tft->getTextWidth("LIVE", 2) - 10;
+    _tft->drawText(liveX, 12, "LIVE", foreground, COLOR_ORANGE, 2);
+    _tft->fillRect(10, 35, 220, 2, foreground);
+    _tft->drawTextCentered(118, "EARNED", foreground, COLOR_ORANGE, 2);
+    _tft->drawRect(20, 177, 200, 12, foreground);
+    _tft->fillRect(10, 208, 220, 3, foreground);
+}
+
+void DisplayService::drawSalaryCounterView() {
+    SalaryCounterService* counter = salaryCounter();
+    if (!counter) return;
+
+    const uint16_t foreground = _themeForeground;
+    const uint64_t earned = counter->getEarnedTenThousandths();
+    char amountText[20];
+    snprintf(amountText, sizeof(amountText), "%llu.%04llu",
+             static_cast<unsigned long long>(earned / 10000ULL),
+             static_cast<unsigned long long>(earned % 10000ULL));
+
+    const uint32_t elapsed = counter->getActiveSeconds();
+    char workedText[24];
+    snprintf(workedText, sizeof(workedText), "%02lu:%02lu:%02lu WORKED",
+             static_cast<unsigned long>(elapsed / 3600UL),
+             static_cast<unsigned long>((elapsed / 60UL) % 60UL),
+             static_cast<unsigned long>(elapsed % 60UL));
+
+    const char* stateText = "READY";
+    if (counter->isRunning()) stateText = "RUNNING";
+    else if (counter->isPaused()) stateText = "PAUSED";
+    else if (counter->getState() == SalaryCounterState::FINISHED) {
+        stateText = "DONE";
+    } else if (!counter->isConfigured()) {
+        stateText = "SET PAY";
+    }
+
+    if (strcmp(amountText, _lastSalaryAmount) != 0) {
+        _tft->fillRect(0, 52, CFG_DISPLAY_WIDTH, 60, COLOR_ORANGE);
+        const size_t length = strlen(amountText);
+        const uint8_t amountSize = length <= 7 ? 5 : (length <= 9 ? 4 : 3);
+        _tft->drawTextCentered(63, amountText, foreground,
+                               COLOR_ORANGE, amountSize);
+        strncpy(_lastSalaryAmount, amountText,
+                sizeof(_lastSalaryAmount) - 1);
+        _lastSalaryAmount[sizeof(_lastSalaryAmount) - 1] = '\0';
+    }
+
+    if (strcmp(workedText, _lastSalaryWorked) != 0) {
+        _tft->fillRect(0, 143, CFG_DISPLAY_WIDTH, 25, COLOR_ORANGE);
+        _tft->drawTextCentered(147, workedText, foreground,
+                               COLOR_ORANGE, 2);
+        strncpy(_lastSalaryWorked, workedText,
+                sizeof(_lastSalaryWorked) - 1);
+        _lastSalaryWorked[sizeof(_lastSalaryWorked) - 1] = '\0';
+    }
+
+    const uint16_t progress = counter->getProgressPermille();
+    if (progress != _lastSalaryProgressPermille) {
+        const int16_t fillWidth = 196 * progress / 1000;
+        _tft->fillRect(22, 179, 196, 8, COLOR_ORANGE);
+        if (fillWidth > 0) {
+            _tft->fillRect(22, 179, fillWidth, 8, foreground);
+        }
+        _tft->drawRect(20, 177, 200, 12, foreground);
+        _lastSalaryProgressPermille = progress;
+    }
+
+    const uint32_t rate = counter->getRateTenThousandthsPerSecond();
+    char footerKey[28];
+    snprintf(footerKey, sizeof(footerKey), "%s|%lu", stateText,
+             static_cast<unsigned long>(rate));
+    if (strcmp(footerKey, _lastSalaryState) != 0) {
+        _tft->fillRect(0, 212, CFG_DISPLAY_WIDTH, 28, COLOR_ORANGE);
+
+        char rateText[18];
+        if (rate < 10000UL) {
+            snprintf(rateText, sizeof(rateText), "RATE .%04lu/S",
+                     static_cast<unsigned long>(rate));
+        } else {
+            snprintf(rateText, sizeof(rateText), "RATE %lu.%04lu/S",
+                     static_cast<unsigned long>(rate / 10000UL),
+                     static_cast<unsigned long>(rate % 10000UL));
+        }
+        _tft->drawText(10, 218, rateText, foreground, COLOR_ORANGE, 1);
+        const int16_t stateX =
+            CFG_DISPLAY_WIDTH - _tft->getTextWidth(stateText, 1) - 10;
+        _tft->drawText(stateX, 218, stateText, foreground,
+                       COLOR_ORANGE, 1);
+
+        strncpy(_lastSalaryState, footerKey,
+                sizeof(_lastSalaryState) - 1);
+        _lastSalaryState[sizeof(_lastSalaryState) - 1] = '\0';
+    }
+}
+
 void DisplayService::setBrightnessPercent(uint8_t percent) {
     _brightnessPercent = constrain(percent, 0, 100);
     applyNightDimming();
@@ -1513,6 +1678,10 @@ void DisplayService::applyIdleDefaultView() {
         case VIEW_POMODORO:
             _expressionPreferred = false;
             showPomodoroReady();
+            break;
+        case VIEW_SALARY:
+            _expressionPreferred = false;
+            showSalaryCounter();
             break;
         case VIEW_WEATHER:
         case VIEW_CRYPTO:
@@ -1562,6 +1731,10 @@ void DisplayService::showCarouselCurrentView() {
 }
 
 void DisplayService::switchToIdleDisplay() {
+    if (_salaryCounter && _salaryCounter->isSessionActive()) {
+        showSalaryCounter();
+        return;
+    }
     if (_carouselEnabled) {
         showCarouselCurrentView();
         return;
@@ -1638,10 +1811,17 @@ void DisplayService::update() {
             return;
         }
         if (_interactiveView != InteractiveView::CLOCK &&
-            _interactiveView != InteractiveView::POMODORO) {
+            _interactiveView != InteractiveView::POMODORO &&
+            _interactiveView != InteractiveView::SALARY_COUNTER) {
             return;
         }
         const unsigned long sec = now / 1000UL;
+        if (_interactiveView == InteractiveView::SALARY_COUNTER) {
+            if (sec == _lastSalaryRenderSec) return;
+            _lastSalaryRenderSec = sec;
+            drawSalaryCounterView();
+            return;
+        }
         if (sec == _lastClockRenderSec) return;
         _lastClockRenderSec = sec;
         if (_interactiveView == InteractiveView::CLOCK) {

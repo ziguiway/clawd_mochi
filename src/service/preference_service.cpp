@@ -321,7 +321,8 @@ bool PreferenceService::isStartupViewAllowed(uint8_t view) const {
            view == VIEW_POMODORO ||
            view == VIEW_WEATHER ||
            view == VIEW_CRYPTO ||
-           view == VIEW_MARKET;
+           view == VIEW_MARKET ||
+           view == VIEW_SALARY;
 }
 
 bool PreferenceService::isCarouselView(uint8_t view) const {

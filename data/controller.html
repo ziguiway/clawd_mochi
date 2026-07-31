@@ -78,6 +78,7 @@ body{background:#1c1c20;font-family:'Courier New',monospace;color:#e8e4dc;
 .vbtn[data-v="3"].active{border-color:#38343a;background:#201c18}
 .vbtn[data-v="6"].active,.vbtn[data-v="7"].active{border-color:#f0a060;background:#22140a}
   .vbtn[data-v="8"].active,.vbtn[data-v="9"].active,.vbtn[data-v="10"].active{border-color:#f0a060;background:#22140a}
+.vbtn[data-v="17"].active{border-color:#f0a060;background:#22140a}
 .vbtn[data-v="11"].active{border-color:#fff;background:#c96a3e}
 .vbtn[data-v="11"].active .ic,.vbtn[data-v="11"].active .nm,.vbtn[data-v="11"].active .ht{color:#171418}
 .arcade{position:fixed;inset:0;z-index:50;background:#111115;display:none;
@@ -179,6 +180,53 @@ input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
   color:#e8e0d6;font-family:'Courier New',monospace;font-size:11px;font-weight:bold;
   padding:11px 4px;cursor:pointer}
 .pbtn.hi{background:#c96a3e;border-color:#f0a060;color:#140c08}
+.ywrap{width:100%;max-width:390px;background:#111115;border:1.5px solid #c96a3e;
+  border-radius:14px;padding:14px;display:none;flex-direction:column;gap:12px}
+.ywrap.open{display:flex}
+.yhead{display:flex;align-items:center;justify-content:space-between;
+  color:#f0ece4;font-size:15px;font-weight:bold;letter-spacing:1.5px}
+.ystate{color:#df6734;font-size:10px;letter-spacing:1px}
+.ypreview{width:240px;height:240px;max-width:100%;aspect-ratio:1;margin:0 auto;
+  background:#fb6b10;color:var(--device-fg);border:0;
+  display:flex;flex-direction:column;padding:11px 9px 0;font-weight:900;
+  text-shadow:.6px 0 currentColor}
+.yphead{height:27px;border-bottom:2px solid var(--device-fg);
+  display:flex;align-items:flex-start;justify-content:space-between;
+  font-size:12px;letter-spacing:.5px;flex:none}
+.ypamount{height:76px;display:flex;align-items:flex-end;justify-content:center;
+  font-size:43px;letter-spacing:-3px;white-space:nowrap;line-height:1;flex:none}
+.ypearned{text-align:center;font-size:12px;line-height:22px;flex:none}
+.ypworked{text-align:center;font-size:15px;line-height:34px;flex:none}
+.ypprogress{height:12px;border:2px solid var(--device-fg);margin:1px 10px 0;flex:none}
+.ypprogress span{display:block;height:100%;width:0;background:var(--device-fg)}
+.ypfoot{margin-top:auto;border-top:3px solid var(--device-fg);height:31px;
+  display:flex;align-items:center;justify-content:space-between;font-size:9px;flex:none}
+.ymetrics{display:grid;grid-template-columns:repeat(3,1fr);
+  border:1px solid #51301f;border-radius:9px;overflow:hidden}
+.ymetric{padding:10px 8px;border-left:1px solid #51301f;color:#8a8278;
+  font-size:8px;letter-spacing:1px}
+.ymetric:first-child{border-left:0}
+.ymetric strong{display:block;color:#f0ece4;font-size:14px;margin-top:5px;
+  letter-spacing:0;white-space:nowrap}
+.yactions{display:grid;grid-template-columns:2fr 1fr;gap:8px}
+.ybtn{min-height:48px;background:#171418;border:1.5px solid #5a3b2e;
+  border-radius:9px;color:#df6734;font:900 11px 'Courier New',monospace;
+  cursor:pointer}
+.ybtn.primary{background:#c96a3e;border-color:#f0a060;color:#140c08;font-size:14px}
+.ybtn:disabled{opacity:.3;cursor:default}
+.ysettings-toggle{width:100%;background:#171418;border:1px solid #423b3d;
+  border-radius:9px;padding:11px 12px;color:#e8e4dc;
+  font:700 10px 'Courier New',monospace;display:flex;justify-content:space-between;
+  cursor:pointer}
+.ysettings{display:none;flex-direction:column;gap:9px;padding-top:2px}
+.ysettings.open{display:flex}
+.yfield{display:grid;grid-template-columns:95px 1fr;align-items:center;gap:8px}
+.yfield label{color:#8a8278;font-size:9px;letter-spacing:1px}
+.yfield input{width:100%;background:#0e0e11;border:1.5px solid #494249;
+  border-radius:8px;color:#eee8df;font:700 13px 'Courier New',monospace;
+  padding:10px;outline:none}
+.yfield input:focus{border-color:#c96a3e}
+.yprivacy{color:#6f675f;font-size:8px;letter-spacing:1px;text-align:center}
 .mwrap{width:100%;max-width:390px;background:#151418;border:1.5px solid #3a3028;
   border-radius:14px;padding:14px;display:none;flex-direction:column;gap:12px}
 .mwrap.open{display:flex}
@@ -423,6 +471,11 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <span class="nm">Pomodoro</span>
     <span class="ht">focus timer</span>
   </button>
+  <button class="vbtn" data-v="17" onclick="setView(17)">
+    <span class="ic">CNY +</span>
+    <span class="nm">Live Ledger</span>
+    <span class="ht">work earnings</span>
+  </button>
   <button class="vbtn" data-v="8" onclick="setView(8)">
     <span class="ic">31&#176; / CLOUD</span>
     <span class="nm">Weather</span>
@@ -631,6 +684,37 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     </div>
   </div>
 </div>
+<div class="ywrap" id="ywrap">
+  <div class="yhead"><span>// WORK EARNINGS</span><span class="ystate" id="yState">READY</span></div>
+  <div class="mlabel">LIVE PREVIEW (240x240)</div>
+  <div class="ypreview" id="ypreview">
+    <div class="yphead"><span>CNY TODAY</span><span id="ypLive">READY</span></div>
+    <div class="ypamount" id="ypAmount">0.0000</div>
+    <div class="ypearned">EARNED</div>
+    <div class="ypworked" id="ypWorked">00:00:00 WORKED</div>
+    <div class="ypprogress"><span id="ypProgress"></span></div>
+    <div class="ypfoot"><span id="ypRate">RATE .0000/S</span><span id="ypState">READY</span></div>
+  </div>
+  <div class="ymetrics">
+    <div class="ymetric">MONTHLY<strong id="yMonthly">--</strong></div>
+    <div class="ymetric">RATE / SEC<strong id="yRate">0.0000</strong></div>
+    <div class="ymetric">TARGET<strong id="yTarget">0.00</strong></div>
+  </div>
+  <div class="yactions">
+    <button class="ybtn primary" id="yPrimary" onclick="salaryPrimary()">START WORK</button>
+    <button class="ybtn" id="yFinish" onclick="salaryFinish()" disabled>CLOCK OUT</button>
+  </div>
+  <button class="ysettings-toggle" id="ySettingsToggle" onclick="toggleSalarySettings()">
+    <span>SALARY SETTINGS</span><span id="ySettingsState">CLOSE</span>
+  </button>
+  <div class="ysettings open" id="ySettings">
+    <div class="yfield"><label>MONTHLY CNY</label><input id="yMonthlyInput" type="number" min="1" max="1000000" step="0.01" value="15000"></div>
+    <div class="yfield"><label>PAID DAYS</label><input id="yDaysInput" type="number" min="1" max="31" step="0.01" value="21.75"></div>
+    <div class="yfield"><label>HOURS / DAY</label><input id="yHoursInput" type="number" min="1" max="24" step="0.5" value="8"></div>
+    <div class="ctrl"><button class="cbtn on" id="ySave" onclick="saveSalaryConfig()">SAVE SETTINGS</button><button class="cbtn" id="yReset" onclick="salaryReset()">RESET TODAY</button></div>
+  </div>
+  <div class="yprivacy">LOCAL DEVICE ONLY · ESTIMATED EARNINGS</div>
+</div>
 <div class="mwrap" id="mwrap">
   <div class="mttl">// crypto display</div>
   <div class="mlabel">LIVE PREVIEW (240x240)</div>
@@ -709,6 +793,7 @@ let lastX=0,lastY=0,tt;
 let marketSelected=[],marketDirectory=[],marketLoaded=false,marketSaving=false,marketSaveQueued=false,marketUpdatedAt=null,marketDrag=null;
 let stockSelected=[],stockSaving=false,stockSaveQueued=false,stockUpdatedAt=null,stockDrag=null,stockSearchTimer=null,stockSearchSeq=0;
 let carouselConfig={enabled:false,speed:12,order:[8,9,10,6],fixed:8},carouselSpeedTimer=null,carouselPanelOpen=false,carouselDrag=null;
+let salaryState=null,salaryConfigured=false,salarySettingsOpen=true,salaryRequestPending=false,lastSalaryStatus=null;
 const spdLabels=['','slow','normal','fast'];
 function toast(msg,ok=true){const el=document.getElementById('toast');el.textContent=msg;el.style.borderColor=ok?'#28b878':'#c96a3e';el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),1300);}
 function setBusy(b){isBusy=b;document.getElementById('busy').classList.toggle('show',b);const locked=b||termOpen;document.querySelectorAll('.vbtn').forEach(el=>{el.disabled=canvasOpen?parseInt(el.dataset.v)!==3:locked;});document.querySelectorAll('.ebtn').forEach(el=>{el.disabled=locked||canvasOpen;});document.querySelectorAll('.cbtn').forEach(el=>{if(el.id!=='blBtn'&&el.id!=='ccStatusBtn')el.disabled=locked;});}
@@ -735,7 +820,7 @@ async function saveProfile(){const payload={deviceName:document.getElementById('
 async function resetProfile(){try{const r=await fetch('/profile/reset',{method:'POST'});if(!r.ok)throw new Error();applyProfile(await r.json());await loadExpressions();toast('profile defaults restored');}catch(e){toast('profile reset failed',false);}}
 async function exportConfig(){try{const r=await fetch('/config/export',{cache:'no-store'});if(!r.ok)throw new Error();const blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='clawd-mochi-config.json';a.click();URL.revokeObjectURL(url);toast('config exported');}catch(e){toast('config export failed',false);}}
 async function importConfig(file){if(!file)return;try{const text=await file.text();JSON.parse(text);const r=await fetch('/config/import',{method:'POST',headers:{'Content-Type':'application/json'},body:text});const result=await r.json();if(!r.ok)throw new Error(result.error||'invalid config');await loadProfile();await loadPrefs();await loadExpressions();toast('config imported');}catch(e){toast(e.message||'config import failed',false);}finally{document.getElementById('configFile').value='';}}
-async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e',9:'m',10:'k'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);document.getElementById('mwrap').classList.toggle('open',v===9);document.getElementById('swrap').classList.toggle('open',v===10);if(v===9){await loadMarketConfig();loadMarketDirectory();toast('crypto open');return;}if(v===10){await loadStockConfig();toast('market open');return;}if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
+async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e',9:'m',10:'k',17:'y'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);document.getElementById('ywrap').classList.toggle('open',v===17);document.getElementById('mwrap').classList.toggle('open',v===9);document.getElementById('swrap').classList.toggle('open',v===10);if(v===17){await loadSalaryConfig();await pollSalary();toast('live ledger open');return;}if(v===9){await loadMarketConfig();loadMarketDirectory();toast('crypto open');return;}if(v===10){await loadStockConfig();toast('market open');return;}if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
 function applyDinoState(state){document.getElementById('dinoState').textContent=String(state.state||'ready').replace('_',' ').toUpperCase();document.getElementById('dinoScore').textContent=String(state.score||0).padStart(4,'0').slice(-4);document.getElementById('dinoHighScore').textContent=String(state.highScore||0).padStart(4,'0').slice(-4);}
 async function dinoPost(path){try{const r=await fetch(path,{method:'POST',cache:'no-store'});const state=await r.json();if(!r.ok)throw new Error(state.error||'game request failed');applyDinoState(state);return true;}catch(e){toast(e.message||'game unavailable',false);return false;}}
 function lockViewsForDino(locked){document.querySelectorAll('.vbtn').forEach(button=>{button.disabled=locked&&Number(button.dataset.v)!==11;});}
@@ -817,6 +902,54 @@ async function startTimer(phase){await fetch('/timer/start?phase='+phase);docume
 async function pauseTimer(){await fetch('/timer/pause');await pollTimer();toast('timer toggled');}
 async function resetTimer(){await fetch('/timer/reset');await pollTimer();toast('timer reset');}
 async function configTimer(){const f=document.getElementById('focusMin').value||25,b=document.getElementById('breakMin').value||5;await fetch('/timer/config?focus='+encodeURIComponent(f)+'&break='+encodeURIComponent(b));await pollTimer();}
+function salaryClock(seconds){seconds=Math.max(0,Number(seconds)||0);const h=Math.floor(seconds/3600),m=Math.floor(seconds/60)%60,s=Math.floor(seconds)%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}
+function salaryMoney4(units){return((Number(units)||0)/10000).toFixed(4);}
+function applySalaryStatus(j){
+  lastSalaryStatus=j;
+  salaryState=j.state||'unconfigured';salaryConfigured=j.configured===true;
+  const state=salaryState.toUpperCase(),running=salaryState==='running',paused=salaryState==='paused',active=running||paused;
+  const amount=salaryMoney4(j.earnedTenThousandths),worked=salaryClock(j.activeSeconds);
+  document.getElementById('yState').textContent=state;document.getElementById('ypLive').textContent=running?'LIVE':state;
+  document.getElementById('ypAmount').textContent=amount;document.getElementById('ypWorked').textContent=worked+' WORKED';
+  document.getElementById('ypProgress').style.width=Math.max(0,Math.min(100,(Number(j.progressPermille)||0)/10))+'%';
+  document.getElementById('ypRate').textContent='RATE '+(Number(j.rateTenThousandths||0)<10000?'.'+String(Number(j.rateTenThousandths||0)).padStart(4,'0'):(Number(j.rateTenThousandths||0)/10000).toFixed(4))+'/S';
+  document.getElementById('ypState').textContent=state;document.getElementById('yRate').textContent=(Number(j.rateTenThousandths||0)/10000).toFixed(4);
+  document.getElementById('yTarget').textContent=((Number(j.dailyTargetTenThousandths)||0)/10000).toFixed(2);
+  const primary=document.getElementById('yPrimary');primary.textContent=running?'PAUSE':(paused?'RESUME':'START WORK');
+  primary.disabled=salaryRequestPending||(!salaryConfigured&&active);document.getElementById('yFinish').disabled=!active||salaryRequestPending;
+  document.getElementById('yReset').disabled=active||salaryRequestPending;
+  ['yMonthlyInput','yDaysInput','yHoursInput','ySave'].forEach(id=>document.getElementById(id).disabled=active||salaryRequestPending);
+  if(!salaryConfigured)toggleSalarySettings(true);
+}
+async function loadSalaryConfig(){
+  try{const r=await fetch('/salary/config',{cache:'no-store'}),j=await r.json();if(!r.ok)throw new Error(j.error||'config unavailable');
+    document.getElementById('yMonthlyInput').value=j.monthlyCents?Number(j.monthlyCents)/100:15000;
+    document.getElementById('yDaysInput').value=(Number(j.workDaysX100)||2175)/100;document.getElementById('yHoursInput').value=(Number(j.workMinutesPerDay)||480)/60;
+    document.getElementById('yMonthly').textContent=j.monthlyCents?(Number(j.monthlyCents)/100).toFixed(0):'--';
+  }catch(e){toast(e.message||'salary config unavailable',false);}
+}
+async function pollSalary(){if(activeView!==17)return;try{const r=await fetch('/salary/status',{cache:'no-store'}),j=await r.json();if(r.ok)applySalaryStatus(j);}catch(e){}}
+async function salaryPost(path,payload={}){
+  if(salaryRequestPending)return null;salaryRequestPending=true;
+  try{const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),j=await r.json();if(!r.ok)throw new Error(j.error||'request failed');applySalaryStatus(j);return j;}
+  catch(e){toast(e.message||'salary request failed',false);return null;}
+  finally{salaryRequestPending=false;if(lastSalaryStatus)applySalaryStatus(lastSalaryStatus);}
+}
+async function saveSalaryConfig(){
+  const monthly=Number(document.getElementById('yMonthlyInput').value),days=Number(document.getElementById('yDaysInput').value),hours=Number(document.getElementById('yHoursInput').value);
+  if(!Number.isFinite(monthly)||monthly<=0||!Number.isFinite(days)||days<1||days>31||!Number.isFinite(hours)||hours<1||hours>24){toast('check salary settings',false);return false;}
+  const result=await salaryPost('/salary/config',{monthlyCents:Math.round(monthly*100),workDaysX100:Math.round(days*100),workMinutesPerDay:Math.round(hours*60)});
+  if(!result)return false;document.getElementById('yMonthly').textContent=monthly.toFixed(0);toast('salary settings saved');return true;
+}
+async function salaryPrimary(){
+  if(salaryState==='running'){if(await salaryPost('/salary/pause'))toast('earnings paused');return;}
+  if(salaryState==='paused'){if(await salaryPost('/salary/resume',{epoch:Math.floor(Date.now()/1000)}))toast('back to work');return;}
+  if(!salaryConfigured&&!(await saveSalaryConfig()))return;
+  if(await salaryPost('/salary/start',{epoch:Math.floor(Date.now()/1000)})){toggleSalarySettings(false);toast('work started');}
+}
+async function salaryFinish(){if(!confirm('Clock out and finish today?'))return;if(await salaryPost('/salary/finish'))toast('day finished');}
+async function salaryReset(){if(!confirm("Reset today's earnings?"))return;if(await salaryPost('/salary/reset'))toast('today reset');}
+function toggleSalarySettings(force){salarySettingsOpen=typeof force==='boolean'?force:!salarySettingsOpen;document.getElementById('ySettings').classList.toggle('open',salarySettingsOpen);document.getElementById('ySettingsState').textContent=salarySettingsOpen?'CLOSE':'OPEN';}
 function marketPrice(v){if(v==null)return'--';if(v>=1000000)return'$'+(v/1000000).toFixed(2)+'M';if(v>=100000)return'$'+Math.round(v/1000)+'K';if(v>=10000)return'$'+(v/1000).toFixed(1)+'K';if(v>=1000)return'$'+Math.round(v);if(v>=100)return'$'+v.toFixed(1);if(v>=1)return'$'+v.toFixed(2);if(v>=.01)return'$'+v.toFixed(4);return'$'+v.toFixed(6);}
 function marketChange(v){return v==null?'--':(v>=0?'+':'')+Number(v).toFixed(1)+'%';}
 function marketTime(){if(!marketUpdatedAt)return'UPDATED --:--';return'UPDATED '+marketUpdatedAt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false});}
@@ -1058,7 +1191,7 @@ async function endDraw(e){if(!drawing)return;drawing=false;if(!canvasOpen||strok
 cvs.addEventListener('mousedown',startDraw);cvs.addEventListener('mousemove',moveDraw);cvs.addEventListener('mouseup',endDraw);cvs.addEventListener('mouseleave',endDraw);
 cvs.addEventListener('touchstart',startDraw,{passive:false});cvs.addEventListener('touchmove',moveDraw,{passive:false});cvs.addEventListener('touchend',endDraw);
 async function clearAll(){const bg=document.getElementById('bgCol').value;redrawCanvas(bg);await req('/draw/clear?bg='+encodeURIComponent(bg));toast('cleared');}
-(async()=>{await loadExpressions();await loadProfile();await loadPrefs();try{const r=await fetch('/state');const j=await r.json();const bv=typeof j.brightness==='number'?j.brightness:(j.bl===false?0:100);document.getElementById('bright').value=bv;document.getElementById('brightV').textContent=bv+'%';blOn=bv>0;updateBlButton();}catch(e){}initialLoadComplete=true;if(!testMode){pollWifiStatus();pollTimer();setInterval(pollTimer,1000);setInterval(()=>{if(activeView===9&&!marketSaving&&!marketDrag)loadMarketConfig();if(activeView===10&&!stockSaving&&!stockDrag)loadStockConfig();},30000);}})();
+(async()=>{await loadExpressions();await loadProfile();await loadPrefs();try{const r=await fetch('/state');const j=await r.json();const bv=typeof j.brightness==='number'?j.brightness:(j.bl===false?0:100);document.getElementById('bright').value=bv;document.getElementById('brightV').textContent=bv+'%';blOn=bv>0;updateBlButton();}catch(e){}initialLoadComplete=true;if(!testMode){pollWifiStatus();pollTimer();setInterval(pollTimer,1000);setInterval(pollSalary,1000);setInterval(()=>{if(activeView===9&&!marketSaving&&!marketDrag)loadMarketConfig();if(activeView===10&&!stockSaving&&!stockDrag)loadStockConfig();},30000);}})();
 </script>
 </body>
 </html>

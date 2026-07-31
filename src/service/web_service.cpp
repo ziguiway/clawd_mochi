@@ -4,6 +4,15 @@
 #include "../config/cfg_display.h"
 #include <ArduinoJson.h>
 
+namespace {
+void appendUInt64(String& output, uint64_t value) {
+    char buffer[24];
+    snprintf(buffer, sizeof(buffer), "%llu",
+             static_cast<unsigned long long>(value));
+    output += buffer;
+}
+}
+
 // ── Original interactive HTML (PROGMEM) ────────────────────────
 // ── Constructor ────────────────────────────────────────────────
 WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiService,
@@ -52,6 +61,14 @@ void WebService::setupRoutes() {
     _server.on("/timer/pause",  HTTP_GET, [this]() { handleTimerPause(); });
     _server.on("/timer/reset",  HTTP_GET, [this]() { handleTimerReset(); });
     _server.on("/timer/config", HTTP_GET, [this]() { handleTimerConfig(); });
+    _server.on("/salary/status", HTTP_GET, [this]() { handleSalaryStatus(); });
+    _server.on("/salary/config", HTTP_GET, [this]() { handleSalaryConfig(); });
+    _server.on("/salary/config", HTTP_POST, [this]() { handleSalaryConfig(); });
+    _server.on("/salary/start", HTTP_POST, [this]() { handleSalaryStart(); });
+    _server.on("/salary/pause", HTTP_POST, [this]() { handleSalaryPause(); });
+    _server.on("/salary/resume", HTTP_POST, [this]() { handleSalaryResume(); });
+    _server.on("/salary/finish", HTTP_POST, [this]() { handleSalaryFinish(); });
+    _server.on("/salary/reset", HTTP_POST, [this]() { handleSalaryReset(); });
     _server.on("/game/dino/start", HTTP_POST, [this]() { handleDinoStart(); });
     _server.on("/game/dino/action", HTTP_POST, [this]() { handleDinoAction(); });
     _server.on("/game/dino/restart", HTTP_POST, [this]() { handleDinoRestart(); });
@@ -171,6 +188,10 @@ void WebService::handleCmd() {
         case 'k':
             rememberedView = VIEW_MARKET;
             _displayService->setInteractiveView(VIEW_MARKET);
+            break;
+        case 'y':
+            rememberedView = VIEW_SALARY;
+            _displayService->setInteractiveView(VIEW_SALARY);
             break;
         case 'a': _displayService->animLogoReveal(); break;
     }
@@ -467,6 +488,158 @@ void WebService::handleTimerConfig() {
     handleTimerStatus();
 }
 
+void WebService::sendSalaryStatus(int statusCode) {
+    SalaryCounterService* counter = _displayService->salaryCounter();
+    if (!counter) {
+        _server.send(503, "application/json",
+                     "{\"error\":\"salary module unavailable\"}");
+        return;
+    }
+
+    String json = "{\"state\":\"";
+    json += counter->getStateName();
+    json += "\",\"configured\":";
+    json += counter->isConfigured() ? "true" : "false";
+    json += ",\"activeSeconds\":";
+    json += counter->getActiveSeconds();
+    json += ",\"earnedTenThousandths\":";
+    appendUInt64(json, counter->getEarnedTenThousandths());
+    json += ",\"dailyTargetTenThousandths\":";
+    appendUInt64(json, counter->getDailyTargetTenThousandths());
+    json += ",\"rateTenThousandths\":";
+    json += counter->getRateTenThousandthsPerSecond();
+    json += ",\"progressPermille\":";
+    json += counter->getProgressPermille();
+    json += "}";
+    _server.send(statusCode, "application/json", json);
+}
+
+void WebService::handleSalaryStatus() {
+    sendSalaryStatus();
+}
+
+void WebService::handleSalaryConfig() {
+    SalaryCounterService* counter = _displayService->salaryCounter();
+    if (!counter) {
+        _server.send(503, "application/json",
+                     "{\"error\":\"salary module unavailable\"}");
+        return;
+    }
+
+    if (_server.method() == HTTP_GET) {
+        String json = "{\"monthlyCents\":";
+        json += counter->getMonthlyCents();
+        json += ",\"workDaysX100\":";
+        json += counter->getWorkDaysX100();
+        json += ",\"workMinutesPerDay\":";
+        json += counter->getWorkMinutesPerDay();
+        json += ",\"locked\":";
+        json += counter->isSessionActive() ? "true" : "false";
+        json += "}";
+        _server.send(200, "application/json", json);
+        return;
+    }
+
+    JsonDocument doc;
+    const DeserializationError error =
+        deserializeJson(doc, _server.arg("plain"));
+    if (error) {
+        _server.send(400, "application/json",
+                     "{\"error\":\"invalid JSON\"}");
+        return;
+    }
+    const uint32_t monthlyCents = doc["monthlyCents"] | 0UL;
+    const uint16_t workDaysX100 = doc["workDaysX100"] | 0;
+    const uint16_t workMinutes = doc["workMinutesPerDay"] | 0;
+    if (!counter->configure(monthlyCents, workDaysX100, workMinutes)) {
+        _server.send(409, "application/json",
+                     "{\"error\":\"invalid or locked salary config\"}");
+        return;
+    }
+    _displayService->showSalaryCounter();
+    _preferenceService->setStartupView(VIEW_SALARY);
+    sendSalaryStatus();
+}
+
+void WebService::handleSalaryStart() {
+    SalaryCounterService* counter = _displayService->salaryCounter();
+    if (!counter) {
+        _server.send(503, "application/json",
+                     "{\"error\":\"salary module unavailable\"}");
+        return;
+    }
+    uint32_t epoch = 0;
+    JsonDocument doc;
+    if (!_server.arg("plain").isEmpty() &&
+        !deserializeJson(doc, _server.arg("plain"))) {
+        epoch = doc["epoch"] | 0UL;
+    }
+    if (!counter->start(epoch)) {
+        _server.send(409, "application/json",
+                     "{\"error\":\"salary counter cannot start\"}");
+        return;
+    }
+    _preferenceService->setStartupView(VIEW_SALARY);
+    _displayService->showSalaryCounter();
+    sendSalaryStatus();
+}
+
+void WebService::handleSalaryPause() {
+    SalaryCounterService* counter = _displayService->salaryCounter();
+    if (!counter || !counter->pause()) {
+        _server.send(409, "application/json",
+                     "{\"error\":\"salary counter is not running\"}");
+        return;
+    }
+    _displayService->refreshSalaryCounter();
+    sendSalaryStatus();
+}
+
+void WebService::handleSalaryResume() {
+    SalaryCounterService* counter = _displayService->salaryCounter();
+    if (!counter) {
+        _server.send(503, "application/json",
+                     "{\"error\":\"salary module unavailable\"}");
+        return;
+    }
+    uint32_t epoch = 0;
+    JsonDocument doc;
+    if (!_server.arg("plain").isEmpty() &&
+        !deserializeJson(doc, _server.arg("plain"))) {
+        epoch = doc["epoch"] | 0UL;
+    }
+    if (!counter->resume(epoch)) {
+        _server.send(409, "application/json",
+                     "{\"error\":\"salary counter is not paused\"}");
+        return;
+    }
+    _displayService->showSalaryCounter();
+    sendSalaryStatus();
+}
+
+void WebService::handleSalaryFinish() {
+    SalaryCounterService* counter = _displayService->salaryCounter();
+    if (!counter || !counter->finish()) {
+        _server.send(409, "application/json",
+                     "{\"error\":\"salary counter is not active\"}");
+        return;
+    }
+    _displayService->refreshSalaryCounter();
+    sendSalaryStatus();
+}
+
+void WebService::handleSalaryReset() {
+    SalaryCounterService* counter = _displayService->salaryCounter();
+    if (!counter) {
+        _server.send(503, "application/json",
+                     "{\"error\":\"salary module unavailable\"}");
+        return;
+    }
+    counter->reset();
+    _displayService->refreshSalaryCounter();
+    sendSalaryStatus();
+}
+
 void WebService::handlePrefs() {
     if (!_preferenceService) {
         _server.send(500, "application/json", "{\"error\":\"preferences unavailable\"}");
@@ -488,7 +661,7 @@ void WebService::handlePrefs() {
     if (_server.hasArg("startup")) {
         _preferenceService->setStartupView(
             constrain(_server.arg("startup").toInt(),
-                      VIEW_EYES_NORMAL, VIEW_MARKET));
+                      VIEW_EYES_NORMAL, VIEW_SALARY));
     }
     if (_server.hasArg("brightness")) {
         const uint8_t brightness = constrain(_server.arg("brightness").toInt(), 0, 100);
@@ -812,7 +985,7 @@ void WebService::handleConfigImport() {
         (startup != VIEW_EYES_NORMAL && startup != VIEW_EYES_SQUISH &&
          startup != VIEW_CLOCK && startup != VIEW_POMODORO &&
          startup != VIEW_WEATHER && startup != VIEW_CRYPTO &&
-         startup != VIEW_MARKET) ||
+         startup != VIEW_MARKET && startup != VIEW_SALARY) ||
         !validBg || theme >= THEME_COUNT || speed < 1 || speed > 3 ||
         brightness > 100 || nightStart > 23 || nightEnd > 23 ||
         nightBrightness > 100 ||

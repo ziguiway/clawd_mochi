@@ -251,6 +251,21 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
     }
     active_arcade_game = ""
     arcade_actions: list[tuple[str, str, int]] = []
+    salary_config: dict[str, Any] = {
+        "monthlyCents": 1_500_000,
+        "workDaysX100": 2_175,
+        "workMinutesPerDay": 480,
+    }
+    salary_status: dict[str, Any] = {
+        "state": "ready",
+        "configured": True,
+        "activeSeconds": 0,
+        "earnedTenThousandths": 0,
+        "dailyTargetTenThousandths": 6_896_551,
+        "rateTenThousandths": 239,
+        "progressPermille": 0,
+    }
+    salary_actions: list[str] = []
 
     def log_message(self, _format: str, *_args: object) -> None:
         return
@@ -416,6 +431,18 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
                     "break": 5,
                 }
             )
+        elif path == "/salary/config":
+            self.send_json(
+                {
+                    **self.salary_config,
+                    "locked": self.salary_status["state"] in {
+                        "running",
+                        "paused",
+                    },
+                }
+            )
+        elif path == "/salary/status":
+            self.send_json(self.salary_status)
         else:
             self.send_json({"ok": True})
 
@@ -423,6 +450,66 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         args = urllib.parse.parse_qs(parsed.query)
+        if path == "/salary/config":
+            length = int(self.headers.get("Content-Length", "0"))
+            payload = json.loads(self.rfile.read(length) or b"{}")
+            monthly_cents = int(payload["monthlyCents"])
+            work_days_x100 = int(payload["workDaysX100"])
+            work_minutes = int(payload["workMinutesPerDay"])
+            day_seconds = work_minutes * 60
+            self.__class__.salary_config = {
+                "monthlyCents": monthly_cents,
+                "workDaysX100": work_days_x100,
+                "workMinutesPerDay": work_minutes,
+            }
+            self.__class__.salary_status = {
+                **self.salary_status,
+                "configured": True,
+                "dailyTargetTenThousandths": (
+                    monthly_cents * 10_000 // work_days_x100
+                ),
+                "rateTenThousandths": (
+                    monthly_cents * 10_000
+                    // (work_days_x100 * day_seconds)
+                ),
+            }
+            self.send_json(self.salary_status)
+            return
+        if path.startswith("/salary/"):
+            action = path.rsplit("/", 1)[-1]
+            self.__class__.salary_actions.append(action)
+            state = {
+                "start": "running",
+                "pause": "paused",
+                "resume": "running",
+                "finish": "finished",
+                "reset": "ready",
+            }.get(action)
+            if state is None:
+                self.send_json({"error": "unknown salary action"}, 404)
+                return
+            reset_values = action in {"start", "reset"}
+            self.__class__.salary_status = {
+                **self.salary_status,
+                "state": state,
+                "activeSeconds": 0
+                if reset_values
+                else self.salary_status["activeSeconds"],
+                "earnedTenThousandths": 0
+                if reset_values
+                else self.salary_status["earnedTenThousandths"],
+                "progressPermille": 0
+                if reset_values
+                else self.salary_status["progressPermille"],
+            }
+            if action in {"pause", "resume", "finish"}:
+                self.__class__.salary_status.update(
+                    activeSeconds=12_068,
+                    earnedTenThousandths=123_456,
+                    progressPermille=450,
+                )
+            self.send_json(self.salary_status)
+            return
         if path == "/game/dino/start":
             self.__class__.dino_state = {
                 **self.dino_state,
@@ -1018,6 +1105,81 @@ def run_carousel_flow(page: Page, *, stub_mode: bool) -> None:
     print("PASS  关闭轮播并固定显示 Market")
 
 
+def run_salary_flow(page: Page) -> None:
+    open_controller(page)
+    page.locator('button[data-v="17"]').click()
+    page.locator("#ywrap.open").wait_for(state="visible")
+    preview = page.locator("#ypreview")
+    box = preview.bounding_box()
+    assert box is not None
+    assert round(box["width"]) == 240 and round(box["height"]) == 240, (
+        f"Live Ledger 预览应为 240×240，实际为 "
+        f"{box['width']:.0f}×{box['height']:.0f}"
+    )
+    assert page.locator("#ypAmount").text_content() == "0.0000"
+    print("PASS  Live Ledger 打开并显示 240×240 金额优先预览")
+
+    page.locator("#yMonthlyInput").fill("15000")
+    page.locator("#yDaysInput").fill("21.75")
+    page.locator("#yHoursInput").fill("8")
+    page.locator("#ySave").click()
+    page.get_by_text("salary settings saved", exact=True).wait_for(
+        state="visible"
+    )
+    assert page.locator("#yMonthly").text_content() == "15000"
+    print("PASS  保存月薪、计薪天数和每日工时")
+
+    primary = page.locator("#yPrimary")
+    primary.click()
+    page.wait_for_function(
+        "() => document.querySelector('#ypState').textContent === 'RUNNING'"
+    )
+    assert page.locator("#yMonthlyInput").is_disabled()
+    assert primary.text_content() == "PAUSE"
+    print("PASS  开始上班后进入 RUNNING 并锁定计薪配置")
+
+    primary.click()
+    page.wait_for_function(
+        "() => document.querySelector('#ypLive').textContent === 'PAUSED'"
+    )
+    assert primary.text_content() == "RESUME"
+    assert page.locator("#ypAmount").text_content() == "12.3456"
+    print("PASS  暂停后冻结当前金额")
+
+    primary.click()
+    page.wait_for_function(
+        "() => document.querySelector('#ypState').textContent === 'RUNNING'"
+    )
+    screenshot = Path("/tmp/clawd_mochi_live_ledger.png")
+    preview.screenshot(path=str(screenshot))
+    assert screenshot.exists()
+    print(f"PASS  Live Ledger 视觉验收截图已保存到 {screenshot}")
+
+    page.once("dialog", lambda dialog: dialog.accept())
+    page.locator("#yFinish").click()
+    page.wait_for_function(
+        "() => document.querySelector('#ypLive').textContent === 'FINISHED'"
+    )
+    assert not page.locator("#yMonthlyInput").is_disabled()
+    print("PASS  继续计时并完成下班结算")
+
+    page.locator("#ySettingsToggle").click()
+    page.locator("#ySettings.open").wait_for(state="visible")
+    page.once("dialog", lambda dialog: dialog.accept())
+    page.locator("#yReset").click()
+    page.wait_for_function(
+        "() => document.querySelector('#ypLive').textContent === 'READY'"
+    )
+    assert FirmwareStubHandler.salary_actions == [
+        "start",
+        "pause",
+        "resume",
+        "finish",
+        "reset",
+    ]
+    print("PASS  重置今日记录并完成完整状态流")
+
+
 def run_game_arcade_flow(page: Page, *, stub_mode: bool) -> None:
     open_controller(page)
     page.locator("#dinoViewBtn").click()
@@ -1512,6 +1674,21 @@ def main() -> int:
         }
         FirmwareStubHandler.active_arcade_game = ""
         FirmwareStubHandler.arcade_actions = []
+        FirmwareStubHandler.salary_config = {
+            "monthlyCents": 1_500_000,
+            "workDaysX100": 2_175,
+            "workMinutesPerDay": 480,
+        }
+        FirmwareStubHandler.salary_status = {
+            "state": "ready",
+            "configured": True,
+            "activeSeconds": 0,
+            "earnedTenThousandths": 0,
+            "dailyTargetTenThousandths": 6_896_551,
+            "rateTenThousandths": 239,
+            "progressPermille": 0,
+        }
+        FirmwareStubHandler.salary_actions = []
         FirmwareStubHandler.profile = {
             "deviceName": "MOCHI",
             "bootLine1": "HELLO",
@@ -1570,6 +1747,13 @@ def main() -> int:
             try:
                 run_positive_flow(page, stub_mode=not bool(args.device_url))
                 run_wifi_status_flow(page)
+                if not args.device_url:
+                    run_salary_flow(page)
+                else:
+                    print(
+                        "INFO  实机模式跳过 Live Ledger 状态变更，"
+                        "避免覆盖真实工资记录"
+                    )
                 run_expression_flow(page, stub_mode=not bool(args.device_url))
                 run_profile_flow(page, stub_mode=not bool(args.device_url))
                 run_theme_flow(page, stub_mode=not bool(args.device_url))

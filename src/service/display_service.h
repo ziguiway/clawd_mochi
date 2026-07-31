@@ -14,6 +14,7 @@
 #include "crypto_service.h"
 #include "market_service.h"
 #include "holiday_service.h"
+#include "salary_counter_service.h"
 #include "../config/cfg_display.h"
 
 enum class DisplayMode {
@@ -41,7 +42,8 @@ enum class InteractiveView {
     TETRIS_GAME,
     SNAKE_GAME,
     GAME_2048,
-    BREAKOUT_GAME
+    BREAKOUT_GAME,
+    SALARY_COUNTER
 };
 
 enum class PomodoroPhase {
@@ -58,6 +60,7 @@ public:
                    CryptoService* cryptoService,
                    MarketService* marketService,
                    HolidayService* holidayService);
+    ~DisplayService();
     void init();
     void update();
 
@@ -151,6 +154,12 @@ public:
     uint32_t getPomodoroRemainingSec() const;
     uint32_t getPomodoroDurationSec() const;
 
+    // 上班赚钱计数。运行会话在切换页面后继续，空闲模块离开时立即释放。
+    SalaryCounterService* salaryCounter();
+    bool showSalaryCounter();
+    void refreshSalaryCounter();
+    bool isSalarySessionActive() const;
+
     // Backlight brightness
     void setBrightnessPercent(uint8_t percent);
     uint8_t getBrightnessPercent() const { return _brightnessPercent; }
@@ -181,6 +190,7 @@ private:
     CryptoService* _cryptoService;
     MarketService* _marketService;
     HolidayService* _holidayService;
+    SalaryCounterService* _salaryCounter;
     ClaudeCodeView _ccView;
     EyesView _eyesView;
     uint8_t* _monoGameBuffer;
@@ -229,6 +239,7 @@ private:
     uint32_t _pomodoroRemainingAtPauseSec;
     unsigned long _pomodoroStartedMs;
     unsigned long _lastClockRenderSec;
+    unsigned long _lastSalaryRenderSec;
     uint32_t _lastWeatherVersion;
     uint32_t _lastCryptoVersion;
     uint32_t _lastMarketVersion;
@@ -244,6 +255,10 @@ private:
     char _lastClockLayoutKey[48];
     uint16_t _lastProgressPermille;
     bool _lastLightProgress;
+    char _lastSalaryAmount[20];
+    char _lastSalaryWorked[24];
+    char _lastSalaryState[28];
+    uint16_t _lastSalaryProgressPermille;
 
     IArcadeGame* createArcadeGame(const String& slug);
     void releaseArcadeGame();
@@ -251,6 +266,7 @@ private:
     uint8_t viewForArcadeGame(ArcadeGameId id) const;
     const char* slugForArcadeView(uint8_t view) const;
     bool isArcadeGameView() const;
+    void releaseSalaryCounterIfIdle(uint8_t nextView);
 
     // Terminal state
     bool _termMode;
@@ -267,6 +283,8 @@ private:
     void drawCryptoView();
     void formatCryptoPrice(float price, char* output, size_t size);
     void drawMarketView();
+    void drawSalaryCounterView();
+    void drawSalaryCounterLayout();
     void formatMarketPrice(float price, char* output, size_t size);
     void renderTimeScreen(const char* mark, const char* timeText, const char* subText,
                           const char* modeText, const char* hintText,

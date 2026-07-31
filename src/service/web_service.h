@@ -53,6 +53,13 @@ private:
     void handleTimerPause();
     void handleTimerReset();
     void handleTimerConfig();
+    void handleSalaryStatus();
+    void handleSalaryConfig();
+    void handleSalaryStart();
+    void handleSalaryPause();
+    void handleSalaryResume();
+    void handleSalaryFinish();
+    void handleSalaryReset();
     void handleDinoStart();
     void handleDinoAction();
     void handleDinoRestart();
@@ -102,4 +109,5 @@ private:
     String getContentType(const String& path);
     String rgb565ToHex(uint16_t c);
     void sendExpressionState(bool includeList);
+    void sendSalaryStatus(int statusCode = 200);
 };
