@@ -512,18 +512,6 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
   <button class="ebtn" data-expression="grumpy" onclick="selectExpression('grumpy')"><span class="face">╲ ╱</span>Grumpy</button>
   <button class="ebtn" data-expression="love" onclick="selectExpression('love')"><span class="face">♥ ♥</span>Love</button>
 </div>
-<div class="sec">// personalization</div>
-<div class="rwrap open" id="profileWrap">
-  <div class="rrow"><span class="mlabel">DEVICE NAME</span><input class="tin" id="profileName" maxlength="12" placeholder="MOCHI"></div>
-  <div class="rrow"><span class="mlabel">BOOT LINE 1</span><input class="tin" id="profileBoot1" maxlength="16" placeholder="HELLO"></div>
-  <div class="rrow"><span class="mlabel">BOOT LINE 2</span><input class="tin" id="profileBoot2" maxlength="16" placeholder="MOCHI"></div>
-  <div class="rrow"><span class="mlabel">DEFAULT FACE</span><select class="rselect" id="profileExpression"><option value="normal">Normal</option><option value="happy">Happy</option><option value="thinking">Thinking</option><option value="sleeping">Sleeping</option><option value="curious">Curious</option><option value="surprised">Surprised</option><option value="grumpy">Grumpy</option><option value="love">Love</option></select></div>
-  <div class="rrow"><span class="mlabel">START MODE</span><select class="rselect" id="profileMode"><option value="manual">Manual</option><option value="auto">Auto</option></select></div>
-  <div class="ctrl"><button class="cbtn on" id="profileSave" onclick="saveProfile()">save profile</button><button class="cbtn" onclick="resetProfile()">restore defaults</button></div>
-  <div class="ctrl"><button class="cbtn" id="configExport" onclick="exportConfig()">export JSON</button><button class="cbtn" id="configImport" onclick="document.getElementById('configFile').click()">import JSON</button></div>
-  <input id="configFile" type="file" accept="application/json,.json" hidden onchange="importConfig(this.files[0])">
-  <div class="minfo">Printable ASCII only. Changes to boot text appear after restart.</div>
-</div>
 <div class="sec">// system theme</div>
 <div class="theme-switch" id="themeSwitch">
   <button class="cbtn theme-btn" data-theme="1" aria-pressed="true" onclick="setDisplayTheme(1)">
@@ -542,6 +530,33 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <span class="theme-chip pink"><span></span><span></span></span>
     <span>pink</span>
   </button>
+</div>
+<div class="sec">// device typography</div>
+<div class="rwrap open">
+  <div class="rrow">
+    <span class="mlabel">DISPLAY FONT</span>
+    <select class="rselect" id="fontSelect" onchange="setFontStyle(this.value)">
+      <option value="pixel">Pixel</option>
+      <option value="courier">Courier</option>
+      <option value="terminal">Terminal</option>
+      <option value="dashboard">Dashboard</option>
+    </select>
+  </div>
+</div>
+<div class="sec">// personalization</div>
+<button class="cbtn idle-open" id="profilePanelBtn" aria-expanded="false" onclick="toggleProfilePanel()">
+  <span>profile &amp; backup</span><span id="profilePanelState">open</span>
+</button>
+<div class="rwrap" id="profileWrap">
+  <div class="rrow"><span class="mlabel">DEVICE NAME</span><input class="tin" id="profileName" maxlength="12" placeholder="MOCHI"></div>
+  <div class="rrow"><span class="mlabel">BOOT LINE 1</span><input class="tin" id="profileBoot1" maxlength="16" placeholder="HELLO"></div>
+  <div class="rrow"><span class="mlabel">BOOT LINE 2</span><input class="tin" id="profileBoot2" maxlength="16" placeholder="MOCHI"></div>
+  <div class="rrow"><span class="mlabel">DEFAULT FACE</span><select class="rselect" id="profileExpression"><option value="normal">Normal</option><option value="happy">Happy</option><option value="thinking">Thinking</option><option value="sleeping">Sleeping</option><option value="curious">Curious</option><option value="surprised">Surprised</option><option value="grumpy">Grumpy</option><option value="love">Love</option></select></div>
+  <div class="rrow"><span class="mlabel">START MODE</span><select class="rselect" id="profileMode"><option value="manual">Manual</option><option value="auto">Auto</option></select></div>
+  <div class="ctrl"><button class="cbtn on" id="profileSave" onclick="saveProfile()">save profile</button><button class="cbtn" onclick="resetProfile()">restore defaults</button></div>
+  <div class="ctrl"><button class="cbtn" id="configExport" onclick="exportConfig()">export JSON</button><button class="cbtn" id="configImport" onclick="document.getElementById('configFile').click()">import JSON</button></div>
+  <input id="configFile" type="file" accept="application/json,.json" hidden onchange="importConfig(this.files[0])">
+  <div class="minfo">Printable ASCII only. Changes to boot text appear after restart.</div>
 </div>
 <div class="sec">// network</div>
 <div class="wwrap" id="wwrap">
@@ -990,7 +1005,7 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
 <div class="toast" id="toast"></div>
 <script src="/wakeup_import.js"></script>
 <script>
-let activeView=0,termOpen=false,canvasOpen=false,arcadeOpen=false,dinoOpen=false,dinoPollTimer=null,dinoJumpPending=false,sokobanOpen=false,sokobanMovePending=false,sokobanStateData=null,arcadeGameOpen='',arcadeGameState=null,arcadeGamePending=false,arcadeGamePollTimer=null,breakoutPositionTimer=null,wifiSetupOpen=false,wifiConnecting=false,lastWifiStatus=null,blOn=true,claudeStatusOn=true,displayTheme=1,isBusy=false,drawing=false,initialLoadComplete=false;
+let activeView=0,termOpen=false,canvasOpen=false,arcadeOpen=false,dinoOpen=false,dinoPollTimer=null,dinoJumpPending=false,sokobanOpen=false,sokobanMovePending=false,sokobanStateData=null,arcadeGameOpen='',arcadeGameState=null,arcadeGamePending=false,arcadeGamePollTimer=null,breakoutPositionTimer=null,wifiSetupOpen=false,wifiConnecting=false,lastWifiStatus=null,blOn=true,claudeStatusOn=true,displayTheme=1,fontStyle='pixel',isBusy=false,drawing=false,initialLoadComplete=false;
 let timetable={schemaVersion:1,school:'GDUFS',termStart:'',courses:[]},editingCourse=-1,timetableStatus=null;
 let importSource='',importDraft=null;
 const graduateCourseNames={
@@ -1063,6 +1078,7 @@ async function updateExpression(payload){try{const r=await fetch('/expression',{
 async function selectExpression(id){if(isBusy||termOpen||canvasOpen)return;if(await updateExpression({id})){activeView=0;document.querySelectorAll('.vbtn').forEach(button=>button.classList.remove('active'));toast(id+' expression');}}
 async function toggleExpressionAuto(){if(isBusy||termOpen||canvasOpen)return;const mode=expressionState.mode==='auto'?'manual':'auto';if(await updateExpression({mode}))toast(mode==='auto'?'auto on':'manual expression');}
 function applyProfile(p){document.getElementById('profileName').value=p.deviceName||'MOCHI';document.getElementById('profileBoot1').value=p.bootLine1??'HELLO';document.getElementById('profileBoot2').value=p.bootLine2??'MOCHI';document.getElementById('profileExpression').value=p.defaultExpression||'normal';document.getElementById('profileMode').value=p.expressionMode==='auto'?'auto':'manual';document.querySelector('.sitename').textContent=(p.deviceName||'MOCHI')+' · CONTROLLER';}
+function toggleProfilePanel(){const panel=document.getElementById('profileWrap'),open=!panel.classList.contains('open');panel.classList.toggle('open',open);document.getElementById('profilePanelState').textContent=open?'close':'open';document.getElementById('profilePanelBtn').setAttribute('aria-expanded',String(open));}
 async function loadProfile(){try{const r=await fetch('/profile',{cache:'no-store'});if(!r.ok)throw new Error();applyProfile(await r.json());}catch(e){toast('profile load failed',false);}}
 async function saveProfile(){const payload={deviceName:document.getElementById('profileName').value,bootLine1:document.getElementById('profileBoot1').value,bootLine2:document.getElementById('profileBoot2').value,defaultExpression:document.getElementById('profileExpression').value,expressionMode:document.getElementById('profileMode').value};try{const r=await fetch('/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const p=await r.json();if(!r.ok)throw new Error(p.error||'save failed');applyProfile(p);await loadExpressions();toast('profile saved');}catch(e){toast(e.message||'profile save failed',false);}}
 async function resetProfile(){try{const r=await fetch('/profile/reset',{method:'POST'});if(!r.ok)throw new Error();applyProfile(await r.json());await loadExpressions();toast('profile defaults restored');}catch(e){toast('profile reset failed',false);}}
@@ -1225,8 +1241,10 @@ async function toggleBL(){blOn=!blOn;const v=blOn?100:0;document.getElementById(
 async function toggleClaudeStatus(){const next=!claudeStatusOn;if(!await req('/prefs?claudeStatus='+(next?'1':'0')))return;claudeStatusOn=next;updateClaudeStatusButton();toast(claudeStatusOn?'Claude status on':'Claude status off');}
 function applyDisplayTheme(theme){displayTheme=[1,2,3,4].includes(Number(theme))?Number(theme):1;const fg={1:'#fff',2:'#f64b00',3:'#5fe0ad',4:'#ff7eb3'}[displayTheme];document.documentElement.style.setProperty('--device-fg',fg);document.querySelectorAll('.theme-btn').forEach(btn=>btn.setAttribute('aria-pressed',String(Number(btn.dataset.theme)===displayTheme)));}
 async function setDisplayTheme(theme){try{const r=await fetch('/prefs?theme='+encodeURIComponent(theme),{cache:'no-store'});if(!r.ok)throw new Error();const p=await r.json();applyDisplayTheme(p.theme);document.getElementById('bgCol').value=p.bg;document.getElementById('bright').value=p.brightness;document.getElementById('brightV').textContent=p.brightness+'%';await loadProfile();await loadExpressions();toast(['','classic','dark','mint','pink'][displayTheme]+' theme');}catch(e){toast('theme save failed',false);}}
+function applyFontStyle(style){const allowed=['pixel','courier','terminal','dashboard'];fontStyle=allowed.includes(style)?style:'pixel';document.documentElement.dataset.fontStyle=fontStyle;const select=document.getElementById('fontSelect');if(select)select.value=fontStyle;}
+async function setFontStyle(style){try{const r=await fetch('/prefs?fontStyle='+encodeURIComponent(style),{cache:'no-store'});if(!r.ok)throw new Error();const p=await r.json();applyFontStyle(p.fontStyle);toast(fontStyle+' font selected');}catch(e){toast('font save failed',false);}}
 async function setBrightness(v){v=parseInt(v||0);document.getElementById('brightV').textContent=v+'%';blOn=v>0;updateBlButton();await req('/brightness?v='+v);}
-async function loadPrefs(){try{const r=await fetch('/prefs');const p=await r.json();document.getElementById('bgCol').value=p.bg||'#aa4818';document.getElementById('spd').value=p.speed||1;document.getElementById('spdV').textContent=spdLabels[p.speed||1];claudeStatusOn=p.claudeStatus!==false;updateClaudeStatusButton();applyDisplayTheme(p.theme);applyCarouselPrefs(p);redrawCanvas(p.bg||'#aa4818');}catch(e){applyDisplayTheme(1);renderCarousel();}}
+async function loadPrefs(){try{const r=await fetch('/prefs');const p=await r.json();document.getElementById('bgCol').value=p.bg||'#aa4818';document.getElementById('spd').value=p.speed||1;document.getElementById('spdV').textContent=spdLabels[p.speed||1];claudeStatusOn=p.claudeStatus!==false;updateClaudeStatusButton();applyDisplayTheme(p.theme);applyFontStyle(p.fontStyle);applyCarouselPrefs(p);redrawCanvas(p.bg||'#aa4818');}catch(e){applyDisplayTheme(1);applyFontStyle('pixel');renderCarousel();}}
 function fmtSec(s){s=Math.max(0,parseInt(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
 async function pollTimer(){try{const r=await fetch('/timer/status');const j=await r.json();document.getElementById('pPhase').textContent=(j.phase==='break'?'BREAK':'FOCUS')+(j.paused?' / PAUSED':'');document.getElementById('pTime').textContent=fmtSec(j.remaining);document.getElementById('focusMin').value=j.focus;document.getElementById('breakMin').value=j.break;}catch(e){}}
 async function startTimer(phase){await fetch('/timer/start?phase='+phase);document.getElementById('pwrap').classList.add('open');await pollTimer();toast(phase==='break'?'break started':'focus started');}

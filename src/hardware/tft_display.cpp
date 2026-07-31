@@ -1,7 +1,63 @@
 #include "tft_display.h"
 
+ScaledTextGfx::ScaledTextGfx(Adafruit_ST7789& target)
+    : Adafruit_GFX(CFG_DISPLAY_WIDTH, CFG_DISPLAY_HEIGHT)
+    , _target(target)
+    , _originX(0)
+    , _originY(0)
+    , _scaleXQ8(256)
+    , _scaleYQ8(256)
+{
+}
+
+void ScaledTextGfx::configure(int16_t originX, int16_t originY,
+                              uint16_t scaleXQ8, uint16_t scaleYQ8) {
+    _originX = originX;
+    _originY = originY;
+    _scaleXQ8 = scaleXQ8;
+    _scaleYQ8 = scaleYQ8;
+}
+
+void ScaledTextGfx::beginWrite() {
+    _target.startWrite();
+}
+
+void ScaledTextGfx::endWrite() {
+    _target.endWrite();
+}
+
+void ScaledTextGfx::drawScaledRect(int16_t x0, int16_t y0, int16_t x1,
+                                   int16_t y1, uint16_t color) {
+    const int16_t left = _originX +
+        static_cast<int32_t>(x0) * _scaleXQ8 / 256;
+    const int16_t top = _originY +
+        static_cast<int32_t>(y0) * _scaleYQ8 / 256;
+    const int16_t right = _originX +
+        static_cast<int32_t>(x1) * _scaleXQ8 / 256;
+    const int16_t bottom = _originY +
+        static_cast<int32_t>(y1) * _scaleYQ8 / 256;
+    if (right <= left || bottom <= top) return;
+    _target.writeFillRect(left, top, right - left, bottom - top, color);
+}
+
+void ScaledTextGfx::drawPixel(int16_t x, int16_t y, uint16_t color) {
+    drawScaledRect(x, y, x + 1, y + 1, color);
+}
+
+void ScaledTextGfx::drawFastHLine(int16_t x, int16_t y, int16_t w,
+                                  uint16_t color) {
+    drawScaledRect(x, y, x + w, y + 1, color);
+}
+
+void ScaledTextGfx::drawFastVLine(int16_t x, int16_t y, int16_t h,
+                                  uint16_t color) {
+    drawScaledRect(x, y, x + 1, y + h, color);
+}
+
 TftDisplay::TftDisplay()
     : _tft(CFG_DISPLAY_PIN_CS, CFG_DISPLAY_PIN_DC, CFG_DISPLAY_PIN_RST)
+    , _scaledTextGfx(_tft)
+    , _fontStyle(FontStyle::PIXEL)
     , _backlightOn(true)
 {
 }
@@ -14,6 +70,7 @@ void TftDisplay::init() {
     _tft.init(CFG_DISPLAY_WIDTH, CFG_DISPLAY_HEIGHT);
     _tft.setSPISpeed(CFG_DISPLAY_SPI_FREQ);
     _tft.setRotation(1);
+    _u8Text.begin(_scaledTextGfx);
     _tft.fillScreen(COLOR_BLACK);
 }
 
@@ -35,21 +92,29 @@ void TftDisplay::fillScreen(uint16_t color) {
 }
 
 void TftDisplay::drawText(int x, int y, const char* text, uint16_t color, uint16_t bgColor, uint8_t size) {
-    _tft.setTextSize(size);
-    _tft.setTextColor(color, bgColor);
-    _tft.setCursor(x, y);
-    _tft.print(text);
+    if (_fontStyle == FontStyle::PIXEL) {
+        _tft.setTextSize(size);
+        _tft.setTextColor(color, bgColor);
+        _tft.setCursor(x, y);
+        _tft.print(text);
+        return;
+    }
+    drawU8Text(x, y, text, color, bgColor, size);
 }
 
 void TftDisplay::drawTextCentered(int y, const char* text, uint16_t color, uint16_t bgColor, uint8_t size) {
-    _tft.setTextSize(size);
-    int16_t x1, y1;
-    uint16_t w, h;
-    _tft.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
-    int x = (CFG_DISPLAY_WIDTH - w) / 2;
-    _tft.setTextColor(color, bgColor);
-    _tft.setCursor(x, y);
-    _tft.print(text);
+    if (_fontStyle == FontStyle::PIXEL) {
+        _tft.setTextSize(size);
+        int16_t x1, y1;
+        uint16_t w, h;
+        _tft.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+        _tft.setTextColor(color, bgColor);
+        _tft.setCursor((CFG_DISPLAY_WIDTH - w) / 2, y);
+        _tft.print(text);
+        return;
+    }
+    const int x = (CFG_DISPLAY_WIDTH - getTextWidth(text, size)) / 2;
+    drawU8Text(x, y, text, color, bgColor, size);
 }
 
 void TftDisplay::drawRect(int x, int y, int w, int h, uint16_t color) {
@@ -130,14 +195,89 @@ void TftDisplay::fillEllipse(int x, int y, int rx, int ry, uint16_t color) {
 }
 
 int TftDisplay::getTextWidth(const char* text, uint8_t size) {
-    _tft.setTextSize(size);
-    int16_t x1, y1;
-    uint16_t w, h;
-    _tft.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
-    return w;
+    return text ? strlen(text) * 6 * size : 0;
 }
 
 int TftDisplay::getTextHeight(uint8_t size) {
-    _tft.setTextSize(size);
     return size * 8;
+}
+
+bool TftDisplay::isNumericText(const char* text) const {
+    if (!text || !text[0]) return false;
+    for (const char* cursor = text; *cursor; ++cursor) {
+        const char c = *cursor;
+        if (!((c >= '0' && c <= '9') || c == '.' || c == ':' ||
+              c == '%' || c == '+' || c == '-' || c == '/' || c == ' ')) {
+            return false;
+        }
+    }
+    return true;
+}
+
+const uint8_t* TftDisplay::u8FontForText(const char* text, uint8_t size) const {
+    const bool numeric = isNumericText(text);
+    switch (_fontStyle) {
+        case FontStyle::PIXEL:
+            if (size <= FONT_SMALL) return u8g2_font_t0_11b_tr;
+            if (size == FONT_MEDIUM) return u8g2_font_t0_15b_tr;
+            if (size == FONT_LARGE) return u8g2_font_t0_18b_tr;
+            return u8g2_font_t0_22b_tr;
+        case FontStyle::COURIER:
+            if (size <= FONT_SMALL) return u8g2_font_courB08_tr;
+            if (size == FONT_MEDIUM) return u8g2_font_courB14_tr;
+            return u8g2_font_courB24_tr;
+        case FontStyle::TERMINAL:
+            if (size <= FONT_SMALL) return u8g2_font_profont10_tr;
+            if (size == FONT_MEDIUM) return u8g2_font_profont17_tr;
+            if (size == FONT_LARGE) return u8g2_font_profont22_tr;
+            return u8g2_font_profont29_tr;
+        case FontStyle::DASHBOARD:
+            if (numeric) {
+                if (size <= FONT_SMALL) return u8g2_font_helvB08_tr;
+                if (size == FONT_MEDIUM) return u8g2_font_logisoso20_tn;
+                if (size == FONT_LARGE) return u8g2_font_logisoso24_tn;
+                if (size == 4) return u8g2_font_logisoso32_tn;
+                return u8g2_font_logisoso38_tn;
+            }
+            if (size <= FONT_SMALL) return u8g2_font_helvB08_tr;
+            if (size == FONT_MEDIUM) return u8g2_font_helvB14_tr;
+            return u8g2_font_helvB24_tr;
+        default:
+            return u8g2_font_t0_11b_tr;
+    }
+}
+
+uint16_t TftDisplay::u8ScaleXQ8(const char* text, uint8_t size) {
+    _u8Text.setFont(u8FontForText(text, size));
+    const int rawWidth = _u8Text.getUTF8Width(text);
+    if (rawWidth <= 0) return 256;
+    const uint32_t targetWidth = strlen(text) * 6U * size;
+    return static_cast<uint16_t>(
+        (targetWidth * 256U + rawWidth / 2) / rawWidth);
+}
+
+uint16_t TftDisplay::u8ScaleYQ8(const char* text, uint8_t size) {
+    _u8Text.setFont(u8FontForText(text, size));
+    const int fontHeight =
+        _u8Text.getFontAscent() - _u8Text.getFontDescent();
+    if (fontHeight <= 0) return 256;
+    const uint16_t targetHeight = static_cast<uint16_t>(size) * 8U;
+    return static_cast<uint16_t>(
+        (static_cast<uint32_t>(targetHeight) * 256U + fontHeight / 2) /
+        fontHeight);
+}
+
+void TftDisplay::drawU8Text(int x, int y, const char* text, uint16_t color,
+                            uint16_t bgColor, uint8_t size) {
+    const uint8_t* font = u8FontForText(text, size);
+    _u8Text.setFont(font);
+    _scaledTextGfx.configure(x, y, u8ScaleXQ8(text, size),
+                             u8ScaleYQ8(text, size));
+    _u8Text.setFontDirection(0);
+    _u8Text.setFontMode(0);
+    _u8Text.setForegroundColor(color);
+    _u8Text.setBackgroundColor(bgColor);
+    _scaledTextGfx.beginWrite();
+    _u8Text.drawUTF8(0, _u8Text.getFontAscent(), text);
+    _scaledTextGfx.endWrite();
 }

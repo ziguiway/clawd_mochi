@@ -175,6 +175,9 @@ public:
     void setDisplayTheme(uint8_t theme);
     uint8_t getDisplayTheme() const { return _displayTheme; }
 
+    void setFontStyle(FontStyle style);
+    FontStyle getFontStyle() const { return _fontStyle; }
+
     // 配网流程绘制(供 ProvisioningState 调用)
     void updateProvisioning();
 
@@ -215,6 +218,7 @@ private:
     uint8_t _brightnessPercent;
     bool _claudeStatusEnabled;
     uint8_t _displayTheme;
+    FontStyle _fontStyle;
     uint16_t _themeForeground;
 
     // 表情模式。AUTO 只由用户主动开启，默认保持 MANUAL / Normal。

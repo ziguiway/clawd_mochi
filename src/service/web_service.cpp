@@ -756,6 +756,16 @@ void WebService::handlePrefs() {
         _displayService->setBrightnessPercent(brightness);
         LOG_INFO("Web", "Theme applied: %u", theme);
     }
+    if (_server.hasArg("fontStyle")) {
+        FontStyle style;
+        if (!fontStyleFromName(_server.arg("fontStyle"), style)) {
+            _server.send(400, "application/json", "{\"error\":\"unknown font style\"}");
+            return;
+        }
+        _preferenceService->setFontStyle(style);
+        _displayService->setFontStyle(style);
+        LOG_INFO("Web", "Font style applied: %s", fontStyleToName(style));
+    }
     if (_server.hasArg("carousel")) {
         const bool enabled = _server.arg("carousel") == "1" ||
                              _server.arg("carousel") == "true";
@@ -1011,6 +1021,8 @@ void WebService::handleConfigImport() {
     ExpressionId expression;
     const uint8_t startup = prefs["startup"] | 255;
     const uint8_t theme = prefs["theme"] | 255;
+    FontStyle fontStyle;
+    const String fontStyleName = prefs["fontStyle"] | "pixel";
     const uint8_t speed = prefs["speed"] | 0;
     const uint8_t brightness = prefs["brightness"] | 255;
     const uint8_t nightStart = prefs["nightStart"] | 255;
@@ -1030,6 +1042,7 @@ void WebService::handleConfigImport() {
          startup != VIEW_WEATHER && startup != VIEW_CRYPTO &&
          startup != VIEW_MARKET && startup != VIEW_SALARY) ||
         !validBg || theme >= THEME_COUNT || speed < 1 || speed > 3 ||
+        !fontStyleFromName(fontStyleName, fontStyle) ||
         brightness > 100 || nightStart > 23 || nightEnd > 23 ||
         nightBrightness > 100 ||
         !prefs["nightDim"].is<bool>() ||
@@ -1062,6 +1075,7 @@ void WebService::handleConfigImport() {
     _preferenceService->setBrightnessPercent(brightness);
     _preferenceService->setClaudeStatusEnabled(prefs["claudeStatus"]);
     _preferenceService->setDisplayTheme(theme);
+    _preferenceService->setFontStyle(fontStyle);
     _preferenceService->setCarouselEnabled(prefs["carousel"]);
     _preferenceService->setCarouselSpeedSeconds(prefs["carouselSpeed"] | 12);
     _preferenceService->setCarouselFixedView(prefs["carouselFixed"] | VIEW_WEATHER);
@@ -1077,6 +1091,7 @@ void WebService::handleConfigImport() {
     _displayService->setBrightnessPercent(brightness);
     _displayService->setClaudeStatusEnabled(prefs["claudeStatus"]);
     _displayService->setDisplayTheme(theme);
+    _displayService->setFontStyle(fontStyle);
     _displayService->setExpression(expression);
     _displayService->setExpressionMode(mode);
     _displayService->reloadIdleDisplayPreferences();

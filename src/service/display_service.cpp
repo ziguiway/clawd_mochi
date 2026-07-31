@@ -106,6 +106,7 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _brightnessPercent(100)
     , _claudeStatusEnabled(true)
     , _displayTheme(THEME_ORANGE_WHITE), _themeForeground(COLOR_WHITE)
+    , _fontStyle(FontStyle::PIXEL)
     , _expressionMode(ExpressionMode::MANUAL)
     , _selectedExpression(ExpressionId::NORMAL)
     , _renderedExpression(ExpressionId::NORMAL)
@@ -158,6 +159,8 @@ void DisplayService::init() {
         _brightnessPercent = _preferenceService->getBrightnessPercent();
         _claudeStatusEnabled = _preferenceService->getClaudeStatusEnabled();
         _displayTheme = _preferenceService->getDisplayTheme();
+        _fontStyle = _preferenceService->getFontStyle();
+        _tft->setFontStyle(_fontStyle);
         if (_displayTheme == THEME_ORANGE_BLACK) _themeForeground = COLOR_BLACK;
         else if (_displayTheme == THEME_DARK_ORANGE) _themeForeground = COLOR_ORANGE;
         else if (_displayTheme == THEME_MINT) _themeForeground = COLOR_MINT;
@@ -190,6 +193,30 @@ void DisplayService::setDisplayTheme(uint8_t theme) {
     else _themeForeground = COLOR_WHITE;
     _ccView.setForegroundColor(_themeForeground);
     invalidateTimeView();
+}
+
+void DisplayService::setFontStyle(FontStyle style) {
+    if (style >= FontStyle::COUNT || style == _fontStyle) return;
+    _fontStyle = style;
+    _tft->setFontStyle(style);
+    _ccView.reset();
+    _timeViewDirty = true;
+    _timeViewLayoutDrawn = false;
+    _lastTimetableRenderMinute = ULONG_MAX;
+    _timetableLayoutDrawn = false;
+    _lastSalaryAmount[0] = '\0';
+    _lastSalaryWorked[0] = '\0';
+    _lastSalaryState[0] = '\0';
+    _lastSalaryProgressPermille = 0xFFFF;
+
+    if (_currentMode == DisplayMode::INTERACTIVE) {
+        if (_interactiveView == InteractiveView::SALARY_COUNTER) {
+            drawSalaryCounterLayout();
+            drawSalaryCounterView();
+        } else {
+            redrawCurrentView();
+        }
+    }
 }
 
 void DisplayService::setExpression(ExpressionId expression) {
@@ -329,10 +356,8 @@ void DisplayService::renderTimeScreenLayout(const char* mark, const char* modeTe
     _tft->fillScreen(COLOR_ORANGE);
 
     // 顶部 mark + 下划线
-    _tft->getTft().setTextColor(_themeForeground);
-    _tft->getTft().setTextSize(1);
-    _tft->getTft().setCursor(14, 14);
-    _tft->getTft().print(mark);
+    _tft->drawText(14, 14, mark, _themeForeground, COLOR_ORANGE,
+                   FONT_SMALL);
     _tft->fillRect(14, 31, 42, 4, _themeForeground);
 
     // 进度条外框(静态)
@@ -343,10 +368,8 @@ void DisplayService::renderTimeScreenLayout(const char* mark, const char* modeTe
                    CFG_DISPLAY_HEIGHT - captionY, COLOR_ORANGE);
     _tft->fillRect(10, captionY, CFG_DISPLAY_WIDTH - 20, 3,
                    _themeForeground);
-    _tft->getTft().setTextSize(1);
-    _tft->getTft().setTextColor(_themeForeground);
-    _tft->getTft().setCursor(10, captionY + 8);
-    _tft->getTft().print(modeText);
+    _tft->drawText(10, captionY + 8, modeText, _themeForeground,
+                   COLOR_ORANGE, FONT_SMALL);
 
     _timeViewLayoutDrawn = true;
 }
@@ -368,27 +391,23 @@ void DisplayService::renderTimeScreenDynamic(const char* timeText, const char* s
     const bool progChanged = (progressPermille != _lastProgressPermille) ||
                              (lightProgress != _lastLightProgress);
 
-    int16_t x1, y1;
-    uint16_t w, h;
-
     // 时间文字(size 6)
     if (timeChanged) {
         _tft->fillRect(0, 60, CFG_DISPLAY_WIDTH, 58, COLOR_ORANGE);
-        _tft->getTft().setTextSize(6);
-        _tft->getTft().setTextColor(_themeForeground);
-        _tft->getTft().getTextBounds(timeText, 0, 0, &x1, &y1, &w, &h);
-        _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - w) / 2, 72);
-        _tft->getTft().print(timeText);
+        const int16_t timeX =
+            (CFG_DISPLAY_WIDTH - _tft->getTextWidth(timeText, 6)) / 2;
+        _tft->drawText(timeX, 72, timeText, _themeForeground,
+                       COLOR_ORANGE, 6);
     }
 
     // 子文字(size 2)
     if (subChanged) {
         _tft->fillRect(0, 124, CFG_DISPLAY_WIDTH, 28, COLOR_ORANGE);
-        _tft->getTft().setTextSize(2);
-        _tft->getTft().setTextColor(_themeForeground);
-        _tft->getTft().getTextBounds(subText, 0, 0, &x1, &y1, &w, &h);
-        _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - w) / 2, 132);
-        _tft->getTft().print(subText);
+        const int16_t subX =
+            (CFG_DISPLAY_WIDTH - _tft->getTextWidth(subText, FONT_MEDIUM)) /
+            2;
+        _tft->drawText(subX, 132, subText, _themeForeground,
+                       COLOR_ORANGE, FONT_MEDIUM);
     }
 
     // 进度条填充
@@ -406,11 +425,10 @@ void DisplayService::renderTimeScreenDynamic(const char* timeText, const char* s
     if (hintChanged) {
         _tft->fillRect(CFG_DISPLAY_WIDTH / 2, captionY + 6,
                        CFG_DISPLAY_WIDTH / 2 - 4, 16, COLOR_ORANGE);
-        _tft->getTft().setTextSize(1);
-        _tft->getTft().setTextColor(_themeForeground);
-        _tft->getTft().getTextBounds(hintText, 0, 0, &x1, &y1, &w, &h);
-        _tft->getTft().setCursor(CFG_DISPLAY_WIDTH - w - 10, captionY + 8);
-        _tft->getTft().print(hintText);
+        const int16_t hintX = CFG_DISPLAY_WIDTH -
+            _tft->getTextWidth(hintText, FONT_SMALL) - 10;
+        _tft->drawText(hintX, captionY + 8, hintText, _themeForeground,
+                       COLOR_ORANGE, FONT_SMALL);
     }
 
     // 缓存最新值
@@ -546,11 +564,9 @@ void DisplayService::drawClockView() {
     const int16_t secondsY = holidayLayout ? 99 : 122;
     if (strcmp(timeText, _lastTimeText) != 0) {
         _tft->fillRect(0, timeY - 5, CFG_DISPLAY_WIDTH, 68, background);
-        _tft->getTft().setTextSize(6);
-        int16_t x1, y1;
-        uint16_t w, h;
-        _tft->getTft().getTextBounds(timeText, 0, 0, &x1, &y1, &w, &h);
-        _tft->drawText((CFG_DISPLAY_WIDTH - w) / 2, timeY, timeText,
+        const int16_t timeX =
+            (CFG_DISPLAY_WIDTH - _tft->getTextWidth(timeText, 6)) / 2;
+        _tft->drawText(timeX, timeY, timeText,
                        _themeForeground, background, 6);
         strncpy(_lastTimeText, timeText, sizeof(_lastTimeText) - 1);
         _lastTimeText[sizeof(_lastTimeText) - 1] = '\0';
@@ -659,7 +675,8 @@ void DisplayService::drawWeatherView() {
     snprintf(temp, sizeof(temp), "%d", _weatherService->getTemperature());
     const uint8_t tempSize = strlen(temp) <= 2 ? 9 : 7;
     _tft->drawText(8, 14, temp, _themeForeground, COLOR_ORANGE, tempSize);
-    const int16_t degreeX = 8 + strlen(temp) * 6 * tempSize + 6;
+    const int16_t degreeX =
+        8 + _tft->getTextWidth(temp, tempSize) + 6;
     _tft->fillRect(degreeX, 18, 18, 18, _themeForeground);
     _tft->fillRect(degreeX + 5, 23, 8, 8, COLOR_ORANGE);
 
@@ -725,13 +742,9 @@ void DisplayService::formatCryptoPrice(float price, char* output, size_t size) {
 void DisplayService::drawCryptoView() {
     _tft->fillScreen(COLOR_ORANGE);
 
-    auto drawBold = [this](int16_t x, int16_t y, const char* text, uint8_t size) {
+    auto drawBold = [this](int16_t x, int16_t y, const char* text,
+                           uint8_t size) {
         _tft->drawText(x, y, text, _themeForeground, COLOR_ORANGE, size);
-        Adafruit_ST7789& screen = _tft->getTft();
-        screen.setTextSize(size);
-        screen.setTextColor(_themeForeground);
-        screen.setCursor(x + 1, y);
-        screen.print(text);
     };
 
     drawBold(8, 8, "CRYPTO", FONT_MEDIUM);
@@ -808,13 +821,9 @@ void DisplayService::formatMarketPrice(float price, char* output, size_t size) {
 void DisplayService::drawMarketView() {
     _tft->fillScreen(COLOR_ORANGE);
 
-    auto drawBold = [this](int16_t x, int16_t y, const char* text, uint8_t size) {
+    auto drawBold = [this](int16_t x, int16_t y, const char* text,
+                           uint8_t size) {
         _tft->drawText(x, y, text, _themeForeground, COLOR_ORANGE, size);
-        Adafruit_ST7789& screen = _tft->getTft();
-        screen.setTextSize(size);
-        screen.setTextColor(_themeForeground);
-        screen.setCursor(x + 1, y);
-        screen.print(text);
     };
 
     drawBold(8, 8, "MARKET", FONT_MEDIUM);

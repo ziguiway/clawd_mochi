@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <Preferences.h>
 #include "../config/cfg_display.h"
+#include "../config/font_style.h"
 #include "../view/expression_id.h"
 
 class TimeService;
@@ -45,6 +46,9 @@ public:
 
     uint8_t getDisplayTheme() const { return _displayTheme; }
     void setDisplayTheme(uint8_t theme);
+
+    FontStyle getFontStyle() const { return _fontStyle; }
+    void setFontStyle(FontStyle style);
 
     // 空闲信息轮播（天气 / Crypto / Market / 时间）
     bool getCarouselEnabled() const { return _carouselEnabled; }
@@ -114,6 +118,7 @@ private:
     uint32_t _game2048BestScore = 0;
     uint32_t _breakoutHighScore = 0;
     uint8_t _displayTheme = THEME_ORANGE_WHITE;
+    FontStyle _fontStyle = FontStyle::PIXEL;
     bool _carouselEnabled = false;
     uint8_t _carouselSpeedSeconds = 12;
     uint8_t _carouselOrder[CAROUSEL_VIEW_COUNT] = {

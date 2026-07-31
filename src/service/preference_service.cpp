@@ -22,6 +22,10 @@ void PreferenceService::init() {
     if (_displayTheme >= THEME_COUNT) {
         _displayTheme = THEME_ORANGE_WHITE;
     }
+    const uint8_t storedFontStyle = _prefs.getUChar(
+        "font", static_cast<uint8_t>(_fontStyle));
+    _fontStyle = isValidFontStyle(storedFontStyle)
+        ? static_cast<FontStyle>(storedFontStyle) : FontStyle::PIXEL;
     _carouselEnabled = _prefs.getBool("carousel", _carouselEnabled);
     _carouselSpeedSeconds = constrain(
         _prefs.getUChar("cspeed", _carouselSpeedSeconds), 5, 60);
@@ -225,6 +229,12 @@ void PreferenceService::setDisplayTheme(uint8_t theme) {
     _prefs.putUChar("theme", _displayTheme);
 }
 
+void PreferenceService::setFontStyle(FontStyle style) {
+    if (style >= FontStyle::COUNT) return;
+    _fontStyle = style;
+    _prefs.putUChar("font", static_cast<uint8_t>(style));
+}
+
 void PreferenceService::setCarouselEnabled(bool enabled) {
     _carouselEnabled = enabled;
     _prefs.putBool("carousel", _carouselEnabled);
@@ -354,6 +364,8 @@ String PreferenceService::getJson() const {
     json += ",\"brightness\":" + String(_brightnessPercent);
     json += ",\"claudeStatus\":" + String(_claudeStatusEnabled ? "true" : "false");
     json += ",\"theme\":" + String(_displayTheme);
+    json += ",\"fontStyle\":\"" +
+            String(fontStyleToName(_fontStyle)) + "\"";
     json += ",\"carousel\":" + String(_carouselEnabled ? "true" : "false");
     json += ",\"carouselSpeed\":" + String(_carouselSpeedSeconds);
     json += ",\"carouselOrder\":[" + String(_carouselOrder[0]) + "," +

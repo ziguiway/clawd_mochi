@@ -188,6 +188,7 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
         "brightness": 100,
         "claudeStatus": True,
         "theme": 1,
+        "fontStyle": "pixel",
         "carousel": False,
         "carouselSpeed": 12,
         "carouselOrder": [8, 9, 10, 6, 17],
@@ -368,6 +369,12 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
                         "selected": expression,
                         "rendered": expression,
                     }
+                if "fontStyle" in args:
+                    style = args["fontStyle"][0]
+                    if style not in {"pixel", "courier", "terminal", "dashboard"}:
+                        self.send_json({"error": "unknown font style"}, 400)
+                        return
+                    self.__class__.prefs["fontStyle"] = style
                 if "carouselSpeed" in args:
                     self.__class__.prefs["carouselSpeed"] = int(
                         args["carouselSpeed"][0]
@@ -995,6 +1002,9 @@ def run_expression_flow(page: Page, *, stub_mode: bool) -> None:
 
 def run_profile_flow(page: Page, *, stub_mode: bool) -> None:
     open_controller(page)
+    assert not page.locator("#profileWrap").is_visible()
+    page.locator("#profilePanelBtn").click()
+    page.locator("#profileWrap").wait_for(state="visible")
     page.locator("#profileName").fill("NOVA")
     page.locator("#profileBoot1").fill("WELCOME")
     page.locator("#profileBoot2").fill("NOVA")
@@ -1061,6 +1071,23 @@ def run_theme_flow(page: Page, *, stub_mode: bool) -> None:
     print("PASS  切换并持久化 Classic / Dark / Mint / Pink 四主题")
 
 
+def run_font_flow(page: Page, *, stub_mode: bool) -> None:
+    selector = page.locator("#fontSelect")
+    assert selector.locator("option").count() == 4, (
+        "Font selector should expose four profiles"
+    )
+    page.wait_for_function("() => fontStyle === 'pixel'")
+
+    for style in ("courier", "terminal", "dashboard", "pixel"):
+        selector.select_option(style)
+        page.wait_for_function("style => fontStyle === style", arg=style)
+        assert selector.input_value() == style
+        if stub_mode:
+            assert FirmwareStubHandler.prefs["fontStyle"] == style
+
+    print("PASS  简洁字体设置支持四套字体并可持久化切换")
+
+
 def run_config_flow(page: Page, *, stub_mode: bool) -> None:
     open_controller(page)
     exported = page.evaluate(
@@ -1080,6 +1107,7 @@ def run_config_flow(page: Page, *, stub_mode: bool) -> None:
     imported["profile"]["defaultExpression"] = "curious"
     imported["profile"]["expressionMode"] = "manual"
     imported["preferences"]["theme"] = 3
+    imported["preferences"]["fontStyle"] = "terminal"
     imported["preferences"]["bg"] = "#10251f"
     status = page.evaluate(
         """async config => {
@@ -1097,6 +1125,8 @@ def run_config_flow(page: Page, *, stub_mode: bool) -> None:
         "async () => await (await fetch('/profile')).json()"
     )
     assert refreshed["deviceName"] == "IMPORT"
+    if stub_mode:
+        assert FirmwareStubHandler.prefs["fontStyle"] == "terminal"
     print("PASS  导入合法配置并应用")
 
     before = page.evaluate(
@@ -1810,6 +1840,7 @@ def main() -> int:
             "brightness": 100,
             "claudeStatus": True,
             "theme": 1,
+            "fontStyle": "pixel",
             "carousel": False,
             "carouselSpeed": 12,
             "carouselOrder": [8, 9, 10, 6, 17],
@@ -1950,6 +1981,7 @@ def main() -> int:
                 run_expression_flow(page, stub_mode=not bool(args.device_url))
                 run_profile_flow(page, stub_mode=not bool(args.device_url))
                 run_theme_flow(page, stub_mode=not bool(args.device_url))
+                run_font_flow(page, stub_mode=not bool(args.device_url))
                 run_config_flow(page, stub_mode=not bool(args.device_url))
                 run_carousel_flow(page, stub_mode=not bool(args.device_url))
                 run_timetable_import_flow(
