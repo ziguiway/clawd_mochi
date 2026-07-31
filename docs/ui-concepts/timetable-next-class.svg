@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <rect width="240" height="240" fill="#F05A18"/>
+  <g fill="#FFF8E8" font-family="'Courier New',monospace">
+    <text x="14" y="22" font-size="11" font-weight="700" letter-spacing="1.5">NEXT CLASS</text>
+    <text x="226" y="22" font-size="9" text-anchor="end">FRI · W01</text>
+    <rect x="14" y="30" width="212" height="2"/>
+    <text x="14" y="63" font-size="11" font-weight="700">10:20 — 12:00</text>
+    <text x="14" y="100" font-size="27" font-weight="900">DATA</text>
+    <text x="14" y="130" font-size="27" font-weight="900">STRUCTURES</text>
+    <text x="14" y="154" font-size="12" font-weight="700">N301  /  PROF. CHEN</text>
+    <rect x="14" y="169" width="212" height="1"/>
+    <text x="14" y="197" font-size="11" font-weight="700" letter-spacing="1">STARTS IN</text>
+    <text x="226" y="201" font-size="27" font-weight="900" text-anchor="end">42 MIN</text>
+    <rect x="14" y="218" width="212" height="7" fill="none" stroke="#FFF8E8" stroke-width="2"/>
+    <rect x="16" y="220" width="130" height="3"/>
+    <text x="14" y="237" font-size="8">2 MORE TODAY</text>
+  </g>
+</svg>

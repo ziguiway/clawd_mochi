@@ -1,4 +1,10 @@
 #include "web_service.h"
+
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
+
+#include "../utils/memory_monitor.h"
+#include "../utils/network_request_gate.h"
 #include "../config/app_config.h"
 #include "operation_mode_service.h"
 #include "../config/cfg_display.h"
@@ -19,7 +25,8 @@ WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiServ
                        TimeService* timeService, DisplayService* displayService,
                        PreferenceService* preferenceService,
                        CryptoService* cryptoService,
-                       MarketService* marketService)
+                       MarketService* marketService,
+                       TimetableService* timetableService)
     : _server(CFG_WIFI_WEB_PORT)
     , _started(false)
     , _ccService(ccService), _wifiService(wifiService)
@@ -27,6 +34,7 @@ WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiServ
     , _preferenceService(preferenceService)
     , _cryptoService(cryptoService)
     , _marketService(marketService)
+    , _timetableService(timetableService)
 {
 }
 
@@ -47,6 +55,9 @@ void WebService::update() {
 void WebService::setupRoutes() {
     // Original interactive routes
     _server.on("/",            HTTP_GET, [this]() { handleRoot(); });
+    _server.on("/wakeup_import.js", HTTP_GET, [this]() {
+        handleFile("/wakeup_import.js", "application/javascript");
+    });
     _server.on("/cmd",         HTTP_GET, [this]() { handleCmd(); });
     _server.on("/char",        HTTP_GET, [this]() { handleChar(); });
     _server.on("/speed",       HTTP_GET, [this]() { handleSpeed(); });
@@ -104,6 +115,10 @@ void WebService::setupRoutes() {
     _server.on("/market/config", HTTP_POST, [this]() { handleMarketUpdate(); });
     _server.on("/market/refresh", HTTP_POST, [this]() { handleMarketRefresh(); });
     _server.on("/market/search", HTTP_GET, [this]() { handleMarketSearch(); });
+    _server.on("/timetable", HTTP_GET, [this]() { handleTimetableGet(); });
+    _server.on("/timetable", HTTP_POST, [this]() { handleTimetableSave(); });
+    _server.on("/timetable/status", HTTP_GET, [this]() { handleTimetableStatus(); });
+    _server.on("/timetable/import/wakeup/proxy", HTTP_POST, [this]() { handleWakeUpProxy(); });
 
     // Existing routes
     _server.on("/wifi_setup", [this]() { handleWifiSetup(); });
@@ -192,6 +207,10 @@ void WebService::handleCmd() {
         case 'y':
             rememberedView = VIEW_SALARY;
             _displayService->setInteractiveView(VIEW_SALARY);
+            break;
+        case 'u':
+            rememberedView = VIEW_TIMETABLE;
+            _displayService->setInteractiveView(VIEW_TIMETABLE);
             break;
         case 'a': _displayService->animLogoReveal(); break;
     }
@@ -1243,6 +1262,153 @@ void WebService::handleMarketSearch() {
     }
     _server.sendHeader("Cache-Control", "no-store");
     _server.send(200, "application/json", _marketService->searchJson(query));
+}
+
+void WebService::handleTimetableGet() {
+    if (!_timetableService) {
+        _server.send(503, "application/json", "{\"error\":\"service unavailable\"}");
+        return;
+    }
+    String payload;
+    if (!_timetableService->loadJson(payload)) {
+        _server.send(200, "application/json",
+            "{\"schemaVersion\":1,\"school\":\"GDUFS\",\"termStart\":\"\","
+            "\"courses\":[]}");
+        return;
+    }
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json", payload);
+}
+
+void WebService::handleTimetableSave() {
+    if (!_timetableService || !_server.hasArg("plain")) {
+        _server.send(400, "application/json", "{\"error\":\"JSON body required\"}");
+        return;
+    }
+    String error;
+    if (!_timetableService->saveJson(_server.arg("plain"), error)) {
+        JsonDocument response;
+        response["error"] = error;
+        String payload;
+        serializeJson(response, payload);
+        _server.send(400, "application/json", payload);
+        return;
+    }
+    if (_displayService &&
+        _displayService->getInteractiveView() == VIEW_TIMETABLE) {
+        _displayService->redrawCurrentView();
+    }
+    _server.send(200, "application/json", "{\"ok\":true}");
+}
+
+void WebService::handleTimetableStatus() {
+    TimetableSnapshot snapshot = {};
+    const bool ready = _timetableService &&
+        _timetableService->getSnapshot(_timeService, snapshot);
+    JsonDocument doc;
+    doc["configured"] = _timetableService && _timetableService->isConfigured();
+    doc["ready"] = ready;
+    const char* state = "not_configured";
+    switch (snapshot.state) {
+        case TimetableState::NO_CLASS_TODAY: state = "no_class_today"; break;
+        case TimetableState::NEXT_CLASS: state = "next_class"; break;
+        case TimetableState::IN_CLASS: state = "in_class"; break;
+        case TimetableState::ALL_DONE: state = "all_done"; break;
+        default: break;
+    }
+    doc["state"] = state;
+    doc["week"] = snapshot.academicWeek;
+    doc["todayTotal"] = snapshot.todayTotal;
+    doc["todayCompleted"] = snapshot.todayCompleted;
+    doc["remainingToday"] = snapshot.remainingToday;
+    doc["minutesRemaining"] = snapshot.minutesRemaining;
+    if (snapshot.course.name[0]) {
+        JsonObject course = doc["course"].to<JsonObject>();
+        course["name"] = snapshot.course.name;
+        course["shortName"] = snapshot.course.shortName;
+        course["room"] = snapshot.course.room;
+        course["teacher"] = snapshot.course.teacher;
+        course["start"] = snapshot.course.start;
+        course["end"] = snapshot.course.end;
+        course["day"] = snapshot.course.weekday;
+    }
+    String payload;
+    serializeJson(doc, payload);
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json", payload);
+}
+
+void WebService::handleWakeUpProxy() {
+    // 浏览器负责签名、解密和课表解析；设备只允许转发到这两个固定端点，
+    // 避免把它变成任意 URL 代理。请求和响应均不写入 LittleFS/NVS。
+    const String stage = _server.arg("stage");
+    const char* path = nullptr;
+    if (stage == "antispam") path = "/pluto/app/antispam";
+    else if (stage == "share") path = "/share_schedule/getv2";
+    else {
+        _server.send(400, "application/json", "{\"error\":\"invalid WakeUp stage\"}");
+        return;
+    }
+    if (!_wifiService || !_wifiService->isConnected()) {
+        _server.send(503, "application/json", "{\"error\":\"internet connection required\"}");
+        return;
+    }
+    const String body = _server.arg("plain");
+    if (body.isEmpty() || body.length() > 12288) {
+        _server.send(413, "application/json", "{\"error\":\"invalid WakeUp request\"}");
+        return;
+    }
+    auto validId = [](const String& value, size_t maxLen) {
+        if (value.length() > maxLen) return false;
+        for (size_t i = 0; i < value.length(); i++) {
+            const char c = value[i];
+            if (!isalnum(static_cast<unsigned char>(c)) && c != '|' &&
+                c != '-' && c != '_') return false;
+        }
+        return true;
+    };
+    const String cuid = _server.arg("cuid");
+    const String adid = _server.arg("adid");
+    const String did = _server.arg("did");
+    if (!validId(cuid, 48) || !validId(adid, 48) || !validId(did, 64)) {
+        _server.send(400, "application/json", "{\"error\":\"invalid temporary device id\"}");
+        return;
+    }
+    if (!MemoryMonitor::hasTlsHeadroom("WakeUpImport") ||
+        !NetworkRequestGate::tryAcquire()) {
+        _server.send(503, "application/json", "{\"error\":\"network busy, try again\"}");
+        return;
+    }
+
+    WiFiClientSecure client;
+    client.setInsecure();
+    HTTPClient http;
+    http.setConnectTimeout(8000);
+    http.setTimeout(15000);
+    const String url = String("https://api.wakeup.fun") + path;
+    if (!http.begin(client, url)) {
+        NetworkRequestGate::release();
+        _server.send(502, "application/json", "{\"error\":\"WakeUp connection failed\"}");
+        return;
+    }
+    http.useHTTP10(true);
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+    http.addHeader("Accept-Encoding", "identity");
+    http.addHeader("na__zyb_source__", "wakeup");
+    if (!cuid.isEmpty()) http.addHeader("zyb-cuid", cuid);
+    if (!adid.isEmpty()) http.addHeader("zyb-adid", adid);
+    if (!did.isEmpty()) http.addHeader("zyb-did", did);
+    const int status = http.POST(body);
+    String response;
+    if (status > 0) response = http.getString();
+    http.end();
+    NetworkRequestGate::release();
+    if (status <= 0) {
+        _server.send(502, "application/json", "{\"error\":\"WakeUp request failed\"}");
+        return;
+    }
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(status, "application/json", response);
 }
 
 // ── Existing handlers ──────────────────────────────────────────

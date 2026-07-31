@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <rect width="240" height="240" fill="#F05A18"/>
+  <g fill="#FFF8E8" font-family="'Courier New',monospace">
+    <text x="14" y="22" font-size="11" font-weight="700" letter-spacing="1.5">TODAY</text>
+    <text x="226" y="22" font-size="9" text-anchor="end">FRI · W01</text>
+    <rect x="14" y="30" width="212" height="2"/>
+
+    <!-- Pixel completion seal: symmetric octagon, inset border, bold tick -->
+    <path d="M96 45H144L158 59V101L144 115H96L82 101V59Z"
+          fill="none" stroke="#FFF8E8" stroke-width="4"/>
+    <path d="M99 51H141L152 62V98L141 109H99L88 98V62Z"
+          fill="none" stroke="#FFF8E8" stroke-width="1"/>
+    <path d="M99 80L113 94L142 64"
+          fill="none" stroke="#FFF8E8" stroke-width="8"
+          stroke-linecap="square" stroke-linejoin="miter"/>
+
+    <text x="120" y="139" font-size="21" font-weight="900"
+          text-anchor="middle" letter-spacing=".5">ALL CLASSES</text>
+    <text x="120" y="160" font-size="21" font-weight="900"
+          text-anchor="middle" letter-spacing=".5">COMPLETE</text>
+
+    <rect x="14" y="174" width="212" height="2"/>
+    <text x="14" y="194" font-size="10" font-weight="700">TODAY</text>
+    <text x="226" y="194" font-size="13" font-weight="900" text-anchor="end">4 / 4</text>
+    <text x="14" y="211" font-size="9">LAST · AI BASICS · 17:50</text>
+    <text x="14" y="229" font-size="9" font-weight="700">NEXT · MON 08:00</text>
+    <text x="226" y="229" font-size="9" text-anchor="end">DISCRETE MATH</text>
+  </g>
+</svg>

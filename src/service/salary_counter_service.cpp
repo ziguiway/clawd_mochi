@@ -205,10 +205,12 @@ void SalaryCounterService::restoreRunningSession() {
 
     const uint32_t nowEpoch = currentEpoch();
     if (_segmentStartedEpoch == 0 || nowEpoch < _segmentStartedEpoch) {
-        _state = SalaryCounterState::PAUSED;
+        // 启动早期 NTP 可能尚未同步。此时保留 RUNNING，并从本次开机
+        // 继续毫秒计时；不能把用户正在进行的班次永久冻结为 PAUSED。
+        _segmentStartedMs = millis();
         _segmentStartedEpoch = 0;
         persistSession();
-        LOG_WARN("Salary", "缺少可信时间，重启后自动暂停");
+        LOG_WARN("Salary", "缺少可信时间，从本次开机继续计时");
         return;
     }
 

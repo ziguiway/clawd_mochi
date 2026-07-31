@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <rect width="240" height="240" fill="#F05A18"/>
+  <g fill="#FFF8E8" font-family="'Courier New',monospace">
+    <text x="14" y="22" font-size="11" font-weight="700" letter-spacing="1.5">TODAY</text>
+    <text x="226" y="22" font-size="9" text-anchor="end">SAT · W01</text>
+    <rect x="14" y="30" width="212" height="2"/>
+
+    <!-- Empty calendar emblem -->
+    <path d="M80 55H160L170 65V119L160 129H80L70 119V65Z"
+          fill="none" stroke="#FFF8E8" stroke-width="4"/>
+    <rect x="70" y="73" width="100" height="4"/>
+    <rect x="91" y="48" width="8" height="18"/>
+    <rect x="141" y="48" width="8" height="18"/>
+    <rect x="87" y="88" width="12" height="10"/>
+    <rect x="114" y="88" width="12" height="10"/>
+    <rect x="141" y="88" width="12" height="10"/>
+    <rect x="87" y="107" width="12" height="10"/>
+    <rect x="114" y="107" width="12" height="10"/>
+    <rect x="141" y="107" width="12" height="10"/>
+    <path d="M78 126L162 55" fill="none" stroke="#F05A18" stroke-width="12"/>
+    <path d="M82 124L158 58" fill="none" stroke="#FFF8E8" stroke-width="5"
+          stroke-linecap="square"/>
+
+    <text x="120" y="155" font-size="22" font-weight="900"
+          text-anchor="middle">NO CLASSES</text>
+    <text x="120" y="177" font-size="22" font-weight="900"
+          text-anchor="middle">TODAY</text>
+
+    <rect x="14" y="190" width="212" height="2"/>
+    <text x="14" y="211" font-size="9" font-weight="700">NEXT · MON 08:00</text>
+    <text x="14" y="229" font-size="10" font-weight="700">DISCRETE MATH</text>
+    <text x="226" y="229" font-size="9" text-anchor="end">W101</text>
+  </g>
+</svg>

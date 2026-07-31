@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <rect width="240" height="240" fill="#F05A18"/>
+  <g fill="#FFF8E8" font-family="'Courier New',monospace">
+    <text x="14" y="21" font-size="10" font-weight="900" letter-spacing="1.5">CLASS BUDDY</text>
+    <text x="226" y="21" font-size="9" text-anchor="end">09:38</text>
+    <rect x="14" y="29" width="212" height="2"/>
+
+    <!-- Pixel Mochi face -->
+    <rect x="35" y="60" width="52" height="25"/>
+    <rect x="153" y="60" width="52" height="25"/>
+    <rect x="44" y="67" width="12" height="10" fill="#F05A18"/>
+    <rect x="184" y="67" width="12" height="10" fill="#F05A18"/>
+    <rect x="76" y="106" width="88" height="4"/>
+    <rect x="68" y="102" width="8" height="4"/>
+    <rect x="164" y="102" width="8" height="4"/>
+
+    <text x="120" y="137" font-size="13" font-weight="900" text-anchor="middle">PACK YOUR BAG!</text>
+    <text x="120" y="157" font-size="10" font-weight="700" text-anchor="middle">CLASS IN 42 MIN</text>
+
+    <rect x="14" y="173" width="212" height="53" fill="#FFF8E8"/>
+    <text x="23" y="191" fill="#F05A18" font-size="9" font-weight="900">NEXT · 10:20</text>
+    <text x="23" y="208" fill="#171418" font-size="14" font-weight="900">DATA STRUCTURES</text>
+    <text x="23" y="220" fill="#6D5144" font-size="9" font-weight="700">N301 · PROF. CHEN</text>
+    <text x="226" y="238" font-size="8" text-anchor="end">2 MORE TODAY</text>
+  </g>
+</svg>

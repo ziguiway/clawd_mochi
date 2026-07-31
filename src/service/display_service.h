@@ -15,6 +15,7 @@
 #include "market_service.h"
 #include "holiday_service.h"
 #include "salary_counter_service.h"
+#include "timetable_service.h"
 #include "../config/cfg_display.h"
 
 enum class DisplayMode {
@@ -43,7 +44,8 @@ enum class InteractiveView {
     SNAKE_GAME,
     GAME_2048,
     BREAKOUT_GAME,
-    SALARY_COUNTER
+    SALARY_COUNTER,
+    TIMETABLE
 };
 
 enum class PomodoroPhase {
@@ -59,7 +61,8 @@ public:
                    WeatherService* weatherService,
                    CryptoService* cryptoService,
                    MarketService* marketService,
-                   HolidayService* holidayService);
+                   HolidayService* holidayService,
+                   TimetableService* timetableService);
     ~DisplayService();
     void init();
     void update();
@@ -190,6 +193,7 @@ private:
     CryptoService* _cryptoService;
     MarketService* _marketService;
     HolidayService* _holidayService;
+    TimetableService* _timetableService;
     SalaryCounterService* _salaryCounter;
     ClaudeCodeView _ccView;
     EyesView _eyesView;
@@ -241,6 +245,11 @@ private:
     unsigned long _lastClockRenderSec;
     unsigned long _lastSalaryRenderMs;
     unsigned long _lastSalaryScheduleCheckSec;
+    unsigned long _lastTimetableRenderMinute;
+    TimetableState _lastTimetableState;
+    uint16_t _lastTimetableMinutes;
+    bool _timetableLayoutDrawn;
+    char _lastTimetableCourse[44];
     uint32_t _lastWeatherVersion;
     uint32_t _lastCryptoVersion;
     uint32_t _lastMarketVersion;
@@ -289,6 +298,10 @@ private:
     void formatCryptoPrice(float price, char* output, size_t size);
     void drawMarketView();
     void drawSalaryCounterView();
+    void drawTimetableView();
+    void drawTimetableHeader(const TimetableSnapshot& snapshot, const char* title);
+    void drawTimetableCourseName(const TimetableCourseSnapshot& course, int16_t firstY);
+    const char* timetableWeekday(uint8_t weekday) const;
     void drawSalaryCounterLayout();
     void updateSalarySchedule(unsigned long now);
     void formatMarketPrice(float price, char* output, size_t size);

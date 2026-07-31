@@ -79,6 +79,66 @@ body{background:#1c1c20;font-family:'Courier New',monospace;color:#e8e4dc;
 .vbtn[data-v="6"].active,.vbtn[data-v="7"].active{border-color:#f0a060;background:#22140a}
   .vbtn[data-v="8"].active,.vbtn[data-v="9"].active,.vbtn[data-v="10"].active{border-color:#f0a060;background:#22140a}
 .vbtn[data-v="17"].active{border-color:#f0a060;background:#22140a}
+.vbtn[data-v="18"].active{border-color:#f0a060;background:#22140a}
+.uwrap{width:100%;max-width:390px;background:#151418;border:1.5px solid #c96a3e;
+  border-radius:14px;padding:14px;display:none;flex-direction:column;gap:12px}
+.uwrap.open{display:flex}
+.uhead{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  border-bottom:1px solid #51301f;padding-bottom:10px}
+.utitle{font-size:17px;color:#f0ece4;font-weight:900;letter-spacing:1px}
+.utitle small{display:block;color:#8a8278;font-size:8px;margin-top:4px;letter-spacing:1px}
+.ubadge{color:#c96a3e;font-size:9px;border:1px solid #5a3b2e;border-radius:20px;padding:6px 8px}
+.uactions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ubtn{min-height:42px;background:#21150f;border:1px solid #60351f;border-radius:9px;
+  color:#df6734;font:900 10px 'Courier New',monospace;cursor:pointer;padding:7px}
+.ubtn.primary{background:#c96a3e;color:#160d08;border-color:#f0a060}
+.uhelper{font-size:8px;color:#736b63;line-height:1.6;border-left:2px solid #c96a3e;
+  padding-left:9px}
+.uterm{display:grid;grid-template-columns:90px 1fr;gap:8px;align-items:center}
+.uterm label,.ufield label{font-size:8px;color:#8a8278;letter-spacing:1px}
+.uinput{width:100%;background:#0e0e11;border:1px solid #494249;border-radius:8px;
+  color:#eee8df;font:700 12px 'Courier New',monospace;padding:9px;outline:none}
+.uinput:focus{border-color:#c96a3e}
+.ulist{display:flex;flex-direction:column;gap:8px}
+.uempty{text-align:center;color:#726a62;font-size:9px;padding:20px 8px;
+  border:1px dashed #423b3d;border-radius:9px}
+.ucourse{background:#101014;border:1px solid #3d383e;border-radius:10px;padding:10px;
+  display:grid;grid-template-columns:1fr auto;gap:5px 9px}
+.ucourse strong{font-size:12px;color:#f0ece4}.ucourse small{font-size:8px;color:#8a8278}
+.ucourse button{grid-row:1/3;grid-column:2;background:transparent;border:1px solid #49352f;
+  color:#c96a3e;border-radius:7px;padding:0 9px;cursor:pointer}
+.uform{display:none;flex-direction:column;gap:8px;background:#111115;
+  border:1px solid #4b403c;border-radius:10px;padding:11px}
+.uform.open{display:flex}.urow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ufield{display:flex;flex-direction:column;gap:5px}.ufield.wide{grid-column:1/-1}
+.ufile{display:none}
+.uimport{position:fixed;inset:0;z-index:70;background:#111115;display:none;
+  overflow:auto;padding:18px 14px 42px}.uimport.open{display:block}
+.uimport-panel{width:100%;max-width:430px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.uimport-head{display:flex;align-items:center;justify-content:space-between;
+  border-bottom:2px solid #c96a3e;padding:3px 0 13px}
+.uimport-title{font-size:20px;color:#f0ece4;font-weight:900;letter-spacing:1.5px}
+.uimport-title small{display:block;font-size:8px;color:#8a8278;margin-top:4px;letter-spacing:1px}
+.uclose{width:42px;height:42px;background:#242328;border:1px solid #4a454c;
+  border-radius:8px;color:#fff;font:900 16px 'Courier New',monospace;cursor:pointer}
+.usources{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.usource{min-height:112px;background:#1b191d;border:1.5px solid #3f393f;border-radius:11px;
+  color:#eee8df;font-family:'Courier New',monospace;padding:13px;text-align:left;cursor:pointer}
+.usource strong{display:block;color:#fff;font-size:14px;margin:10px 0 5px}
+.usource small{display:block;color:#8a8278;font-size:8px;line-height:1.45}
+.usource span{color:#c96a3e;font-size:9px;letter-spacing:1px}.usource.active{border-color:#c96a3e;background:#25160f}
+.uimport-input{display:flex;flex-direction:column;gap:8px;background:#18171a;border:1px solid #3d383e;
+  border-radius:11px;padding:12px}.upaste{min-height:76px;resize:vertical;line-height:1.45}
+.uimport-status{display:none;background:#20140e;border-left:3px solid #c96a3e;
+  padding:11px;color:#d8d0c6;font-size:9px;line-height:1.55}.uimport-status.show{display:block}
+.upreview{display:none;flex-direction:column;gap:9px}.upreview.open{display:flex}
+.usummary{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #50382c;
+  border-radius:9px;overflow:hidden}.usummary div{padding:9px;border-left:1px solid #50382c;
+  color:#8a8278;font-size:8px}.usummary div:first-child{border-left:0}.usummary strong{display:block;color:#fff;font-size:14px;margin-top:4px}
+.ureview{display:flex;flex-direction:column;gap:7px;max-height:310px;overflow:auto}
+.ureview-row{background:#19181b;border:1px solid #3e393f;border-radius:9px;padding:9px}
+.ureview-row strong{display:block;color:#fff;font-size:11px}.ureview-row small{display:block;color:#8a8278;font-size:8px;margin-top:4px}
+.ureview-row.warn{border-color:#9a6429}.ureview-row.warn strong{color:#e0b341}
 .vbtn[data-v="11"].active{border-color:#fff;background:#c96a3e}
 .vbtn[data-v="11"].active .ic,.vbtn[data-v="11"].active .nm,.vbtn[data-v="11"].active .ht{color:#171418}
 .arcade{position:fixed;inset:0;z-index:50;background:#111115;display:none;
@@ -190,13 +250,14 @@ input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
   background:#fb6b10;color:var(--device-fg);border:0;
   display:flex;flex-direction:column;padding:11px 9px 0;font-weight:900;
   text-shadow:.6px 0 currentColor}
-.yphead{height:27px;border-bottom:2px solid var(--device-fg);
+.yphead{height:21px;border-bottom:2px solid var(--device-fg);
   display:flex;align-items:flex-start;justify-content:space-between;
   font-size:12px;letter-spacing:.5px;flex:none}
+.yphead span:last-child{font-size:9px;padding-top:4px}
 .ypamount{height:95px;display:flex;align-items:flex-end;justify-content:center;
   font-size:43px;letter-spacing:-3px;white-space:nowrap;line-height:1;flex:none}
-.ypworked{text-align:center;font-size:15px;line-height:38px;flex:none}
-.ypprogress{height:12px;border:2px solid var(--device-fg);margin:1px 10px 0;flex:none}
+.ypworked{text-align:center;font-size:10px;line-height:38px;flex:none}
+.ypprogress{height:12px;border:2px solid var(--device-fg);margin:1px 0 0;flex:none}
 .ypprogress span{display:block;height:100%;width:0;background:var(--device-fg)}
 .ypfoot{margin-top:auto;height:31px;display:flex;align-items:center;
   justify-content:center;font-size:11px;letter-spacing:1px;flex:none}
@@ -490,11 +551,72 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <span class="nm">Market</span>
     <span class="ht">China stocks & indices</span>
   </button>
+  <button class="vbtn" data-v="18" onclick="setView(18)">
+    <span class="ic">MON / 08:00</span>
+    <span class="nm">Timetable</span>
+    <span class="ht">classes & import</span>
+  </button>
   <button class="vbtn" data-v="11" id="dinoViewBtn" onclick="openArcade()">
     <span class="ic">PLAY</span>
     <span class="nm">Game Arcade</span>
     <span class="ht">choose a game</span>
   </button>
+</div>
+<div class="uwrap" id="uwrap">
+  <div class="uhead">
+    <div class="utitle">UNIVERSITY TIMETABLE<small>GDUFS · GRADUATE COMPUTER SCIENCE</small></div>
+    <span class="ubadge" id="uState">NOT SET</span>
+  </div>
+  <div class="uactions">
+    <button class="ubtn primary" type="button" onclick="openCourseForm()">+ ADD CLASS</button>
+    <button class="ubtn primary" type="button" onclick="openTimetableImporter()">IMPORT CLASSES</button>
+    <button class="ubtn" type="button" onclick="exportTimetable()">EXPORT</button>
+    <button class="ubtn" type="button" onclick="document.getElementById('uImport').click()">QUICK FILE IMPORT</button>
+    <input class="ufile" id="uImport" type="file" accept=".ics,.json,.csv,.html,.htm,text/calendar,application/json,text/csv,text/html" onchange="importTimetableFile(this.files[0])">
+  </div>
+  <div class="uhelper" id="uHelp">Import from WakeUp, XiaoAi, an ICS calendar, or an exported timetable file. Mochi never receives your university password.</div>
+  <div class="uterm">
+    <label for="uTermStart">TERM START</label>
+    <input class="uinput" id="uTermStart" type="date" onchange="saveTimetable()">
+  </div>
+  <div class="uform" id="uForm">
+    <div class="urow">
+      <div class="ufield wide"><label>CHINESE COURSE NAME</label><input class="uinput" id="uChinese" maxlength="60" onblur="mapCourseName()"></div>
+      <div class="ufield wide"><label>ENGLISH DISPLAY NAME</label><input class="uinput" id="uEnglish" maxlength="42"></div>
+      <div class="ufield"><label>DAY</label><select class="uinput" id="uDay"><option value="1">MON</option><option value="2">TUE</option><option value="3">WED</option><option value="4">THU</option><option value="5">FRI</option><option value="6">SAT</option><option value="7">SUN</option></select></div>
+      <div class="ufield"><label>WEEKS</label><input class="uinput" id="uWeeks" value="1-18" maxlength="30"></div>
+      <div class="ufield"><label>START</label><input class="uinput" id="uStart" type="time" value="08:00"></div>
+      <div class="ufield"><label>END</label><input class="uinput" id="uEnd" type="time" value="09:40"></div>
+      <div class="ufield"><label>ROOM</label><input class="uinput" id="uRoom" maxlength="20"></div>
+      <div class="ufield"><label>TEACHER</label><input class="uinput" id="uTeacher" maxlength="22"></div>
+    </div>
+    <div class="uactions"><button class="ubtn primary" type="button" onclick="commitCourse()">SAVE CLASS</button><button class="ubtn" id="uDelete" type="button" onclick="deleteCourse()">DELETE</button><button class="ubtn" type="button" onclick="closeCourseForm()">CANCEL</button></div>
+  </div>
+  <div class="ulist" id="uList"></div>
+</div>
+<div class="uimport" id="uImporter">
+  <div class="uimport-panel">
+    <div class="uimport-head"><div class="uimport-title">IMPORT CLASSES<small>BRING YOUR TIMETABLE TO MOCHI</small></div><button class="uclose" type="button" onclick="closeTimetableImporter()">X</button></div>
+    <div class="usources">
+      <button class="usource" data-source="wakeup" onclick="selectImportSource('wakeup')"><span>APP 01</span><strong>WakeUp</strong><small>Share code or exported timetable file</small></button>
+      <button class="usource" data-source="xiaoai" onclick="selectImportSource('xiaoai')"><span>APP 02</span><strong>XiaoAi</strong><small>Paste a timetable share link</small></button>
+      <button class="usource" data-source="ics" onclick="selectImportSource('ics')"><span>FORMAT 03</span><strong>Calendar</strong><small>ICS file or calendar URL</small></button>
+      <button class="usource" data-source="file" onclick="selectImportSource('file')"><span>FORMAT 04</span><strong>Other file</strong><small>JSON, CSV, HTML or ICS</small></button>
+    </div>
+    <div class="uimport-input">
+      <label class="uhelper" id="uImportGuide">Choose a source, paste a share link, or select an exported file.</label>
+      <textarea class="uinput upaste" id="uPaste" placeholder="Paste a WakeUp code, XiaoAi link, or calendar URL"></textarea>
+      <div class="uactions"><button class="ubtn primary" type="button" onclick="readPastedTimetable()">READ TIMETABLE</button><button class="ubtn" type="button" onclick="document.getElementById('uWizardFile').click()">CHOOSE FILE</button></div>
+      <input class="ufile" id="uWizardFile" type="file" accept=".ics,.json,.csv,.html,.htm,text/calendar,application/json,text/csv,text/html" onchange="readTimetableFile(this.files[0])">
+    </div>
+    <div class="uimport-status" id="uImportStatus"></div>
+    <div class="upreview" id="uPreview">
+      <div class="usummary"><div>SOURCE<strong id="uPreviewSource">--</strong></div><div>COURSES<strong id="uPreviewCount">0</strong></div><div>REVIEW<strong id="uPreviewReview">0</strong></div></div>
+      <div class="uterm"><label for="uPreviewTerm">TERM START</label><input class="uinput" id="uPreviewTerm" type="date"></div>
+      <div class="ureview" id="uReview"></div>
+      <button class="ubtn primary" type="button" onclick="confirmTimetableImport()">IMPORT TO MOCHI</button>
+    </div>
+  </div>
 </div>
 <div class="arcade" id="arcadeWrap">
   <div class="arcade-panel">
@@ -691,7 +813,7 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <div class="ypamount" id="ypAmount">0.0000</div>
     <div class="ypworked" id="ypWorked">00:00:00 WORKED</div>
     <div class="ypprogress"><span id="ypProgress"></span></div>
-    <div class="ypfoot"><span id="ypSchedule">09:30 &gt; 19:00</span></div>
+    <div class="ypfoot"><span id="ypSchedule">09:30 ~ 19:00</span></div>
   </div>
   <div class="ymetrics">
     <div class="ymetric">MONTHLY<strong id="yMonthly">--</strong></div>
@@ -785,8 +907,29 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
   <canvas id="cvs" width="240" height="240"></canvas>
 </div>
 <div class="toast" id="toast"></div>
+<script src="/wakeup_import.js"></script>
 <script>
 let activeView=0,termOpen=false,canvasOpen=false,arcadeOpen=false,dinoOpen=false,dinoPollTimer=null,dinoJumpPending=false,sokobanOpen=false,sokobanMovePending=false,sokobanStateData=null,arcadeGameOpen='',arcadeGameState=null,arcadeGamePending=false,arcadeGamePollTimer=null,breakoutPositionTimer=null,wifiSetupOpen=false,wifiConnecting=false,lastWifiStatus=null,blOn=true,claudeStatusOn=true,displayTheme=1,isBusy=false,drawing=false,initialLoadComplete=false;
+let timetable={schemaVersion:1,school:'GDUFS',termStart:'',courses:[]},editingCourse=-1;
+let importSource='',importDraft=null;
+const graduateCourseNames={
+'数据结构':['DATA STRUCTURES','DATA STRUCT.'],'高级数据结构':['DATA STRUCTURES','DATA STRUCT.'],
+'算法设计与分析':['ALGORITHM DESIGN','ALGORITHMS'],'高级算法设计与分析':['ADV. ALGORITHMS','ALGORITHMS'],
+'机器学习':['MACHINE LEARNING','ML'],'深度学习':['DEEP LEARNING','DL'],
+'强化学习':['REINFORCEMENT LEARN.','RL'],'自然语言处理':['NATURAL LANGUAGE PROC.','NLP'],
+'统计自然语言处理':['STATISTICAL NLP','STAT. NLP'],'计算机视觉':['COMPUTER VISION','CV'],
+'高级人工智能技术':['ADVANCED AI','ADV. AI'],'知识图谱及应用':['KNOWLEDGE GRAPHS','KG'],
+'信息检索与抽取':['INFO RETRIEVAL','IR'],'数据挖掘进阶':['ADV. DATA MINING','DATA MINING'],
+'大数据原理与实践':['BIG DATA','BIG DATA'],'社会计算与社交网络分析':['SOCIAL COMPUTING','SOCIAL COMP.'],
+'高级操作系统':['ADV. OPERATING SYS.','ADV. OS'],'分布式系统':['DISTRIBUTED SYSTEMS','DIST. SYSTEMS'],
+'高级计算机网络':['ADV. NETWORKS','NETWORKS'],'高级数据库系统':['ADV. DATABASES','DATABASES'],
+'软件服务工程与实践':['SERVICE ENGINEERING','SERVICE ENG.'],'高级软件工程':['ADV. SOFTWARE ENG.','ADV. SE'],
+'网络安全技术':['NETWORK SECURITY','NET SECURITY'],'网络攻击与防御':['NETWORK DEFENSE','NET DEFENSE'],
+'现代密码学':['MODERN CRYPTOGRAPHY','CRYPTOGRAPHY'],'网络取证与实践':['NETWORK FORENSICS','NET FORENSICS'],
+'漏洞挖掘与实践':['VULNERABILITY MINING','VULN. MINING'],'区块链技术与实践':['BLOCKCHAIN','BLOCKCHAIN'],
+'论文写作指导':['THESIS WRITING','THESIS'],'工程伦理':['ENGINEERING ETHICS','ENG. ETHICS'],
+'工程实践与科研训练':['RESEARCH PRACTICE','RESEARCH'],'前沿讲座':['FRONTIER LECTURES','FRONTIERS']
+};
 const testMode=new URLSearchParams(location.search).has('test');
 let expressionState={mode:'manual',selected:'normal',rendered:'normal'};
 let lastX=0,lastY=0,tt;
@@ -820,7 +963,51 @@ async function saveProfile(){const payload={deviceName:document.getElementById('
 async function resetProfile(){try{const r=await fetch('/profile/reset',{method:'POST'});if(!r.ok)throw new Error();applyProfile(await r.json());await loadExpressions();toast('profile defaults restored');}catch(e){toast('profile reset failed',false);}}
 async function exportConfig(){try{const r=await fetch('/config/export',{cache:'no-store'});if(!r.ok)throw new Error();const blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='clawd-mochi-config.json';a.click();URL.revokeObjectURL(url);toast('config exported');}catch(e){toast('config export failed',false);}}
 async function importConfig(file){if(!file)return;try{const text=await file.text();JSON.parse(text);const r=await fetch('/config/import',{method:'POST',headers:{'Content-Type':'application/json'},body:text});const result=await r.json();if(!r.ok)throw new Error(result.error||'invalid config');await loadProfile();await loadPrefs();await loadExpressions();toast('config imported');}catch(e){toast(e.message||'config import failed',false);}finally{document.getElementById('configFile').value='';}}
-async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e',9:'m',10:'k',17:'y'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);document.getElementById('ywrap').classList.toggle('open',v===17);document.getElementById('mwrap').classList.toggle('open',v===9);document.getElementById('swrap').classList.toggle('open',v===10);if(v===17){await loadSalaryConfig();await pollSalary();toast('live ledger open');return;}if(v===9){await loadMarketConfig();loadMarketDirectory();toast('crypto open');return;}if(v===10){await loadStockConfig();toast('market open');return;}if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
+async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e',9:'m',10:'k',17:'y',18:'u'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);document.getElementById('ywrap').classList.toggle('open',v===17);document.getElementById('mwrap').classList.toggle('open',v===9);document.getElementById('swrap').classList.toggle('open',v===10);document.getElementById('uwrap').classList.toggle('open',v===18);if(v===18){await loadTimetable();toast('timetable open');return;}if(v===17){await loadSalaryConfig();await pollSalary();toast('live ledger open');return;}if(v===9){await loadMarketConfig();loadMarketDirectory();toast('crypto open');return;}if(v===10){await loadStockConfig();toast('market open');return;}if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
+function timetableDay(day){return['','MON','TUE','WED','THU','FRI','SAT','SUN'][Number(day)]||'---';}
+function renderTimetable(){
+  const list=document.getElementById('uList');list.innerHTML='';document.getElementById('uTermStart').value=timetable.termStart||'';
+  const courses=[...(timetable.courses||[])].sort((a,b)=>Number(a.day)-Number(b.day)||String(a.start).localeCompare(String(b.start)));
+  document.getElementById('uState').textContent=courses.length?courses.length+' RULES':'NOT SET';
+  if(!courses.length){list.innerHTML='<div class="uempty">NO CLASSES YET<br>IMPORT FROM GDUFS OR ADD ONE MANUALLY</div>';return;}
+  courses.forEach(course=>{const realIndex=timetable.courses.indexOf(course),row=document.createElement('div');row.className='ucourse';
+    const name=document.createElement('strong');name.textContent=course.displayName||course.englishName||'UNTITLED CLASS';
+    const meta=document.createElement('small');meta.textContent=timetableDay(course.day)+' · '+course.start+'-'+course.end+' · W'+(course.weeks||'ALL')+' · '+(course.room||'TBA');
+    const edit=document.createElement('button');edit.type='button';edit.textContent='EDIT';edit.onclick=()=>openCourseForm(realIndex);row.append(name,meta,edit);list.appendChild(row);});
+}
+async function loadTimetable(){try{const r=await fetch('/timetable',{cache:'no-store'});if(!r.ok)throw new Error();timetable=await r.json();if(!Array.isArray(timetable.courses))timetable.courses=[];renderTimetable();}catch(e){toast('timetable unavailable',false);}}
+async function saveTimetable(){timetable.termStart=document.getElementById('uTermStart').value;if(!timetable.termStart){toast('set the first Monday of term',false);return false;}try{const r=await fetch('/timetable',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(timetable)}),j=await r.json();if(!r.ok)throw new Error(j.error||'save failed');renderTimetable();toast('timetable saved');return true;}catch(e){toast(e.message||'timetable save failed',false);return false;}}
+function mapCourseName(){const cn=document.getElementById('uChinese').value.trim(),mapped=graduateCourseNames[cn];if(mapped&&!document.getElementById('uEnglish').value.trim())document.getElementById('uEnglish').value=mapped[0];}
+function openCourseForm(index=-1){editingCourse=index;const c=index>=0?timetable.courses[index]:{};document.getElementById('uChinese').value=c.sourceName||'';document.getElementById('uEnglish').value=c.displayName||'';document.getElementById('uDay').value=String(c.day||1);document.getElementById('uWeeks').value=c.weeks||'1-18';document.getElementById('uStart').value=c.start||'08:00';document.getElementById('uEnd').value=c.end||'09:40';document.getElementById('uRoom').value=c.room||'';document.getElementById('uTeacher').value=c.teacher||'';document.getElementById('uDelete').style.display=index>=0?'block':'none';document.getElementById('uForm').classList.add('open');}
+function closeCourseForm(){editingCourse=-1;document.getElementById('uForm').classList.remove('open');}
+async function deleteCourse(){if(editingCourse<0)return;const name=timetable.courses[editingCourse]?.displayName||'this class';if(!confirm('Delete '+name+'?'))return;timetable.courses.splice(editingCourse,1);if(await saveTimetable())closeCourseForm();}
+async function commitCourse(){mapCourseName();const cn=document.getElementById('uChinese').value.trim(),en=document.getElementById('uEnglish').value.trim().toUpperCase();if(!en){toast('enter or map an English name',false);return;}const mapped=graduateCourseNames[cn]||[en,en];const course={sourceName:cn,englishName:en,displayName:en,shortName:mapped[1]||en,day:Number(document.getElementById('uDay').value),weeks:document.getElementById('uWeeks').value.trim(),start:document.getElementById('uStart').value,end:document.getElementById('uEnd').value,room:document.getElementById('uRoom').value.trim().toUpperCase(),teacher:document.getElementById('uTeacher').value.trim().toUpperCase()};if(!course.start||!course.end||course.end<=course.start){toast('check class start and end time',false);return;}if(editingCourse>=0)timetable.courses[editingCourse]=course;else timetable.courses.push(course);if(await saveTimetable())closeCourseForm();}
+function openTimetableImporter(){importSource='';importDraft=null;document.getElementById('uImporter').classList.add('open');document.getElementById('uPreview').classList.remove('open');document.getElementById('uImportStatus').classList.remove('show');document.body.style.overflow='hidden';}
+function closeTimetableImporter(){document.getElementById('uImporter').classList.remove('open');document.body.style.overflow='';}
+function selectImportSource(source){importSource=source;document.querySelectorAll('.usource').forEach(b=>b.classList.toggle('active',b.dataset.source===source));const guides={wakeup:'In WakeUp, share the timetable and paste the complete message or its share code here. The temporary code is used once and is never saved.',xiaoai:'In XiaoAi, choose Share timetable and paste the official i.ai.mi.com link.',ics:'Choose an .ics file exported by your calendar or paste an HTTPS calendar URL.',file:'Choose an exported JSON, CSV, HTML, or ICS timetable file.'};document.getElementById('uImportGuide').textContent=guides[source];if(source==='file'||source==='ics')document.getElementById('uWizardFile').click();}
+function setImportStatus(message,error=false){const el=document.getElementById('uImportStatus');el.textContent=message;el.style.borderColor=error?'#c96a3e':'#28b878';el.classList.add('show');}
+function unfoldIcs(text){return text.replace(/\r?\n[ \t]/g,'');}
+function icsValue(block,key){const line=block.split(/\r?\n/).find(v=>v.startsWith(key+':')||v.startsWith(key+';'));return line?line.slice(line.indexOf(':')+1).replace(/\\n/g,' ').replace(/\\,/g,',').trim():'';}
+function parseIcsDate(value){const clean=value.replace(/[^0-9TZ]/g,'');if(clean.length<8)return null;const y=+clean.slice(0,4),m=+clean.slice(4,6)-1,d=+clean.slice(6,8),h=+(clean.slice(9,11)||0),min=+(clean.slice(11,13)||0);return new Date(y,m,d,h,min);}
+function mondayOf(date){const d=new Date(date.getFullYear(),date.getMonth(),date.getDate()),day=d.getDay()||7;d.setDate(d.getDate()-day+1);return d;}
+function dateIso(date){return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');}
+function timeHm(date){return String(date.getHours()).padStart(2,'0')+':'+String(date.getMinutes()).padStart(2,'0');}
+function mapImportedName(source){const clean=String(source||'').trim(),mapped=graduateCourseNames[clean];if(mapped)return{englishName:mapped[0],displayName:mapped[0],shortName:mapped[1]};if(/^[\x20-\x7E]+$/.test(clean)){const upper=clean.toUpperCase();return{englishName:clean,displayName:upper,shortName:upper.length<=22?upper:upper.slice(0,22)};}return{englishName:'',displayName:'',shortName:''};}
+function parseIcs(text){const events=unfoldIcs(text).split('BEGIN:VEVENT').slice(1).map(v=>v.split('END:VEVENT')[0]),raw=[];for(const event of events){const start=parseIcsDate(icsValue(event,'DTSTART')),end=parseIcsDate(icsValue(event,'DTEND')),name=icsValue(event,'SUMMARY');if(!start||!end||!name)continue;raw.push({start,end,name,room:icsValue(event,'LOCATION'),teacher:(icsValue(event,'DESCRIPTION').match(/(?:Teacher|教师|老师)[:：]\s*([^;，,]+)/i)||[])[1]||'',rrule:icsValue(event,'RRULE')});}if(!raw.length)throw new Error('no calendar events found');const term=mondayOf(new Date(Math.min(...raw.map(x=>x.start.getTime()))));const courses=raw.map(item=>{let weeks='1-18';const until=(item.rrule.match(/UNTIL=([^;]+)/)||[])[1];if(until){const last=parseIcsDate(until);if(last)weeks='1-'+Math.max(1,Math.floor((last-term)/604800000)+1);}return{sourceName:item.name,...mapImportedName(item.name),day:item.start.getDay()||7,weeks,start:timeHm(item.start),end:timeHm(item.end),room:item.room,teacher:item.teacher};});return{schemaVersion:1,school:'',source:'ics',termStart:dateIso(term),courses};}
+function normalizeJsonTimetable(data){if(data.data?.courseInfos)data={source:'xiaoai',courses:data.data.courseInfos};if(data.courseInfos)data={source:'xiaoai',courses:data.courseInfos};if(!Array.isArray(data.courses))throw new Error('courses array missing');const courses=data.courses.map(c=>{const source=c.sourceName||c.name||c.courseName||c.title||'',sections=c.sections||[],first=sections[0]?.section||c.startSection,last=sections[sections.length-1]?.section||c.endSection,periodTimes={1:['08:30','09:15'],2:['09:20','10:05'],3:['10:25','11:10'],4:['11:15','12:00'],5:['14:00','14:45'],6:['14:50','15:35'],7:['15:55','16:40'],8:['16:45','17:30'],9:['19:00','19:45'],10:['19:50','20:35'],11:['20:40','21:25'],12:['21:30','22:15']},mapped=mapImportedName(source),weeks=Array.isArray(c.weeks)?compressWeeks(c.weeks):String(c.weeks||'1-18');return{sourceName:source,englishName:c.englishName||mapped.englishName,displayName:(c.displayName||mapped.displayName||'').toUpperCase(),shortName:(c.shortName||mapped.shortName||'').toUpperCase(),day:Number(c.day||c.weekday||1),weeks,start:c.start||c.startTime||periodTimes[first]?.[0]||'',end:c.end||c.endTime||periodTimes[last]?.[1]||'',room:c.room||c.position||c.location||'',teacher:c.teacher||''};});return{schemaVersion:1,school:data.school||data.schoolId||'',source:data.source||'json',termStart:data.termStart||data.term?.startDate||'',courses};}
+function compressWeeks(weeks){const nums=[...new Set(weeks.map(Number).filter(n=>n>0))].sort((a,b)=>a-b);if(!nums.length)return'';const out=[];let start=nums[0],last=nums[0];for(const n of nums.slice(1)){if(n===last+1){last=n;continue;}out.push(start===last?String(start):start+'-'+last);start=last=n;}out.push(start===last?String(start):start+'-'+last);return out.join(',');}
+function parseCsv(text){const rows=text.trim().split(/\r?\n/).map(line=>line.split(',').map(v=>v.trim().replace(/^"|"$/g,''))),head=rows.shift().map(v=>v.toLowerCase()),pick=(row,names)=>{const i=head.findIndex(h=>names.includes(h));return i>=0?row[i]:'';},courses=rows.filter(r=>r.some(Boolean)).map(r=>{const source=pick(r,['课程名称','课程','name','course']),mapped=mapImportedName(source);return{sourceName:source,...mapped,day:Number(pick(r,['星期','day','weekday']))||1,weeks:pick(r,['周数','周次','weeks'])||'1-18',start:pick(r,['开始时间','start','starttime']),end:pick(r,['结束时间','end','endtime']),room:pick(r,['地点','教室','room','location']),teacher:pick(r,['老师','教师','teacher'])};});if(!courses.length)throw new Error('no CSV courses found');return{schemaVersion:1,school:'',source:'csv',termStart:'',courses};}
+function detectAndParseText(text,name=''){const trimmed=text.trim(),lower=name.toLowerCase();if(trimmed.includes('BEGIN:VCALENDAR')||lower.endsWith('.ics'))return parseIcs(trimmed);if(trimmed.startsWith('{')||trimmed.startsWith('[')||lower.endsWith('.json'))return normalizeJsonTimetable(JSON.parse(trimmed));if(lower.endsWith('.csv')||trimmed.split(/\r?\n/)[0].includes(','))return parseCsv(trimmed);throw new Error('unsupported file format');}
+function showImportPreview(draft){if(!draft.courses.length)throw new Error('no courses found');importDraft=draft;document.getElementById('uPreviewSource').textContent=String(draft.source||importSource||'FILE').toUpperCase();document.getElementById('uPreviewCount').textContent=draft.courses.length;document.getElementById('uPreviewTerm').value=draft.termStart||'';const review=draft.courses.filter(c=>!c.displayName).length;document.getElementById('uPreviewReview').textContent=review;const list=document.getElementById('uReview');list.innerHTML='';draft.courses.forEach((c,i)=>{const row=document.createElement('div');row.className='ureview-row'+(!c.displayName?' warn':'');const title=document.createElement('strong');title.textContent=c.displayName||c.sourceName||'UNMAPPED COURSE';const meta=document.createElement('small');meta.textContent=timetableDay(c.day)+' · '+(c.start||'--:--')+'-'+(c.end||'--:--')+' · W'+(c.weeks||'ALL')+' · '+(c.room||'TBA');row.append(title,meta);if(!c.displayName){const input=document.createElement('input');input.className='uinput';input.placeholder='ENTER ENGLISH DISPLAY NAME';input.addEventListener('input',()=>{c.englishName=input.value.trim();c.displayName=input.value.trim().toUpperCase();c.shortName=c.displayName.slice(0,22);title.textContent=c.displayName||c.sourceName;row.classList.toggle('warn',!c.displayName);document.getElementById('uPreviewReview').textContent=draft.courses.filter(x=>!x.displayName).length;});row.append(input);}list.append(row);});document.getElementById('uPreview').classList.add('open');setImportStatus('READY TO REVIEW · '+draft.courses.length+' COURSE RULES');}
+async function readTimetableFile(file){if(!file)return;try{setImportStatus('READING FILE · '+file.name);const draft=detectAndParseText(await file.text(),file.name);showImportPreview(draft);}catch(e){setImportStatus(e.message||'file import failed',true);}finally{document.getElementById('uWizardFile').value='';}}
+async function importTimetableFile(file){if(!file)return;openTimetableImporter();await readTimetableFile(file);document.getElementById('uImport').value='';}
+async function readXiaoAiLink(value){const url=new URL(value);if(!/(^|\.)i\.ai\.mi\.com$/.test(url.hostname))throw new Error('not an official XiaoAi share link');const token=url.searchParams.get('linkToken');if(!token)throw new Error('XiaoAi linkToken missing');const parts=decodeURIComponent(atob(token)).split('&');if(parts.length<5)throw new Error('invalid XiaoAi share token');const endpoint=new URL('https://i.ai.mi.com/course-multi/table');endpoint.searchParams.set('userId',parts[0]);endpoint.searchParams.set('deviceId',parts[1]);endpoint.searchParams.set('ctId',parts[4]);const response=await fetch(endpoint.toString(),{cache:'no-store'});if(!response.ok)throw new Error('XiaoAi share request failed');return normalizeJsonTimetable(await response.json());}
+function extractWakeUpCode(value){const marked=value.match(/分享口令为[「\"']?([A-Za-z0-9_-]{16,64})/),raw=value.match(/^([A-Za-z0-9_-]{16,64})$/);return(marked||raw||[])[1]||'';}
+function parseWakeUpPayload(payload){if(Number(payload?.status)!==1||typeof payload.data!=='string')throw new Error(payload?.message||'WakeUp share code is invalid or expired');const parts=payload.data.replace(/\\\"/g,'\"').replace(/\\\\/g,'\\').trim().split(/\r?\n/);if(parts.length<5)throw new Error('WakeUp returned an unsupported timetable format');let slots,table,infos,details;try{slots=JSON.parse(parts[1]);table=JSON.parse(parts[2]);infos=JSON.parse(parts[3]);details=JSON.parse(parts[4]);}catch(e){throw new Error('WakeUp timetable data could not be decoded');}const byId=new Map(infos.map(c=>[Number(c.id),c])),byNode=new Map(slots.map(s=>[Number(s.node),s])),courses=[];for(const d of details){if(d.ownTime)continue;const info=byId.get(Number(d.id)),first=byNode.get(Number(d.startNode)),last=byNode.get(Number(d.startNode)+Number(d.step)-1);if(!info||!first||!last)continue;const mapped=mapImportedName(info.courseName||''),weeks=[];for(let w=Number(d.startWeek)||1;w<=(Number(d.endWeek)||1);w++){if(Array.isArray(d.weekList)&&d.weekList.length&&!d.weekList.includes(w))continue;if(Number(d.type)===1&&w%2===0)continue;if(Number(d.type)===2&&w%2===1)continue;weeks.push(w);}courses.push({sourceName:info.courseName||'',...mapped,day:Number(d.day)||1,weeks:compressWeeks(weeks),start:String(first.startTime||'').slice(0,5),end:String(last.endTime||'').slice(0,5),room:d.room||d.position||'',teacher:d.teacher||''});}if(!courses.length)throw new Error('WakeUp timetable contains no importable courses');return{schemaVersion:1,school:'',source:'wakeup',termStart:table.startDate||'',courses};}
+async function readWakeUpCode(code){if(!window.WakeUpImport)throw new Error('WakeUp importer did not load');const data=await WakeUpImport.importCode(code);return parseWakeUpPayload({status:1,data});}
+async function readPastedTimetable(){const value=document.getElementById('uPaste').value.trim();if(!value){setImportStatus('paste a share link, code, or calendar URL',true);return;}try{setImportStatus('DETECTING SOURCE');let draft,wakeUpCode=extractWakeUpCode(value);if(wakeUpCode){selectImportSource('wakeup');setImportStatus('SOURCE DETECTED · WAKEUP');draft=await readWakeUpCode(wakeUpCode);}else if(/^https?:\/\//i.test(value)){const url=new URL(value);if(/(^|\.)i\.ai\.mi\.com$/.test(url.hostname)){selectImportSource('xiaoai');setImportStatus('SOURCE DETECTED · XIAOAI');draft=await readXiaoAiLink(value);}else if(/\.ics($|\?)/i.test(url.pathname)){selectImportSource('ics');const r=await fetch(value);if(!r.ok)throw new Error('calendar download failed');draft=parseIcs(await r.text());}else throw new Error('unsupported or non-official share URL');}else if(value.startsWith('{')||value.includes('BEGIN:VCALENDAR'))draft=detectAndParseText(value);else throw new Error('could not detect a supported timetable');showImportPreview(draft);}catch(e){setImportStatus(e.message||'could not read timetable',true);}}
+async function confirmTimetableImport(){if(!importDraft)return;if(importDraft.courses.some(c=>!c.displayName)){setImportStatus('review every unmapped course before importing',true);return;}const term=document.getElementById('uPreviewTerm').value;if(!term){setImportStatus('set the first Monday of the term',true);return;}importDraft.termStart=term;timetable=importDraft;if(await saveTimetable()){closeTimetableImporter();toast(timetable.courses.length+' courses imported');}}
+function exportTimetable(){const blob=new Blob([JSON.stringify(timetable,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='gdufs-timetable.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 function applyDinoState(state){document.getElementById('dinoState').textContent=String(state.state||'ready').replace('_',' ').toUpperCase();document.getElementById('dinoScore').textContent=String(state.score||0).padStart(4,'0').slice(-4);document.getElementById('dinoHighScore').textContent=String(state.highScore||0).padStart(4,'0').slice(-4);}
 async function dinoPost(path){try{const r=await fetch(path,{method:'POST',cache:'no-store'});const state=await r.json();if(!r.ok)throw new Error(state.error||'game request failed');applyDinoState(state);return true;}catch(e){toast(e.message||'game unavailable',false);return false;}}
 function lockViewsForDino(locked){document.querySelectorAll('.vbtn').forEach(button=>{button.disabled=locked&&Number(button.dataset.v)!==11;});}
@@ -903,14 +1090,19 @@ async function pauseTimer(){await fetch('/timer/pause');await pollTimer();toast(
 async function resetTimer(){await fetch('/timer/reset');await pollTimer();toast('timer reset');}
 async function configTimer(){const f=document.getElementById('focusMin').value||25,b=document.getElementById('breakMin').value||5;await fetch('/timer/config?focus='+encodeURIComponent(f)+'&break='+encodeURIComponent(b));await pollTimer();}
 function salaryClock(seconds){seconds=Math.max(0,Number(seconds)||0);const h=Math.floor(seconds/3600),m=Math.floor(seconds/60)%60,s=Math.floor(seconds)%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}
-function salaryMoney4(units){return((Number(units)||0)/10000).toFixed(4);}
+function salaryMoney(units){
+  const value=Math.max(0,Number(units)||0)/10000,integer=Math.floor(value);
+  const digits=Math.max(1,String(integer).length),decimals=Math.max(0,Math.min(4,8-digits));
+  const factor=10**decimals,truncated=Math.floor(value*factor+1e-9)/factor;
+  return truncated.toFixed(decimals);
+}
 function salaryTime(minutes){minutes=Math.max(0,Math.min(1440,Number(minutes)||0));const h=Math.floor(minutes/60)%24,m=minutes%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
 function salaryMinutes(value){const parts=String(value||'').split(':');return parts.length===2?Number(parts[0])*60+Number(parts[1]):NaN;}
 function animateSalaryAmount(now){
   if(activeView===17&&salaryState==='running'&&lastSalaryStatus){
     const elapsed=Math.max(0,now-salaryMotionAt)/1000;
     const units=salaryMotionBase+(Number(lastSalaryStatus.rateTenThousandths)||0)*elapsed;
-    document.getElementById('ypAmount').textContent=salaryMoney4(units);
+    document.getElementById('ypAmount').textContent=salaryMoney(units);
   }
   requestAnimationFrame(animateSalaryAmount);
 }
@@ -918,7 +1110,7 @@ function applySalaryStatus(j){
   lastSalaryStatus=j;
   salaryState=j.state||'unconfigured';salaryConfigured=j.configured===true;
   const state=salaryState.toUpperCase(),running=salaryState==='running',paused=salaryState==='paused',active=running||paused;
-  const amount=salaryMoney4(j.earnedTenThousandths),worked=salaryClock(j.activeSeconds);
+  const amount=salaryMoney(j.earnedTenThousandths),worked=salaryClock(j.activeSeconds);
   salaryMotionBase=Number(j.earnedTenThousandths)||0;salaryMotionAt=performance.now();
   document.getElementById('yState').textContent=state;document.getElementById('ypLive').textContent=running?'LIVE':state;
   document.getElementById('ypAmount').textContent=amount;document.getElementById('ypWorked').textContent=worked+' WORKED';
@@ -936,7 +1128,7 @@ async function loadSalaryConfig(){
     document.getElementById('yDaysInput').value=(Number(j.workDaysX100)||2175)/100;document.getElementById('yHoursInput').value=(Number(j.workMinutesPerDay)||480)/60;
     document.getElementById('yStartInput').value=salaryTime(j.startMinutes??570);
     document.getElementById('yEndInput').value=salaryTime(j.endMinutes??1140);
-    document.getElementById('ypSchedule').textContent=salaryTime(j.startMinutes??570)+'  >  '+salaryTime(j.endMinutes??1140);
+    document.getElementById('ypSchedule').textContent=salaryTime(j.startMinutes??570)+'  ~  '+salaryTime(j.endMinutes??1140);
     document.getElementById('yAutoInput').value=j.autoEnabled===false?'0':'1';
     document.getElementById('yMonthly').textContent=j.monthlyCents?(Number(j.monthlyCents)/100).toFixed(0):'--';
   }catch(e){toast(e.message||'salary config unavailable',false);}

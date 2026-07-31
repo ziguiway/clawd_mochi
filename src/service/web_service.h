@@ -12,6 +12,7 @@
 #include "preference_service.h"
 #include "crypto_service.h"
 #include "market_service.h"
+#include "timetable_service.h"
 #include "../utils/logger.h"
 
 class WebService {
@@ -20,7 +21,8 @@ public:
                TimeService* timeService, DisplayService* displayService,
                PreferenceService* preferenceService,
                CryptoService* cryptoService,
-               MarketService* marketService);
+               MarketService* marketService,
+               TimetableService* timetableService);
     void init();
     void update();
 
@@ -34,6 +36,7 @@ private:
     PreferenceService* _preferenceService;
     CryptoService* _cryptoService;
     MarketService* _marketService;
+    TimetableService* _timetableService;
 
     void setupRoutes();
 
@@ -94,6 +97,10 @@ private:
     void handleMarketUpdate();
     void handleMarketRefresh();
     void handleMarketSearch();
+    void handleTimetableGet();
+    void handleTimetableSave();
+    void handleTimetableStatus();
+    void handleWakeUpProxy();
 
     // Existing routes
     void handleWifiSetup();

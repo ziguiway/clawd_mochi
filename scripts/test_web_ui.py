@@ -174,6 +174,7 @@ def extract_index_html() -> str:
 
 class FirmwareStubHandler(BaseHTTPRequestHandler):
     html = extract_index_html()
+    wakeup_js = (ROOT / "data" / "wakeup_import.js").read_text()
     assets: list[dict[str, Any]] = [dict(item) for item in INITIAL_ASSETS]
     market_assets: list[dict[str, Any]] = [
         dict(item) for item in INITIAL_MARKET_ASSETS
@@ -269,6 +270,25 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
         "progressPermille": 0,
     }
     salary_actions: list[str] = []
+    timetable: dict[str, Any] = {
+        "schemaVersion": 1,
+        "school": "GDUFS",
+        "termStart": "2026-09-07",
+        "courses": [
+            {
+                "sourceName": "机器学习",
+                "englishName": "Machine Learning",
+                "displayName": "MACHINE LEARNING",
+                "shortName": "ML",
+                "day": 1,
+                "weeks": "1-16",
+                "start": "08:30",
+                "end": "10:05",
+                "room": "N301",
+                "teacher": "PROF. CHEN",
+            }
+        ],
+    }
 
     def log_message(self, _format: str, *_args: object) -> None:
         return
@@ -288,6 +308,13 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
             body = self.html.encode()
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        elif path == "/wakeup_import.js":
+            body = self.wakeup_js.encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/javascript")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
@@ -446,6 +473,14 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
             )
         elif path == "/salary/status":
             self.send_json(self.salary_status)
+        elif path == "/timetable":
+            self.send_json(self.timetable)
+        elif path == "/timetable/status":
+            self.send_json({
+                "configured": True, "ready": True, "state": "next_class",
+                "week": 1, "todayTotal": 1, "todayCompleted": 0,
+                "remainingToday": 1, "minutesRemaining": 42,
+            })
         else:
             self.send_json({"ok": True})
 
@@ -453,6 +488,37 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         args = urllib.parse.parse_qs(parsed.query)
+        if path == "/timetable/import/wakeup":
+            length = int(self.headers.get("Content-Length", "0"))
+            payload = json.loads(self.rfile.read(length) or b"{}")
+            if not payload.get("code"):
+                self.send_json({"error": "share code required"}, 400)
+                return
+            wakeup_data = "\n".join([
+                json.dumps({"name": "test"}),
+                json.dumps([
+                    {"node": 1, "startTime": "08:30", "endTime": "09:15"},
+                    {"node": 2, "startTime": "09:20", "endTime": "10:05"},
+                ]),
+                json.dumps({"startDate": "2026-09-07"}),
+                json.dumps([{"id": 7, "courseName": "机器学习"}]),
+                json.dumps([{
+                    "id": 7, "day": 1, "startNode": 1, "step": 2,
+                    "startWeek": 1, "endWeek": 16, "type": 0,
+                    "room": "N301", "teacher": "陈老师",
+                }]),
+            ])
+            self.send_json({"status": 1, "data": wakeup_data})
+            return
+        if path == "/timetable":
+            length = int(self.headers.get("Content-Length", "0"))
+            payload = json.loads(self.rfile.read(length) or b"{}")
+            if not payload.get("termStart") or not isinstance(payload.get("courses"), list):
+                self.send_json({"error": "invalid timetable"}, 400)
+                return
+            self.__class__.timetable = payload
+            self.send_json({"ok": True})
+            return
         if path == "/salary/config":
             length = int(self.headers.get("Content-Length", "0"))
             payload = json.loads(self.rfile.read(length) or b"{}")
@@ -512,7 +578,7 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
                 self.__class__.salary_status.update(
                     activeSeconds=12_068,
                     earnedTenThousandths=123_456,
-                    progressPermille=450,
+                    progressPermille=340,
                 )
             self.send_json(self.salary_status)
             return
@@ -1113,6 +1179,59 @@ def run_carousel_flow(page: Page, *, stub_mode: bool) -> None:
     print("PASS  关闭轮播并固定显示 Market")
 
 
+def run_timetable_import_flow(page: Page, *, stub_mode: bool) -> None:
+    open_controller(page)
+    page.locator('button[data-v="18"]').click()
+    page.locator("#uwrap.open").wait_for(state="visible")
+    page.get_by_role("button", name="IMPORT CLASSES").click()
+    page.locator("#uImporter.open").wait_for(state="visible")
+    print("PASS  打开手机课表 App 导入向导")
+
+    if stub_mode:
+        wakeup_data = "\n".join([
+            json.dumps({"name": "test"}),
+            json.dumps([
+                {"node": 1, "startTime": "08:30", "endTime": "09:15"},
+                {"node": 2, "startTime": "09:20", "endTime": "10:05"},
+            ]),
+            json.dumps({"startDate": "2026-09-07"}),
+            json.dumps([{"id": 7, "courseName": "机器学习"}]),
+            json.dumps([{
+                "id": 7, "day": 1, "startNode": 1, "step": 2,
+                "startWeek": 1, "endWeek": 16, "type": 0,
+                "room": "N301", "teacher": "陈老师",
+            }]),
+        ])
+        page.evaluate(
+            "data => { window.WakeUpImport.importCode = async () => data; }",
+            wakeup_data,
+        )
+
+    page.locator("#uPaste").fill(
+        "这是来自「WakeUp课程表」的课表分享，分享口令为「test_share_code_1234」"
+    )
+    page.get_by_role("button", name="READ TIMETABLE").click()
+    page.locator("#uPreview.open").wait_for(state="visible")
+    assert page.locator("#uPreviewSource").text_content() == "WAKEUP"
+    assert page.locator("#uPreviewCount").text_content() == "1"
+    assert page.locator("#uPreviewReview").text_content() == "0"
+    assert page.locator("#uReview").get_by_text(
+        "MACHINE LEARNING", exact=True
+    ).is_visible()
+    assert page.locator("#uPreviewTerm").input_value() == "2026-09-07"
+    print("PASS  WakeUp 口令自动识别、研究生课程映射和预览")
+
+    page.get_by_role("button", name="IMPORT TO MOCHI").click()
+    page.locator("#uImporter").wait_for(state="hidden")
+    page.locator("#uList").get_by_text(
+        "MACHINE LEARNING", exact=True
+    ).wait_for(state="visible")
+    if stub_mode:
+        assert FirmwareStubHandler.timetable["source"] == "wakeup"
+        assert len(FirmwareStubHandler.timetable["courses"]) == 1
+    print("PASS  课表确认并同步到设备")
+
+
 def run_salary_flow(page: Page) -> None:
     open_controller(page)
     page.locator('button[data-v="17"]').click()
@@ -1125,6 +1244,8 @@ def run_salary_flow(page: Page) -> None:
         f"{box['width']:.0f}×{box['height']:.0f}"
     )
     assert page.locator("#ypAmount").text_content() == "0.0000"
+    assert page.evaluate("salaryMoney(99999999)") == "9999.9999"
+    assert page.evaluate("salaryMoney(100000000)") == "10000.000"
     print("PASS  Live Ledger 打开并显示 240×240 金额优先预览")
 
     page.locator("#ySettingsToggle").click()
@@ -1134,6 +1255,7 @@ def run_salary_flow(page: Page) -> None:
     page.locator("#yHoursInput").fill("8")
     assert page.locator("#yStartInput").input_value() == "09:30"
     assert page.locator("#yEndInput").input_value() == "19:00"
+    assert page.locator("#ypSchedule").text_content() == "09:30  ~  19:00"
     page.locator("#yAutoInput").select_option("1")
     page.locator("#ySave").click()
     page.get_by_text("salary settings saved", exact=True).wait_for(
@@ -1782,6 +1904,9 @@ def main() -> int:
                 run_theme_flow(page, stub_mode=not bool(args.device_url))
                 run_config_flow(page, stub_mode=not bool(args.device_url))
                 run_carousel_flow(page, stub_mode=not bool(args.device_url))
+                run_timetable_import_flow(
+                    page, stub_mode=not bool(args.device_url)
+                )
                 run_game_arcade_flow(page, stub_mode=not bool(args.device_url))
                 run_market_flow(page, stub_mode=not bool(args.device_url))
                 if device_logs_before is not None:
