@@ -13,6 +13,7 @@
 #include "weather_service.h"
 #include "crypto_service.h"
 #include "market_service.h"
+#include "holiday_service.h"
 #include "../config/cfg_display.h"
 
 enum class DisplayMode {
@@ -55,7 +56,8 @@ public:
                    PreferenceService* preferenceService,
                    WeatherService* weatherService,
                    CryptoService* cryptoService,
-                   MarketService* marketService);
+                   MarketService* marketService,
+                   HolidayService* holidayService);
     void init();
     void update();
 
@@ -178,6 +180,7 @@ private:
     WeatherService* _weatherService;
     CryptoService* _cryptoService;
     MarketService* _marketService;
+    HolidayService* _holidayService;
     ClaudeCodeView _ccView;
     EyesView _eyesView;
     uint8_t* _monoGameBuffer;
@@ -238,6 +241,7 @@ private:
     char _lastTimeText[12];
     char _lastSubText[20];
     char _lastHintText[12];
+    char _lastClockLayoutKey[48];
     uint16_t _lastProgressPermille;
     bool _lastLightProgress;
 

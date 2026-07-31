@@ -153,6 +153,7 @@ void PreferenceService::setAnimSpeed(uint8_t speed) {
 
 void PreferenceService::setStartupView(uint8_t view) {
     if (!isStartupViewAllowed(view)) view = VIEW_EYES_NORMAL;
+    if (_startupView == view) return;
     _startupView = view;
     _prefs.putUChar("startup", _startupView);
 }
@@ -250,6 +251,7 @@ bool PreferenceService::setCarouselOrder(
 
 void PreferenceService::setCarouselFixedView(uint8_t view) {
     if (!isCarouselView(view)) return;
+    if (_carouselFixedView == view) return;
     _carouselFixedView = view;
     _prefs.putUChar("cfixed", _carouselFixedView);
 }
@@ -316,7 +318,10 @@ bool PreferenceService::isStartupViewAllowed(uint8_t view) const {
     return view == VIEW_EYES_NORMAL ||
            view == VIEW_EYES_SQUISH ||
            view == VIEW_CLOCK ||
-           view == VIEW_POMODORO;
+           view == VIEW_POMODORO ||
+           view == VIEW_WEATHER ||
+           view == VIEW_CRYPTO ||
+           view == VIEW_MARKET;
 }
 
 bool PreferenceService::isCarouselView(uint8_t view) const {

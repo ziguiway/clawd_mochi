@@ -19,6 +19,7 @@
 #include "../service/weather_service.h"
 #include "../service/crypto_service.h"
 #include "../service/market_service.h"
+#include "../service/holiday_service.h"
 #include "../service/web_service.h"
 #include "../service/display_service.h"
 #include "../service/serial_command_service.h"
@@ -69,6 +70,7 @@ private:
     WeatherService       _weather;
     CryptoService        _crypto;
     MarketService        _market;
+    HolidayService       _holiday;
     DisplayService       _display;
     WebService           _web;
     SerialCommandService _serial;

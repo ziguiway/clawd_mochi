@@ -21,17 +21,47 @@
 #define EYE_OX  0
 #define EYE_OY  40
 
+namespace {
+bool isLeapYear(int year) {
+    return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+}
+
+uint8_t weeksInIsoYear(int year) {
+    struct tm firstDay = {};
+    firstDay.tm_year = year - 1900;
+    firstDay.tm_mon = 0;
+    firstDay.tm_mday = 1;
+    firstDay.tm_isdst = -1;
+    mktime(&firstDay);
+    const int isoWeekday = firstDay.tm_wday == 0 ? 7 : firstDay.tm_wday;
+    return (isoWeekday == 4 || (isoWeekday == 3 && isLeapYear(year)))
+        ? 53 : 52;
+}
+
+uint8_t isoWeekNumber(const struct tm& current) {
+    const int year = current.tm_year + 1900;
+    const int dayOfYear = current.tm_yday + 1;
+    const int isoWeekday = current.tm_wday == 0 ? 7 : current.tm_wday;
+    int week = (dayOfYear - isoWeekday + 10) / 7;
+    if (week < 1) return weeksInIsoYear(year - 1);
+    if (week > weeksInIsoYear(year)) return 1;
+    return static_cast<uint8_t>(week);
+}
+}
+
 DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
                                WifiConfigService* wifiService, TimeService* timeService,
                                PreferenceService* preferenceService,
                                WeatherService* weatherService,
                                CryptoService* cryptoService,
-                               MarketService* marketService)
+                               MarketService* marketService,
+                               HolidayService* holidayService)
     : _tft(tft), _ccService(ccService), _wifiService(wifiService), _timeService(timeService)
     , _preferenceService(preferenceService)
     , _weatherService(weatherService)
     , _cryptoService(cryptoService)
     , _marketService(marketService)
+    , _holidayService(holidayService)
     , _ccView(tft), _eyesView(tft)
     , _monoGameBuffer(nullptr)
     , _arcadeCanvas(nullptr)
@@ -63,6 +93,7 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _lastNightDimCheckMs(0), _lastAppliedBrightnessPercent(255)
     , _timeViewDirty(true), _timeViewLayoutDrawn(false)
     , _lastTimeText{0}, _lastSubText{0}, _lastHintText{0}
+    , _lastClockLayoutKey{0}
     , _lastProgressPermille(0xFFFF), _lastLightProgress(false)
     , _termMode(false), _termRow(0), _termCol(0)
 {
@@ -232,6 +263,7 @@ void DisplayService::invalidateTimeView() {
     _lastTimeText[0] = '\0';
     _lastSubText[0] = '\0';
     _lastHintText[0] = '\0';
+    _lastClockLayoutKey[0] = '\0';
     _lastProgressPermille = 0xFFFF;
     _lastLightProgress = false;
     _timeViewLayoutDrawn = false;
@@ -359,19 +391,129 @@ void DisplayService::renderTimeScreen(const char* mark, const char* timeText, co
 }
 
 void DisplayService::drawClockView() {
-    char timeText[8] = "--:--";
-    char dateText[16] = "TIME WAIT";
-    uint16_t progress = 0;
+    static const char* WEEKDAYS[] = {
+        "SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"
+    };
+    static const char* MONTHS[] = {
+        "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+        "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+    };
 
-    if (_timeService && _timeService->getEpoch() > 1000000000UL) {
+    const uint16_t background =
+        _displayTheme == THEME_DARK_ORANGE ? COLOR_DARKBG : COLOR_ORANGE;
+    const bool timeValid =
+        _timeService && _timeService->getEpoch() > 1000000000UL;
+
+    char timeText[8] = "--:--";
+    char secondText[4] = "--";
+    char dateText[18] = "WAITING FOR TIME";
+    char weekdayText[4] = "---";
+    char leftMeta[12] = "NTP SYNC";
+    char rightMeta[12] = "";
+    char holidayName[24] = {0};
+    bool holidayLayout = false;
+
+    if (timeValid) {
+        const time_t epoch = static_cast<time_t>(_timeService->getEpoch());
+        struct tm current = {};
+        localtime_r(&epoch, &current);
+
         snprintf(timeText, sizeof(timeText), "%02d:%02d",
-                 _timeService->getHour(), _timeService->getMinute());
-        snprintf(dateText, sizeof(dateText), "%04d-%02d-%02d",
-                 _timeService->getYear(), _timeService->getMonth(), _timeService->getDay());
-        progress = (_timeService->getSecond() * 1000UL) / 59UL;
+                 current.tm_hour, current.tm_min);
+        snprintf(secondText, sizeof(secondText), "%02d", current.tm_sec);
+        strncpy(weekdayText, WEEKDAYS[current.tm_wday],
+                sizeof(weekdayText) - 1);
+        weekdayText[sizeof(weekdayText) - 1] = '\0';
+        snprintf(dateText, sizeof(dateText), "%02d %s %04d",
+                 current.tm_mday, MONTHS[current.tm_mon],
+                 current.tm_year + 1900);
+        snprintf(leftMeta, sizeof(leftMeta), "WEEK %02u",
+                 isoWeekNumber(current));
+        snprintf(rightMeta, sizeof(rightMeta), "DAY %03d",
+                 current.tm_yday + 1);
+
+        holidayLayout = _holidayService &&
+                        _holidayService->isHolidayToday();
+        if (holidayLayout) {
+            strncpy(holidayName, _holidayService->getHolidayName(),
+                    sizeof(holidayName) - 1);
+            holidayName[sizeof(holidayName) - 1] = '\0';
+        }
     }
 
-    renderTimeScreen("MOCHI", timeText, dateText, "CLOCK", "IDLE", progress, false);
+    char layoutKey[48];
+    snprintf(layoutKey, sizeof(layoutKey), "%s|%s",
+             dateText, holidayLayout ? holidayName : "DEFAULT");
+    const bool layoutChanged =
+        _timeViewDirty ||
+        strcmp(layoutKey, _lastClockLayoutKey) != 0;
+
+    if (layoutChanged) {
+        _tft->fillScreen(background);
+
+        // 星期缩写使用小面积反色标签：容易扫到，但不参与主层级竞争。
+        _tft->fillRect(12, 12, 30, 18, _themeForeground);
+        _tft->drawText(18, 17, weekdayText, background,
+                       _themeForeground, FONT_SMALL);
+
+        const int16_t dateX =
+            CFG_DISPLAY_WIDTH - _tft->getTextWidth(dateText, FONT_SMALL) - 12;
+        _tft->drawText(dateX < 50 ? 50 : dateX, 17, dateText,
+                       _themeForeground, background, FONT_SMALL);
+
+        if (holidayLayout) {
+            _tft->fillRect(12, 116, 216, 2, _themeForeground);
+            _tft->drawText(12, 130, "TODAY", _themeForeground,
+                           background, FONT_SMALL);
+
+            const uint8_t holidaySize =
+                strlen(holidayName) <= 17 ? FONT_MEDIUM : FONT_SMALL;
+            _tft->drawText(12, holidaySize == FONT_MEDIUM ? 151 : 155,
+                           holidayName, _themeForeground,
+                           background, holidaySize);
+            _tft->fillRect(12, 185, 216, 1, _themeForeground);
+        } else {
+            _tft->fillRect(12, 185, 216, 2, _themeForeground);
+        }
+
+        _tft->drawText(12, 207, leftMeta, _themeForeground,
+                       background, FONT_SMALL);
+        const int16_t rightX =
+            CFG_DISPLAY_WIDTH - _tft->getTextWidth(rightMeta, FONT_SMALL) - 12;
+        _tft->drawText(rightX, 207, rightMeta, _themeForeground,
+                       background, FONT_SMALL);
+
+        strncpy(_lastClockLayoutKey, layoutKey,
+                sizeof(_lastClockLayoutKey) - 1);
+        _lastClockLayoutKey[sizeof(_lastClockLayoutKey) - 1] = '\0';
+        _lastTimeText[0] = '\0';
+        _lastHintText[0] = '\0';
+        _timeViewDirty = false;
+        _timeViewLayoutDrawn = true;
+    }
+
+    const int16_t timeY = holidayLayout ? 53 : 76;
+    const int16_t secondsY = holidayLayout ? 99 : 122;
+    if (strcmp(timeText, _lastTimeText) != 0) {
+        _tft->fillRect(0, timeY - 5, CFG_DISPLAY_WIDTH, 68, background);
+        _tft->getTft().setTextSize(6);
+        int16_t x1, y1;
+        uint16_t w, h;
+        _tft->getTft().getTextBounds(timeText, 0, 0, &x1, &y1, &w, &h);
+        _tft->drawText((CFG_DISPLAY_WIDTH - w) / 2, timeY, timeText,
+                       _themeForeground, background, 6);
+        strncpy(_lastTimeText, timeText, sizeof(_lastTimeText) - 1);
+        _lastTimeText[sizeof(_lastTimeText) - 1] = '\0';
+        _lastHintText[0] = '\0';
+    }
+
+    if (strcmp(secondText, _lastHintText) != 0) {
+        _tft->fillRect(201, secondsY, 27, 17, background);
+        _tft->drawText(204, secondsY, secondText, _themeForeground,
+                       background, FONT_MEDIUM);
+        strncpy(_lastHintText, secondText, sizeof(_lastHintText) - 1);
+        _lastHintText[sizeof(_lastHintText) - 1] = '\0';
+    }
 }
 
 void DisplayService::drawPomodoroView() {
@@ -1372,6 +1514,12 @@ void DisplayService::applyIdleDefaultView() {
             _expressionPreferred = false;
             showPomodoroReady();
             break;
+        case VIEW_WEATHER:
+        case VIEW_CRYPTO:
+        case VIEW_MARKET:
+            _expressionPreferred = false;
+            setInteractiveView(view);
+            break;
         case VIEW_EYES_NORMAL:
         default:
             showExpression(_expressionMode == ExpressionMode::AUTO
@@ -1414,17 +1562,12 @@ void DisplayService::showCarouselCurrentView() {
 }
 
 void DisplayService::switchToIdleDisplay() {
-    if (_expressionPreferred) {
-        showExpression(_expressionMode == ExpressionMode::AUTO
-            ? _renderedExpression : _selectedExpression);
-        return;
-    }
     if (_carouselEnabled) {
         showCarouselCurrentView();
         return;
     }
     _carouselSuspended = false;
-    setInteractiveView(_carouselFixedView);
+    applyIdleDefaultView();
 }
 
 void DisplayService::reloadIdleDisplayPreferences() {
@@ -1448,6 +1591,7 @@ void DisplayService::update() {
     // 游戏渲染与 TLS 都需要短时内存和 CPU 峰值。游戏期间保留现有数据，
     // 退出后服务会按原有刷新/重试逻辑继续，不让后台请求干扰帧率。
     if (!gameActive) {
+        if (_holidayService) _holidayService->update();
         if (_weatherService) _weatherService->update();
         if (_cryptoService) _cryptoService->update();
         if (_marketService) _marketService->update();

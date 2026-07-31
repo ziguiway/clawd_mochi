@@ -141,16 +141,43 @@ void WebService::handleCmd() {
     }
 
     _server.send(200, "application/json", "{\"ok\":1}");
+    uint8_t rememberedView = 0xFF;
     switch (c) {
-        case 'w': _displayService->setInteractiveView(VIEW_EYES_NORMAL); break;
-        case 's': _displayService->setInteractiveView(VIEW_EYES_SQUISH); break;
+        case 'w':
+            rememberedView = VIEW_EYES_NORMAL;
+            _displayService->setInteractiveView(VIEW_EYES_NORMAL);
+            break;
+        case 's':
+            rememberedView = VIEW_EYES_SQUISH;
+            _displayService->setInteractiveView(VIEW_EYES_SQUISH);
+            break;
         case 'd': _displayService->setInteractiveView(VIEW_CODE); break;
-        case 'c': _displayService->setInteractiveView(VIEW_CLOCK); break;
-        case 'p': _displayService->setInteractiveView(VIEW_POMODORO); break;
-        case 'e': _displayService->setInteractiveView(VIEW_WEATHER); break;
-        case 'm': _displayService->setInteractiveView(VIEW_CRYPTO); break;
-        case 'k': _displayService->setInteractiveView(VIEW_MARKET); break;
+        case 'c':
+            rememberedView = VIEW_CLOCK;
+            _displayService->setInteractiveView(VIEW_CLOCK);
+            break;
+        case 'p':
+            rememberedView = VIEW_POMODORO;
+            _displayService->setInteractiveView(VIEW_POMODORO);
+            break;
+        case 'e':
+            rememberedView = VIEW_WEATHER;
+            _displayService->setInteractiveView(VIEW_WEATHER);
+            break;
+        case 'm':
+            rememberedView = VIEW_CRYPTO;
+            _displayService->setInteractiveView(VIEW_CRYPTO);
+            break;
+        case 'k':
+            rememberedView = VIEW_MARKET;
+            _displayService->setInteractiveView(VIEW_MARKET);
+            break;
         case 'a': _displayService->animLogoReveal(); break;
+    }
+    if (_preferenceService && rememberedView != 0xFF) {
+        // 只记住用户主动选择且适合上电恢复的页面；终端、画板、动画和游戏
+        // 都是临时状态，不能让设备下次启动停在不可交互的中间界面。
+        _preferenceService->setStartupView(rememberedView);
     }
 }
 
@@ -459,7 +486,9 @@ void WebService::handlePrefs() {
         _displayService->setAnimSpeed(speed);
     }
     if (_server.hasArg("startup")) {
-        _preferenceService->setStartupView(constrain(_server.arg("startup").toInt(), 0, 7));
+        _preferenceService->setStartupView(
+            constrain(_server.arg("startup").toInt(),
+                      VIEW_EYES_NORMAL, VIEW_MARKET));
     }
     if (_server.hasArg("brightness")) {
         const uint8_t brightness = constrain(_server.arg("brightness").toInt(), 0, 100);
@@ -522,8 +551,14 @@ void WebService::handlePrefs() {
             constrain(_server.arg("carouselSpeed").toInt(), 5, 60));
     }
     if (_server.hasArg("carouselFixed")) {
-        _preferenceService->setCarouselFixedView(
-            static_cast<uint8_t>(_server.arg("carouselFixed").toInt()));
+        const uint8_t fixedView =
+            static_cast<uint8_t>(_server.arg("carouselFixed").toInt());
+        _preferenceService->setCarouselFixedView(fixedView);
+        // 关闭轮播时，“固定页”就是用户期望下次上电恢复的页面。
+        if (fixedView == VIEW_CLOCK || fixedView == VIEW_WEATHER ||
+            fixedView == VIEW_CRYPTO || fixedView == VIEW_MARKET) {
+            _preferenceService->setStartupView(fixedView);
+        }
     }
     if (_server.hasArg("carouselOrder")) {
         const String value = _server.arg("carouselOrder");
@@ -758,6 +793,7 @@ void WebService::handleConfigImport() {
     const String modeName = profile["expressionMode"] | "";
     const String bg = prefs["bg"] | "";
     ExpressionId expression;
+    const uint8_t startup = prefs["startup"] | 255;
     const uint8_t theme = prefs["theme"] | 255;
     const uint8_t speed = prefs["speed"] | 0;
     const uint8_t brightness = prefs["brightness"] | 255;
@@ -773,6 +809,10 @@ void WebService::handleConfigImport() {
         !PreferenceService::isValidProfileText(bootLine2, 16, true) ||
         !expressionIdFromName(expressionName, expression) ||
         (modeName != "auto" && modeName != "manual") ||
+        (startup != VIEW_EYES_NORMAL && startup != VIEW_EYES_SQUISH &&
+         startup != VIEW_CLOCK && startup != VIEW_POMODORO &&
+         startup != VIEW_WEATHER && startup != VIEW_CRYPTO &&
+         startup != VIEW_MARKET) ||
         !validBg || theme >= THEME_COUNT || speed < 1 || speed > 3 ||
         brightness > 100 || nightStart > 23 || nightEnd > 23 ||
         nightBrightness > 100 ||
@@ -809,6 +849,7 @@ void WebService::handleConfigImport() {
     _preferenceService->setCarouselEnabled(prefs["carousel"]);
     _preferenceService->setCarouselSpeedSeconds(prefs["carouselSpeed"] | 12);
     _preferenceService->setCarouselFixedView(prefs["carouselFixed"] | VIEW_WEATHER);
+    _preferenceService->setStartupView(startup);
     _preferenceService->setNightDimEnabled(prefs["nightDim"]);
     _preferenceService->setNightHours(nightStart, nightEnd);
     _preferenceService->setNightBrightnessPercent(nightBrightness);
