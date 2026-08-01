@@ -680,7 +680,7 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
           role="img" aria-label="Media display preview"></canvas>
   <div class="media-options">
     <label>FIT MODE<select id="mediaFit" onchange="redrawSelectedMedia()"><option value="cover">COVER</option><option value="contain">CONTAIN</option><option value="stretch">STRETCH</option></select></label>
-    <label>LETTERBOX<input id="mediaBg" type="color" value="#000000" onchange="redrawSelectedMedia()"></label>
+    <label>LETTERBOX<input id="mediaBg" type="color" value="#000000" oninput="redrawSelectedMedia()"></label>
   </div>
   <div class="media-actions">
     <button class="media-btn primary" type="button" onclick="document.getElementById('mediaFile').click()">CHOOSE MEDIA</button>
@@ -1105,6 +1105,7 @@ const coursePhraseNames={
 const courseMappingStorageKey='mochi.courseMappings.v1';
 const testMode=new URLSearchParams(location.search).has('test');
 let expressionState={mode:'manual',selected:'normal',rendered:'normal'};
+let bgPreviewHex='#aa4818',bgPreviewRevision=0,bgPreviewTimer=0,bgPreviewInFlight=false;
 let lastX=0,lastY=0,tt;
 let marketSelected=[],marketDirectory=[],marketLoaded=false,marketSaving=false,marketSaveQueued=false,marketUpdatedAt=null,marketDrag=null;
 let stockSelected=[],stockSaving=false,stockSaveQueued=false,stockUpdatedAt=null,stockDrag=null,stockSearchTimer=null,stockSearchSeq=0;
@@ -1115,7 +1116,20 @@ function toast(msg,ok=true){const el=document.getElementById('toast');el.textCon
 function setBusy(b){isBusy=b;document.getElementById('busy').classList.toggle('show',b);const locked=b||termOpen;document.querySelectorAll('.vbtn').forEach(el=>{el.disabled=canvasOpen?parseInt(el.dataset.v)!==3:locked;});document.querySelectorAll('.ebtn').forEach(el=>{el.disabled=locked||canvasOpen;});document.querySelectorAll('.cbtn').forEach(el=>{if(el.id!=='blBtn'&&el.id!=='ccStatusBtn')el.disabled=locked;});}
 async function req(path){try{const r=await fetch(path);return r.ok;}catch(e){toast('no connection',false);return false;}}
 async function waitNotBusy(){for(let i=0;i<100;i++){try{const r=await fetch('/state');const j=await r.json();if(!j.busy)return;}catch(e){}await new Promise(r=>setTimeout(r,150));}}
-async function onBgChange(hex){if(canvasOpen){await req('/draw/clear?bg='+encodeURIComponent(hex));await req('/prefs?bg='+encodeURIComponent(hex));}else{await req('/redraw?bg='+encodeURIComponent(hex));}redrawCanvas(hex);}
+function scheduleBgPreview(){if(bgPreviewTimer)return;bgPreviewTimer=setTimeout(()=>{bgPreviewTimer=0;flushBgPreview();},24);}
+async function flushBgPreview(){
+  if(bgPreviewInFlight)return;
+  bgPreviewInFlight=true;
+  const revision=bgPreviewRevision,hex=bgPreviewHex;
+  if(canvasOpen){await req('/draw/clear?bg='+encodeURIComponent(hex));await req('/prefs?bg='+encodeURIComponent(hex));}
+  else await req('/redraw?bg='+encodeURIComponent(hex));
+  bgPreviewInFlight=false;
+  if(revision!==bgPreviewRevision)scheduleBgPreview();
+}
+function onBgChange(hex){
+  if(!/^#[0-9a-f]{6}$/i.test(hex))return;
+  bgPreviewHex=hex;bgPreviewRevision++;redrawCanvas(hex);scheduleBgPreview();
+}
 async function setSpeed(v){document.getElementById('spdV').textContent=spdLabels[v];await req('/speed?v='+v);}
 function applyExpressionState(state){
   expressionState={mode:state.mode==='auto'?'auto':'manual',selected:state.selected||'normal',rendered:state.rendered||state.selected||'normal'};
@@ -1297,7 +1311,7 @@ async function setDisplayTheme(theme){try{const r=await fetch('/prefs?theme='+en
 function applyFontStyle(style){const allowed=['pixel','courier','terminal','dashboard'];fontStyle=allowed.includes(style)?style:'pixel';document.documentElement.dataset.fontStyle=fontStyle;const select=document.getElementById('fontSelect');if(select)select.value=fontStyle;}
 async function setFontStyle(style){try{const r=await fetch('/prefs?fontStyle='+encodeURIComponent(style),{cache:'no-store'});if(!r.ok)throw new Error();const p=await r.json();applyFontStyle(p.fontStyle);toast(fontStyle+' font selected');}catch(e){toast('font save failed',false);}}
 async function setBrightness(v){v=parseInt(v||0);document.getElementById('brightV').textContent=v+'%';blOn=v>0;updateBlButton();await req('/brightness?v='+v);}
-async function loadPrefs(){try{const r=await fetch('/prefs');const p=await r.json();document.getElementById('bgCol').value=p.bg||'#aa4818';document.getElementById('spd').value=p.speed||1;document.getElementById('spdV').textContent=spdLabels[p.speed||1];claudeStatusOn=p.claudeStatus!==false;updateClaudeStatusButton();applyDisplayTheme(p.theme);applyFontStyle(p.fontStyle);applyCarouselPrefs(p);redrawCanvas(p.bg||'#aa4818');}catch(e){applyDisplayTheme(1);applyFontStyle('pixel');renderCarousel();}}
+async function loadPrefs(){try{const r=await fetch('/prefs');const p=await r.json();const bg=p.bg||'#aa4818';bgPreviewHex=bg;document.getElementById('bgCol').value=bg;document.getElementById('spd').value=p.speed||1;document.getElementById('spdV').textContent=spdLabels[p.speed||1];claudeStatusOn=p.claudeStatus!==false;updateClaudeStatusButton();applyDisplayTheme(p.theme);applyFontStyle(p.fontStyle);applyCarouselPrefs(p);redrawCanvas(bg);}catch(e){applyDisplayTheme(1);applyFontStyle('pixel');renderCarousel();}}
 function fmtSec(s){s=Math.max(0,parseInt(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
 async function pollTimer(){try{const r=await fetch('/timer/status');const j=await r.json();document.getElementById('pPhase').textContent=(j.phase==='break'?'BREAK':'FOCUS')+(j.paused?' / PAUSED':'');document.getElementById('pTime').textContent=fmtSec(j.remaining);document.getElementById('focusMin').value=j.focus;document.getElementById('breakMin').value=j.break;}catch(e){}}
 async function startTimer(phase){await fetch('/timer/start?phase='+phase);document.getElementById('pwrap').classList.add('open');await pollTimer();toast(phase==='break'?'break started':'focus started');}

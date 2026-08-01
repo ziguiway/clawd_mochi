@@ -277,12 +277,17 @@ void WebService::handleMediaAnimationUpload() {
             if (LittleFS.exists("/media_animation.tmp")) {
                 LittleFS.remove("/media_animation.tmp");
             }
+            if (LittleFS.exists("/media_animation.previous")) {
+                LittleFS.remove("/media_animation.previous");
+            }
             if (LittleFS.exists("/media_animation.gif")) {
-                LittleFS.remove("/media_animation.gif");
+                LittleFS.rename("/media_animation.gif",
+                                "/media_animation.previous");
             }
             const size_t freeBytes = LittleFS.totalBytes() - LittleFS.usedBytes();
-            _mediaAnimationMaxBytes = freeBytes > MEDIA_FS_RESERVE_BYTES
+            const size_t fsLimit = freeBytes > MEDIA_FS_RESERVE_BYTES
                 ? freeBytes - MEDIA_FS_RESERVE_BYTES : 0;
+            _mediaAnimationMaxBytes = min(fsLimit, MEDIA_ANIMATION_MAX_BYTES);
             _mediaAnimationUploadBytes = 0;
             _mediaAnimationUploadComplete = false;
             _mediaAnimationUploadStatusCode = 400;
@@ -297,6 +302,10 @@ void WebService::handleMediaAnimationUpload() {
                     delete _mediaAnimationUploadFile;
                     _mediaAnimationUploadFile = nullptr;
                 }
+                if (LittleFS.exists("/media_animation.previous")) {
+                    LittleFS.rename("/media_animation.previous",
+                                    "/media_animation.gif");
+                }
                 _mediaAnimationUploadStatusCode = 507;
             }
             break;
@@ -308,7 +317,9 @@ void WebService::handleMediaAnimationUpload() {
                     _mediaAnimationUploadFile->write(
                         upload.buf, upload.currentSize) != upload.currentSize) {
                     _mediaAnimationUploadAccepted = false;
-                    _mediaAnimationUploadStatusCode = 507;
+                    _mediaAnimationUploadStatusCode =
+                        _mediaAnimationUploadBytes + upload.currentSize >
+                            MEDIA_ANIMATION_MAX_BYTES ? 413 : 507;
                 } else {
                     _mediaAnimationUploadBytes += upload.currentSize;
                 }
@@ -328,11 +339,18 @@ void WebService::handleMediaAnimationUpload() {
             _mediaAnimationUploadComplete = stored &&
                 _displayService->startMediaGif("/media_animation.gif");
             _mediaAnimationUploadStatusCode = _mediaAnimationUploadComplete
-                ? 200 : (_mediaAnimationUploadStatusCode == 507 ? 507 : 400);
+                ? 200
+                : (_mediaAnimationUploadStatusCode == 413 ? 413
+                   : (_mediaAnimationUploadStatusCode == 507 ? 507 : 400));
             if (!_mediaAnimationUploadComplete) {
                 LittleFS.remove("/media_animation.tmp");
-                LittleFS.remove("/media_animation.gif");
+                if (stored) LittleFS.remove("/media_animation.gif");
+                if (LittleFS.exists("/media_animation.previous")) {
+                    LittleFS.rename("/media_animation.previous",
+                                    "/media_animation.gif");
+                }
             } else {
+                LittleFS.remove("/media_animation.previous");
                 LOG_INFO("Media", "GIF upload=%u bytes elapsed=%lums",
                          static_cast<unsigned int>(_mediaAnimationUploadBytes),
                          millis() - _mediaAnimationUploadStartedMs);
@@ -346,6 +364,10 @@ void WebService::handleMediaAnimationUpload() {
                 _mediaAnimationUploadFile = nullptr;
             }
             LittleFS.remove("/media_animation.tmp");
+            if (LittleFS.exists("/media_animation.previous")) {
+                LittleFS.rename("/media_animation.previous",
+                                "/media_animation.gif");
+            }
             _mediaAnimationUploadAccepted = false;
             _mediaAnimationUploadComplete = false;
             _mediaAnimationUploadStatusCode = 400;
@@ -363,6 +385,9 @@ void WebService::handleMediaAnimation() {
         json += millis() - _mediaAnimationUploadStartedMs;
         json += "}";
         _server.send(200, "application/json", json);
+    } else if (_mediaAnimationUploadStatusCode == 413) {
+        _server.send(413, "application/json",
+                     "{\"error\":\"GIF exceeds 560 KB\"}");
     } else if (_mediaAnimationUploadStatusCode == 507) {
         _server.send(507, "application/json",
                      "{\"error\":\"not enough LittleFS space\"}");

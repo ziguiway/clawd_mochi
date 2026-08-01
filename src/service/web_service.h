@@ -17,6 +17,8 @@
 
 class WebService {
 public:
+    static constexpr size_t MEDIA_ANIMATION_MAX_BYTES = 560U * 1024U;
+
     WebService(ClaudeCodeService* ccService, WifiConfigService* wifiService,
                TimeService* timeService, DisplayService* displayService,
                PreferenceService* preferenceService,
