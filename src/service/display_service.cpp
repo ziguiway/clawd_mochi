@@ -1731,8 +1731,12 @@ void DisplayService::updateMediaGif(unsigned long now) {
     static constexpr unsigned long MIN_MEDIA_FRAME_MS = 20UL;
     const unsigned long frameDelay = max(
         MIN_MEDIA_FRAME_MS, static_cast<unsigned long>(delayMs));
-    // 以本次渲染完成时间为基准，避免渲染落后时连续追帧造成闪屏。
-    _mediaNextFrameMs = millis() + frameDelay;
+    // 按 GIF 原始时间线推进；渲染耗时只消耗本帧预算，不应额外叠加到
+    // 下一帧的延迟上。若设备已经落后，则从当前时刻重新同步，避免
+    // 连续补帧造成闪屏，同时保持能达到的最高实际帧率。
+    const unsigned long targetNextFrame = _mediaNextFrameMs + frameDelay;
+    _mediaNextFrameMs = static_cast<long>(targetNextFrame - millis()) > 0
+        ? targetNextFrame : millis();
     if (playResult == 0) _mediaGifLoopPending = true;
 }
 
