@@ -680,7 +680,7 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
           role="img" aria-label="Media display preview"></canvas>
   <div class="media-options">
     <label>FIT MODE<select id="mediaFit" onchange="redrawSelectedMedia()"><option value="cover">COVER</option><option value="contain">CONTAIN</option><option value="stretch">STRETCH</option></select></label>
-    <label>LETTERBOX<input id="mediaBg" type="color" value="#000000" oninput="redrawSelectedMedia()"></label>
+    <label>LETTERBOX<input id="mediaBg" type="color" value="#aa4818" oninput="redrawSelectedMedia()"></label>
   </div>
   <div class="media-actions">
     <button class="media-btn primary" type="button" onclick="document.getElementById('mediaFile').click()">CHOOSE MEDIA</button>
@@ -1128,7 +1128,12 @@ async function flushBgPreview(){
 }
 function onBgChange(hex){
   if(!/^#[0-9a-f]{6}$/i.test(hex))return;
-  bgPreviewHex=hex;bgPreviewRevision++;redrawCanvas(hex);scheduleBgPreview();
+  bgPreviewHex=hex;bgPreviewRevision++;
+  const mediaBg=document.getElementById('mediaBg');
+  if(mediaBg)mediaBg.value=hex;
+  redrawCanvas(hex);
+  if(typeof redrawSelectedMedia==='function')redrawSelectedMedia();
+  scheduleBgPreview();
 }
 async function setSpeed(v){document.getElementById('spdV').textContent=spdLabels[v];await req('/speed?v='+v);}
 function applyExpressionState(state){
@@ -1307,11 +1312,11 @@ function endCarouselDrag(){document.removeEventListener('pointermove',moveCarous
 async function toggleBL(){blOn=!blOn;const v=blOn?100:0;document.getElementById('bright').value=v;document.getElementById('brightV').textContent=v+'%';await req('/backlight?on='+(blOn?1:0));updateBlButton();}
 async function toggleClaudeStatus(){const next=!claudeStatusOn;if(!await req('/prefs?claudeStatus='+(next?'1':'0')))return;claudeStatusOn=next;updateClaudeStatusButton();toast(claudeStatusOn?'Claude status on':'Claude status off');}
 function applyDisplayTheme(theme){displayTheme=[1,2,3,4].includes(Number(theme))?Number(theme):1;const fg={1:'#fff',2:'#f64b00',3:'#5fe0ad',4:'#ff7eb3'}[displayTheme];document.documentElement.style.setProperty('--device-fg',fg);document.querySelectorAll('.theme-btn').forEach(btn=>btn.setAttribute('aria-pressed',String(Number(btn.dataset.theme)===displayTheme)));}
-async function setDisplayTheme(theme){try{const r=await fetch('/prefs?theme='+encodeURIComponent(theme),{cache:'no-store'});if(!r.ok)throw new Error();const p=await r.json();applyDisplayTheme(p.theme);document.getElementById('bgCol').value=p.bg;document.getElementById('bright').value=p.brightness;document.getElementById('brightV').textContent=p.brightness+'%';await loadProfile();await loadExpressions();toast(['','classic','dark','mint','pink'][displayTheme]+' theme');}catch(e){toast('theme save failed',false);}}
+async function setDisplayTheme(theme){try{const r=await fetch('/prefs?theme='+encodeURIComponent(theme),{cache:'no-store'});if(!r.ok)throw new Error();const p=await r.json();applyDisplayTheme(p.theme);document.getElementById('bgCol').value=p.bg;document.getElementById('mediaBg').value=p.bg;document.getElementById('bright').value=p.brightness;document.getElementById('brightV').textContent=p.brightness+'%';if(typeof redrawSelectedMedia==='function')redrawSelectedMedia();await loadProfile();await loadExpressions();toast(['','classic','dark','mint','pink'][displayTheme]+' theme');}catch(e){toast('theme save failed',false);}}
 function applyFontStyle(style){const allowed=['pixel','courier','terminal','dashboard'];fontStyle=allowed.includes(style)?style:'pixel';document.documentElement.dataset.fontStyle=fontStyle;const select=document.getElementById('fontSelect');if(select)select.value=fontStyle;}
 async function setFontStyle(style){try{const r=await fetch('/prefs?fontStyle='+encodeURIComponent(style),{cache:'no-store'});if(!r.ok)throw new Error();const p=await r.json();applyFontStyle(p.fontStyle);toast(fontStyle+' font selected');}catch(e){toast('font save failed',false);}}
 async function setBrightness(v){v=parseInt(v||0);document.getElementById('brightV').textContent=v+'%';blOn=v>0;updateBlButton();await req('/brightness?v='+v);}
-async function loadPrefs(){try{const r=await fetch('/prefs');const p=await r.json();const bg=p.bg||'#aa4818';bgPreviewHex=bg;document.getElementById('bgCol').value=bg;document.getElementById('spd').value=p.speed||1;document.getElementById('spdV').textContent=spdLabels[p.speed||1];claudeStatusOn=p.claudeStatus!==false;updateClaudeStatusButton();applyDisplayTheme(p.theme);applyFontStyle(p.fontStyle);applyCarouselPrefs(p);redrawCanvas(bg);}catch(e){applyDisplayTheme(1);applyFontStyle('pixel');renderCarousel();}}
+async function loadPrefs(){try{const r=await fetch('/prefs');const p=await r.json();const bg=p.bg||'#aa4818';bgPreviewHex=bg;document.getElementById('bgCol').value=bg;document.getElementById('mediaBg').value=bg;document.getElementById('spd').value=p.speed||1;document.getElementById('spdV').textContent=spdLabels[p.speed||1];claudeStatusOn=p.claudeStatus!==false;updateClaudeStatusButton();applyDisplayTheme(p.theme);applyFontStyle(p.fontStyle);applyCarouselPrefs(p);redrawCanvas(bg);if(typeof redrawSelectedMedia==='function')redrawSelectedMedia();}catch(e){applyDisplayTheme(1);applyFontStyle('pixel');renderCarousel();}}
 function fmtSec(s){s=Math.max(0,parseInt(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
 async function pollTimer(){try{const r=await fetch('/timer/status');const j=await r.json();document.getElementById('pPhase').textContent=(j.phase==='break'?'BREAK':'FOCUS')+(j.paused?' / PAUSED':'');document.getElementById('pTime').textContent=fmtSec(j.remaining);document.getElementById('focusMin').value=j.focus;document.getElementById('breakMin').value=j.break;}catch(e){}}
 async function startTimer(phase){await fetch('/timer/start?phase='+phase);document.getElementById('pwrap').classList.add('open');await pollTimer();toast(phase==='break'?'break started':'focus started');}
