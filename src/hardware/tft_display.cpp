@@ -59,6 +59,7 @@ TftDisplay::TftDisplay()
     , _scaledTextGfx(_tft)
     , _fontStyle(FontStyle::PIXEL)
     , _backlightOn(true)
+    , _rgb565BatchActive(false)
 {
 }
 
@@ -200,16 +201,28 @@ void TftDisplay::pushRgb565Rect(int16_t x, int16_t y, uint16_t width,
         x + width > CFG_DISPLAY_WIDTH || y + height > CFG_DISPLAY_HEIGHT) {
         return;
     }
-    _tft.startWrite();
+    if (!_rgb565BatchActive) _tft.startWrite();
     _tft.setAddrWindow(x, y, width, height);
     _tft.writePixels(const_cast<uint16_t*>(pixels),
                      static_cast<uint32_t>(width) * height, true, false);
-    _tft.endWrite();
+    if (!_rgb565BatchActive) _tft.endWrite();
 }
 
 void TftDisplay::pushRgb565Row(int16_t x, int16_t y, const uint16_t* pixels,
                                uint16_t width) {
     pushRgb565Rect(x, y, width, 1, pixels);
+}
+
+void TftDisplay::beginRgb565Batch() {
+    if (_rgb565BatchActive) return;
+    _tft.startWrite();
+    _rgb565BatchActive = true;
+}
+
+void TftDisplay::endRgb565Batch() {
+    if (!_rgb565BatchActive) return;
+    _tft.endWrite();
+    _rgb565BatchActive = false;
 }
 
 int TftDisplay::getTextWidth(const char* text, uint8_t size) {

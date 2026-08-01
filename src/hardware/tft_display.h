@@ -67,6 +67,9 @@ public:
                         uint16_t height, const uint16_t* pixels);
     void pushRgb565Row(int16_t x, int16_t y, const uint16_t* pixels,
                        uint16_t width);
+    // 合并一帧媒体的多个条带写入，减少 SPI 事务切换造成的闪烁。
+    void beginRgb565Batch();
+    void endRgb565Batch();
 
     int getWidth() const { return CFG_DISPLAY_WIDTH; }
     int getHeight() const { return CFG_DISPLAY_HEIGHT; }
@@ -89,4 +92,5 @@ private:
     U8G2_FOR_ADAFRUIT_GFX _u8Text;
     FontStyle _fontStyle;
     bool _backlightOn;
+    bool _rgb565BatchActive;
 };

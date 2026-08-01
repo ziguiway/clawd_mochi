@@ -175,6 +175,16 @@
     const encoder = GIFEncoder();
     const normalizeForDisplay = gifReader.width > WIDTH ||
       gifReader.height > HEIGHT;
+    // Partial transparent frames rely on disposal semantics. Flatten these
+    // into opaque composited frames in the browser so the device never has to
+    // clear a large previous frame while it is actively refreshing the TFT.
+    const flattenFrames = normalizeForDisplay ||
+      Array.from({length: gifReader.numFrames()}, (_, index) =>
+        gifReader.frameInfo(index)).some(info =>
+          info.transparent_index !== null || info.disposal === 2 ||
+          info.disposal === 3 ||
+          info.x !== 0 || info.y !== 0 ||
+          info.width !== gifReader.width || info.height !== gifReader.height);
     const outputWidth = normalizeForDisplay ? WIDTH : gifReader.width;
     const outputHeight = normalizeForDisplay ? HEIGHT : gifReader.height;
     const repeat = gifReader.loopCount() === null
@@ -183,9 +193,24 @@
     for (let index = 0; index < gifReader.numFrames(); index++) {
       const info = decodeGifFrame(index);
       let pixels = gifPixels;
-      if (normalizeForDisplay) {
-        drawGifPixels();
-        pixels = context().getImageData(0, 0, WIDTH, HEIGHT).data;
+      if (flattenFrames) {
+        if (normalizeForDisplay) {
+          drawGifPixels();
+          pixels = context().getImageData(
+            0, 0, outputWidth, outputHeight).data;
+        } else {
+          gifCanvas.width = gifReader.width;
+          gifCanvas.height = gifReader.height;
+          gifContext.clearRect(0, 0, outputWidth, outputHeight);
+          gifContext.putImageData(
+            new ImageData(gifPixels, gifReader.width, gifReader.height), 0, 0);
+          gifContext.globalCompositeOperation = 'destination-over';
+          gifContext.fillStyle = byId('mediaBg').value || '#000000';
+          gifContext.fillRect(0, 0, outputWidth, outputHeight);
+          gifContext.globalCompositeOperation = 'source-over';
+          pixels = gifContext.getImageData(
+            0, 0, outputWidth, outputHeight).data;
+        }
       }
       const palette = quantize(pixels, 256, {format: 'rgb565'});
       const indexed = applyPalette(pixels, palette, 'rgb565');
@@ -200,7 +225,7 @@
     }
     encoder.finish();
     const optimized = new Blob([encoder.bytes()], {type: 'image/gif'});
-    return normalizeForDisplay || optimized.size < selectedFile.size
+    return flattenFrames || optimized.size < selectedFile.size
       ? optimized : selectedFile;
   }
 

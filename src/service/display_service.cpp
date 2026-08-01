@@ -87,6 +87,7 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _mediaHasHighByte(false), _mediaFrameReceiving(false)
     , _mediaActive(false)
     , _mediaGifPlaying(false)
+    , _mediaGifLoopPending(false)
     , _mediaNextFrameMs(0)
     , _mediaGifOffsetX(0), _mediaGifOffsetY(0)
     , _mediaGifStripX(0), _mediaGifStripY(0)
@@ -1538,6 +1539,7 @@ void DisplayService::releaseMediaBuffer() {
     _mediaRow = 0;
     _mediaColumn = 0;
     _mediaGifPlaying = false;
+    _mediaGifLoopPending = false;
     _mediaGifStripActive = false;
     if (s_mediaGifOwner == this) s_mediaGifOwner = nullptr;
     if (hadResources) MemoryMonitor::logSnapshot("media released");
@@ -1709,24 +1711,29 @@ bool DisplayService::startMediaGif(const char* path) {
 void DisplayService::updateMediaGif(unsigned long now) {
     if (!_mediaGifPlaying || !_mediaGif ||
         static_cast<long>(now - _mediaNextFrameMs) < 0) return;
+    if (_mediaGifLoopPending) {
+        _mediaGif->reset();
+        _mediaGifLoopPending = false;
+    }
     const unsigned long started = millis();
     int delayMs = 0;
-    if (!_mediaGif->playFrame(false, &delayMs, this)) {
-        _mediaGif->reset();
-        if (!_mediaGif->playFrame(false, &delayMs, this)) {
-            LOG_ERROR("Media", "GIF 重置后仍无法解码");
-            stopMedia();
-            return;
-        }
-    }
+    _tft->beginRgb565Batch();
+    const int playResult = _mediaGif->playFrame(false, &delayMs, this);
     flushMediaGifStrip();
+    _tft->endRgb565Batch();
+    if (playResult < 0) {
+        LOG_ERROR("Media", "GIF 帧解码失败");
+        stopMedia();
+        return;
+    }
     _mediaLastRenderMs = millis() - started;
     _mediaRenderedFrames++;
-    const unsigned long frameDelay = max(20, delayMs);
-    _mediaNextFrameMs += frameDelay;
-    if (static_cast<long>(now - _mediaNextFrameMs) > 1000L) {
-        _mediaNextFrameMs = millis();
-    }
+    static constexpr unsigned long MIN_MEDIA_FRAME_MS = 20UL;
+    const unsigned long frameDelay = max(
+        MIN_MEDIA_FRAME_MS, static_cast<unsigned long>(delayMs));
+    // 以本次渲染完成时间为基准，避免渲染落后时连续追帧造成闪屏。
+    _mediaNextFrameMs = millis() + frameDelay;
+    if (playResult == 0) _mediaGifLoopPending = true;
 }
 
 String DisplayService::getArcadeGameStateJson(const String& slug) const {

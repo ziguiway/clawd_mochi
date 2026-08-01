@@ -243,6 +243,7 @@ private:
     bool _mediaFrameReceiving;
     bool _mediaActive;
     bool _mediaGifPlaying;
+    bool _mediaGifLoopPending;
     unsigned long _mediaNextFrameMs;
     int16_t _mediaGifOffsetX;
     int16_t _mediaGifOffsetY;
