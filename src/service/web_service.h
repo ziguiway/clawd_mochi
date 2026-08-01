@@ -37,6 +37,10 @@ private:
     CryptoService* _cryptoService;
     MarketService* _marketService;
     TimetableService* _timetableService;
+    bool _mediaUploadAccepted;
+    bool _mediaUploadComplete;
+    int _mediaUploadStatusCode;
+    size_t _mediaExpectedBytes;
 
     void setupRoutes();
 
@@ -101,6 +105,10 @@ private:
     void handleTimetableSave();
     void handleTimetableStatus();
     void handleWakeUpProxy();
+    void handleMediaFrame();
+    void handleMediaFrameUpload();
+    void handleMediaStop();
+    void handleMediaStatus();
 
     // Existing routes
     void handleWifiSetup();

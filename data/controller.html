@@ -81,6 +81,28 @@ body{background:#1c1c20;font-family:'Courier New',monospace;color:#e8e4dc;
   .vbtn[data-v="8"].active,.vbtn[data-v="9"].active,.vbtn[data-v="10"].active{border-color:#f0a060;background:#22140a}
 .vbtn[data-v="17"].active{border-color:#f0a060;background:#22140a}
 .vbtn[data-v="18"].active{border-color:#f0a060;background:#22140a}
+.vbtn[data-v="19"].active{border-color:#f0a060;background:#22140a}
+.media-wrap{width:100%;max-width:390px;background:#151418;border:1.5px solid #c96a3e;
+  border-radius:14px;padding:14px;display:none;flex-direction:column;gap:12px}
+.media-wrap.open{display:flex}
+.media-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  border-bottom:1px solid #51301f;padding-bottom:10px}
+.media-title{font-size:17px;color:#f0ece4;font-weight:900;letter-spacing:1px}
+.media-title small{display:block;color:#8a8278;font-size:8px;margin-top:4px;letter-spacing:1px}
+.media-state{color:#c96a3e;font-size:9px;border:1px solid #5a3b2e;border-radius:20px;padding:6px 8px}
+.media-preview{width:240px;height:240px;max-width:100%;aspect-ratio:1;margin:0 auto;
+  background:#000;border:1px solid #5a3b2e;image-rendering:pixelated;display:block}
+.media-file{display:none}
+.media-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.media-btn{min-height:42px;background:#21150f;border:1px solid #60351f;border-radius:9px;
+  color:#df6734;font:900 10px 'Courier New',monospace;cursor:pointer;padding:8px}
+.media-btn.primary{background:#c96a3e;color:#160d08;border-color:#f0a060}
+.media-btn:disabled{opacity:.35;cursor:default}
+.media-options{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.media-options label{font-size:8px;color:#8a8278;letter-spacing:1px;line-height:1.5}
+.media-options select,.media-options input{width:100%;height:36px;margin-top:5px;background:#0e0e11;
+  border:1px solid #494249;border-radius:7px;color:#eee8df;font:700 11px 'Courier New',monospace;padding:6px}
+.media-help{font-size:8px;color:#736b63;line-height:1.6;border-left:2px solid #c96a3e;padding-left:9px}
 .uwrap{width:100%;max-width:390px;background:#151418;border:1.5px solid #c96a3e;
   border-radius:14px;padding:14px;display:none;flex-direction:column;gap:12px}
 .uwrap.open{display:flex}
@@ -637,11 +659,39 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <span class="nm">Timetable</span>
     <span class="ht">classes & import</span>
   </button>
+  <button class="vbtn" data-v="19" onclick="openMediaPanel()">
+    <span class="ic">IMG / GIF</span>
+    <span class="nm">Media Cast</span>
+    <span class="ht">images &amp; video</span>
+  </button>
   <button class="vbtn" data-v="11" id="dinoViewBtn" onclick="openArcade()">
     <span class="ic">PLAY</span>
     <span class="nm">Game Arcade</span>
     <span class="ht">choose a game</span>
   </button>
+</div>
+<div class="media-wrap" id="mediaWrap">
+  <div class="media-head">
+    <div class="media-title">MEDIA CAST<small>LOCAL · 240x240 RGB565</small></div>
+    <span class="media-state" id="mediaState">CHOOSE FILE</span>
+  </div>
+  <div class="mlabel">EXACT DEVICE FRAME (240x240)</div>
+  <canvas class="media-preview" id="mediaPreview" width="240" height="240"
+          role="img" aria-label="Media display preview"></canvas>
+  <div class="media-options">
+    <label>FIT MODE<select id="mediaFit" onchange="redrawSelectedMedia()"><option value="cover">COVER</option><option value="contain">CONTAIN</option><option value="stretch">STRETCH</option></select></label>
+    <label>LETTERBOX<input id="mediaBg" type="color" value="#000000" onchange="redrawSelectedMedia()"></label>
+  </div>
+  <div class="media-actions">
+    <button class="media-btn primary" type="button" onclick="document.getElementById('mediaFile').click()">CHOOSE MEDIA</button>
+    <button class="media-btn primary" id="mediaPlay" type="button" onclick="castSelectedMedia()" disabled>DISPLAY / PLAY</button>
+    <button class="media-btn" id="mediaStop" type="button" onclick="stopMediaCast()" disabled>STOP</button>
+    <button class="media-btn" type="button" onclick="closeMediaPanel()">CLOSE</button>
+  </div>
+  <input class="media-file" id="mediaFile" type="file"
+         accept="image/png,image/jpeg,image/webp,image/bmp,image/gif,video/mp4,video/webm,video/quicktime"
+         onchange="selectMediaFile(this.files[0])">
+  <div class="media-help">PNG · JPEG · WEBP · BMP display as a still frame. GIF and browser-supported video stream while this page stays open. Video is muted and automatically capped at 6 FPS.</div>
 </div>
 <div class="uwrap" id="uwrap">
   <div class="uhead">
@@ -1004,6 +1054,8 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
 </div>
 <div class="toast" id="toast"></div>
 <script src="/wakeup_import.js"></script>
+<script src="/gif_reader.js"></script>
+<script src="/media.js"></script>
 <script>
 let activeView=0,termOpen=false,canvasOpen=false,arcadeOpen=false,dinoOpen=false,dinoPollTimer=null,dinoJumpPending=false,sokobanOpen=false,sokobanMovePending=false,sokobanStateData=null,arcadeGameOpen='',arcadeGameState=null,arcadeGamePending=false,arcadeGamePollTimer=null,breakoutPositionTimer=null,wifiSetupOpen=false,wifiConnecting=false,lastWifiStatus=null,blOn=true,claudeStatusOn=true,displayTheme=1,fontStyle='pixel',isBusy=false,drawing=false,initialLoadComplete=false;
 let timetable={schemaVersion:1,school:'GDUFS',termStart:'',courses:[]},editingCourse=-1,timetableStatus=null;
@@ -1075,7 +1127,7 @@ function applyExpressionState(state){
 }
 async function loadExpressions(){try{const r=await fetch('/expressions',{cache:'no-store'});if(!r.ok)throw new Error();applyExpressionState(await r.json());}catch(e){applyExpressionState(expressionState);}}
 async function updateExpression(payload){try{const r=await fetch('/expression',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!r.ok)throw new Error();applyExpressionState(await r.json());return true;}catch(e){toast('expression update failed',false);return false;}}
-async function selectExpression(id){if(isBusy||termOpen||canvasOpen)return;if(await updateExpression({id})){activeView=0;document.querySelectorAll('.vbtn').forEach(button=>button.classList.remove('active'));toast(id+' expression');}}
+async function selectExpression(id){if(isBusy||termOpen||canvasOpen)return;if(activeView===19)await leaveMediaForView();if(await updateExpression({id})){activeView=0;document.querySelectorAll('.vbtn').forEach(button=>button.classList.remove('active'));toast(id+' expression');}}
 async function toggleExpressionAuto(){if(isBusy||termOpen||canvasOpen)return;const mode=expressionState.mode==='auto'?'manual':'auto';if(await updateExpression({mode}))toast(mode==='auto'?'auto on':'manual expression');}
 function applyProfile(p){document.getElementById('profileName').value=p.deviceName||'MOCHI';document.getElementById('profileBoot1').value=p.bootLine1??'HELLO';document.getElementById('profileBoot2').value=p.bootLine2??'MOCHI';document.getElementById('profileExpression').value=p.defaultExpression||'normal';document.getElementById('profileMode').value=p.expressionMode==='auto'?'auto':'manual';document.querySelector('.sitename').textContent=(p.deviceName||'MOCHI')+' · CONTROLLER';}
 function toggleProfilePanel(){const panel=document.getElementById('profileWrap'),open=!panel.classList.contains('open');panel.classList.toggle('open',open);document.getElementById('profilePanelState').textContent=open?'close':'open';document.getElementById('profilePanelBtn').setAttribute('aria-expanded',String(open));}
@@ -1084,7 +1136,7 @@ async function saveProfile(){const payload={deviceName:document.getElementById('
 async function resetProfile(){try{const r=await fetch('/profile/reset',{method:'POST'});if(!r.ok)throw new Error();applyProfile(await r.json());await loadExpressions();toast('profile defaults restored');}catch(e){toast('profile reset failed',false);}}
 async function exportConfig(){try{const r=await fetch('/config/export',{cache:'no-store'});if(!r.ok)throw new Error();const blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='clawd-mochi-config.json';a.click();URL.revokeObjectURL(url);toast('config exported');}catch(e){toast('config export failed',false);}}
 async function importConfig(file){if(!file)return;try{const text=await file.text();JSON.parse(text);const r=await fetch('/config/import',{method:'POST',headers:{'Content-Type':'application/json'},body:text});const result=await r.json();if(!r.ok)throw new Error(result.error||'invalid config');await loadProfile();await loadPrefs();await loadExpressions();toast('config imported');}catch(e){toast(e.message||'config import failed',false);}finally{document.getElementById('configFile').value='';}}
-async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e',9:'m',10:'k',17:'y',18:'u'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);document.getElementById('ywrap').classList.toggle('open',v===17);document.getElementById('mwrap').classList.toggle('open',v===9);document.getElementById('swrap').classList.toggle('open',v===10);document.getElementById('uwrap').classList.toggle('open',v===18);if(v===18){await Promise.all([loadTimetable(),pollTimetableStatus()]);toast('timetable open');return;}if(v===17){await loadSalaryConfig();await pollSalary();toast('live ledger open');return;}if(v===9){await loadMarketConfig();loadMarketDirectory();toast('crypto open');return;}if(v===10){await loadStockConfig();toast('market open');return;}if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
+async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(activeView===19)await leaveMediaForView();if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e',9:'m',10:'k',17:'y',18:'u'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);document.getElementById('ywrap').classList.toggle('open',v===17);document.getElementById('mwrap').classList.toggle('open',v===9);document.getElementById('swrap').classList.toggle('open',v===10);document.getElementById('uwrap').classList.toggle('open',v===18);if(v===18){await Promise.all([loadTimetable(),pollTimetableStatus()]);toast('timetable open');return;}if(v===17){await loadSalaryConfig();await pollSalary();toast('live ledger open');return;}if(v===9){await loadMarketConfig();loadMarketDirectory();toast('crypto open');return;}if(v===10){await loadStockConfig();toast('market open');return;}if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
 function timetableDay(day){return['','MON','TUE','WED','THU','FRI','SAT','SUN'][Number(day)]||'---';}
 function timetablePreviewNode(className,text){const node=document.createElement('span');node.className=className;if(text!==undefined)node.textContent=text;return node;}
 function splitTimetableCourse(course){const name=String(course.name||'UNTITLED CLASS'),fits=(value,size)=>value.length*size*.6<=212;if(fits(name,27))return{name,size:4};for(let i=name.length-1;i>0;i--){if(name[i]===' '&&fits(name.slice(0,i),27)&&fits(name.slice(i+1),27))return{name:name.slice(0,i)+'\n'+name.slice(i+1),size:4};}const shortName=String(course.shortName||name);return{name:shortName,size:fits(shortName,21)?3:2};}
@@ -1171,7 +1223,7 @@ function exportTimetable(){const blob=new Blob([JSON.stringify(timetable,null,2)
 function applyDinoState(state){document.getElementById('dinoState').textContent=String(state.state||'ready').replace('_',' ').toUpperCase();document.getElementById('dinoScore').textContent=String(state.score||0).padStart(4,'0').slice(-4);document.getElementById('dinoHighScore').textContent=String(state.highScore||0).padStart(4,'0').slice(-4);}
 async function dinoPost(path){try{const r=await fetch(path,{method:'POST',cache:'no-store'});const state=await r.json();if(!r.ok)throw new Error(state.error||'game request failed');applyDinoState(state);return true;}catch(e){toast(e.message||'game unavailable',false);return false;}}
 function lockViewsForDino(locked){document.querySelectorAll('.vbtn').forEach(button=>{button.disabled=locked&&Number(button.dataset.v)!==11;});}
-function openArcade(){if(isBusy||termOpen||canvasOpen)return;arcadeOpen=true;document.getElementById('arcadeWrap').classList.add('open');document.getElementById('arcadeHome').style.display='grid';document.body.style.overflow='hidden';lockViewsForDino(true);}
+async function openArcade(){if(isBusy||termOpen||canvasOpen)return;if(activeView===19)await leaveMediaForView();arcadeOpen=true;document.getElementById('arcadeWrap').classList.add('open');document.getElementById('arcadeHome').style.display='grid';document.body.style.overflow='hidden';lockViewsForDino(true);}
 async function closeArcade(){if(dinoOpen)await exitDinoGame();if(sokobanOpen)await exitSokobanGame();if(arcadeGameOpen)await exitArcadeGame();arcadeOpen=false;document.getElementById('arcadeWrap').classList.remove('open');document.body.style.overflow='';lockViewsForDino(false);}
 function showArcadeHome(){document.getElementById('arcadeHome').style.display='grid';document.getElementById('dinoWrap').classList.remove('open');document.getElementById('sokobanWrap').classList.remove('open');document.querySelectorAll('[data-game-panel]').forEach(panel=>panel.classList.remove('open'));activeView=0;}
 async function openDinoGame(){if(isBusy||termOpen||canvasOpen||dinoOpen)return;if(!arcadeOpen)openArcade();if(!await dinoPost('/game/dino/start'))return;dinoOpen=true;activeView=11;document.getElementById('arcadeHome').style.display='none';document.getElementById('dinoWrap').classList.add('open');document.querySelectorAll('.vbtn').forEach(button=>button.classList.toggle('active',Number(button.dataset.v)===11));clearInterval(dinoPollTimer);dinoPollTimer=setInterval(pollDinoState,500);toast('dino game ready');}
@@ -1548,7 +1600,7 @@ async function connectWifi(){
   else toast('new network not connected; saved network was kept',false);
 }
 async function pollWifiStatus(){try{const r=await fetch('/wifi/status',{cache:'no-store'});if(r.ok)renderWifiStatus(await r.json());}catch(e){document.getElementById('wstatus').innerHTML='<strong style="color:#c96a3e">DEVICE UNREACHABLE</strong><small>Join ClaWD-Mochi and open 192.168.4.1.</small>';document.getElementById('wscanBtn').style.display='block';}}
-async function toggleCanvas(){canvasOpen=!canvasOpen;document.getElementById('cwrap').classList.toggle('open',canvasOpen);document.querySelectorAll('.vbtn').forEach(btn=>btn.classList.toggle('active',canvasOpen&&parseInt(btn.dataset.v)===3));await req('/canvas?on='+(canvasOpen?1:0));if(canvasOpen){const bg=document.getElementById('bgCol').value;redrawCanvas(bg);await req('/draw/clear?bg='+encodeURIComponent(bg));document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);toast('canvas active');}else{setBusy(false);toast('canvas off');}}
+async function toggleCanvas(){if(activeView===19)await leaveMediaForView();canvasOpen=!canvasOpen;document.getElementById('cwrap').classList.toggle('open',canvasOpen);document.querySelectorAll('.vbtn').forEach(btn=>btn.classList.toggle('active',canvasOpen&&parseInt(btn.dataset.v)===3));await req('/canvas?on='+(canvasOpen?1:0));if(canvasOpen){const bg=document.getElementById('bgCol').value;redrawCanvas(bg);await req('/draw/clear?bg='+encodeURIComponent(bg));document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);toast('canvas active');}else{setBusy(false);toast('canvas off');}}
 const tin=document.getElementById('tin');let lastVal='';
 tin.addEventListener('input',async()=>{const cur=tin.value,prev=lastVal;if(cur.length>prev.length){await req('/char?c='+encodeURIComponent(cur[cur.length-1]));}else if(cur.length<prev.length){await req('/char?c=%08');}lastVal=cur;});
 async function termEnter(){await req('/char?c=%0A');tin.value='';lastVal='';tin.focus();}

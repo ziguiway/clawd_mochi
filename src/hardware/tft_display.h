@@ -62,6 +62,10 @@ public:
     void fillRoundRect(int x, int y, int w, int h, int r, uint16_t color);
     void fillEllipse(int x, int y, int rx, int ry, uint16_t color);
 
+    // 将一行 RGB565 像素直接推送到屏幕，不需要整帧缓冲。
+    void pushRgb565Row(int16_t x, int16_t y, const uint16_t* pixels,
+                       uint16_t width);
+
     int getWidth() const { return CFG_DISPLAY_WIDTH; }
     int getHeight() const { return CFG_DISPLAY_HEIGHT; }
 

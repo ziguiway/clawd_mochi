@@ -21,6 +21,8 @@ static_assert(sizeof(AppStateMachine) <= 32U * 1024U,
               "AppStateMachine exceeds the 32 KB static RAM budget");
 static_assert(ArcadeCanvas::BUFFER_BYTES <= 12U * 1024U,
               "ArcadeCanvas buffer exceeds the 12 KB render budget");
+static_assert(DisplayService::MEDIA_ROW_BUFFER_BYTES <= 12U * 1024U,
+              "Media row buffer exceeds the 12 KB render budget");
 
 AppStateMachine appState;
 

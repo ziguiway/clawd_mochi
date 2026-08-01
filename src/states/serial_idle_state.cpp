@@ -36,7 +36,7 @@ void SerialIdleState::onUpdate() {
     _ctx->serial()->update();
     _ctx->display()->update();
 
-    if (_ctx->display()->isGameActive()) return;
+    if (_ctx->display()->isExclusiveDisplayActive()) return;
 
     auto status = _ctx->cc()->getStatus();
     if (_ctx->display()->isClaudeStatusEnabled() && shouldShowInfo(status)) {

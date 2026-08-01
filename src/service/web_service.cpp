@@ -35,6 +35,10 @@ WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiServ
     , _cryptoService(cryptoService)
     , _marketService(marketService)
     , _timetableService(timetableService)
+    , _mediaUploadAccepted(false)
+    , _mediaUploadComplete(false)
+    , _mediaUploadStatusCode(400)
+    , _mediaExpectedBytes(0)
 {
 }
 
@@ -57,6 +61,12 @@ void WebService::setupRoutes() {
     _server.on("/",            HTTP_GET, [this]() { handleRoot(); });
     _server.on("/wakeup_import.js", HTTP_GET, [this]() {
         handleFile("/wakeup_import.js", "application/javascript");
+    });
+    _server.on("/media.js", HTTP_GET, [this]() {
+        handleFile("/media.js", "application/javascript");
+    });
+    _server.on("/gif_reader.js", HTTP_GET, [this]() {
+        handleFile("/gif_reader.js", "application/javascript");
     });
     _server.on("/cmd",         HTTP_GET, [this]() { handleCmd(); });
     _server.on("/char",        HTTP_GET, [this]() { handleChar(); });
@@ -119,6 +129,11 @@ void WebService::setupRoutes() {
     _server.on("/timetable", HTTP_POST, [this]() { handleTimetableSave(); });
     _server.on("/timetable/status", HTTP_GET, [this]() { handleTimetableStatus(); });
     _server.on("/timetable/import/wakeup/proxy", HTTP_POST, [this]() { handleWakeUpProxy(); });
+    _server.on("/media/frame", HTTP_POST,
+        [this]() { handleMediaFrame(); },
+        [this]() { handleMediaFrameUpload(); });
+    _server.on("/media/stop", HTTP_POST, [this]() { handleMediaStop(); });
+    _server.on("/media/status", HTTP_GET, [this]() { handleMediaStatus(); });
 
     // Existing routes
     _server.on("/wifi_setup", [this]() { handleWifiSetup(); });
@@ -156,6 +171,94 @@ void WebService::handleRoot() {
     _server.sendHeader("Cache-Control", "no-store, no-cache, must-revalidate");
     _server.sendHeader("Pragma", "no-cache");
     handleFile("/controller.html", "text/html");
+}
+
+void WebService::handleMediaFrameUpload() {
+    HTTPUpload& upload = _server.upload();
+    switch (upload.status) {
+        case UPLOAD_FILE_START:
+            _mediaUploadComplete = false;
+            _mediaUploadStatusCode = 400;
+            _mediaExpectedBytes = 0;
+            {
+                const int x = _server.hasArg("x")
+                    ? _server.arg("x").toInt() : 0;
+                const int y = _server.hasArg("y")
+                    ? _server.arg("y").toInt() : 0;
+                const int width = _server.hasArg("w")
+                    ? _server.arg("w").toInt() : CFG_DISPLAY_WIDTH;
+                const int height = _server.hasArg("h")
+                    ? _server.arg("h").toInt() : CFG_DISPLAY_HEIGHT;
+                if (x < 0 || y < 0 || width <= 0 || height <= 0 ||
+                    x + width > CFG_DISPLAY_WIDTH ||
+                    y + height > CFG_DISPLAY_HEIGHT) {
+                    _mediaUploadAccepted = false;
+                    break;
+                }
+                _mediaExpectedBytes =
+                    static_cast<size_t>(width) * height * sizeof(uint16_t);
+                _mediaUploadAccepted = _displayService->beginMediaFrame(
+                    x, y, width, height);
+                if (!_mediaUploadAccepted) _mediaUploadStatusCode = 503;
+            }
+            break;
+        case UPLOAD_FILE_WRITE:
+            if (_mediaUploadAccepted &&
+                !_displayService->writeMediaFrameBytes(
+                    upload.buf, upload.currentSize)) {
+                _displayService->abortMediaFrame();
+                _mediaUploadAccepted = false;
+                _mediaUploadStatusCode = 400;
+            }
+            break;
+        case UPLOAD_FILE_END:
+            if (_mediaUploadAccepted &&
+                upload.totalSize == _mediaExpectedBytes &&
+                _displayService->finishMediaFrame()) {
+                _mediaUploadComplete = true;
+                _mediaUploadStatusCode = 200;
+            } else {
+                _displayService->abortMediaFrame();
+                _mediaUploadComplete = false;
+                if (_mediaUploadStatusCode != 503) {
+                    _mediaUploadStatusCode = 400;
+                }
+            }
+            break;
+        case UPLOAD_FILE_ABORTED:
+            _displayService->abortMediaFrame();
+            _mediaUploadAccepted = false;
+            _mediaUploadComplete = false;
+            _mediaUploadStatusCode = 400;
+            break;
+    }
+}
+
+void WebService::handleMediaFrame() {
+    if (_mediaUploadComplete) {
+        _server.send(200, "application/json",
+                     "{\"ok\":true}");
+    } else if (_mediaUploadStatusCode == 503) {
+        _server.send(503, "application/json",
+                     "{\"error\":\"media buffer unavailable\"}");
+    } else {
+        _server.send(400, "application/json",
+                     "{\"error\":\"invalid RGB565 frame region\"}");
+    }
+    _mediaUploadAccepted = false;
+    _mediaUploadComplete = false;
+}
+
+void WebService::handleMediaStop() {
+    _displayService->stopMedia();
+    _server.send(200, "application/json", "{\"ok\":true}");
+}
+
+void WebService::handleMediaStatus() {
+    String json = "{\"active\":";
+    json += _displayService->isMediaActive() ? "true" : "false";
+    json += ",\"width\":240,\"height\":240,\"pixelFormat\":\"rgb565be\"}";
+    _server.send(200, "application/json", json);
 }
 
 void WebService::handleCmd() {

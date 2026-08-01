@@ -194,6 +194,18 @@ void TftDisplay::fillEllipse(int x, int y, int rx, int ry, uint16_t color) {
     _tft.endWrite();
 }
 
+void TftDisplay::pushRgb565Row(int16_t x, int16_t y, const uint16_t* pixels,
+                               uint16_t width) {
+    if (!pixels || x < 0 || y < 0 || y >= CFG_DISPLAY_HEIGHT || width == 0 ||
+        x + width > CFG_DISPLAY_WIDTH) {
+        return;
+    }
+    _tft.startWrite();
+    _tft.setAddrWindow(x, y, width, 1);
+    _tft.writePixels(const_cast<uint16_t*>(pixels), width, true, false);
+    _tft.endWrite();
+}
+
 int TftDisplay::getTextWidth(const char* text, uint8_t size) {
     return text ? strlen(text) * 6 * size : 0;
 }

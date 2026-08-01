@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import struct
 import threading
 import time
 import urllib.request
@@ -175,6 +176,11 @@ def extract_index_html() -> str:
 class FirmwareStubHandler(BaseHTTPRequestHandler):
     html = extract_index_html()
     wakeup_js = (ROOT / "data" / "wakeup_import.js").read_text()
+    gif_reader_js = (ROOT / "data" / "gif_reader.js").read_text()
+    media_js = (ROOT / "data" / "media.js").read_text()
+    media_frame_count = 0
+    media_stop_count = 0
+    media_upload_bytes = 0
     assets: list[dict[str, Any]] = [dict(item) for item in INITIAL_ASSETS]
     market_assets: list[dict[str, Any]] = [
         dict(item) for item in INITIAL_MARKET_ASSETS
@@ -314,6 +320,20 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
             self.wfile.write(body)
         elif path == "/wakeup_import.js":
             body = self.wakeup_js.encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/javascript")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        elif path == "/media.js":
+            body = self.media_js.encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/javascript")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        elif path == "/gif_reader.js":
+            body = self.gif_reader_js.encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/javascript")
             self.send_header("Content-Length", str(len(body)))
@@ -494,6 +514,13 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
                     "start": "08:30", "end": "10:05", "day": 1,
                 },
             })
+        elif path == "/media/status":
+            self.send_json({
+                "active": self.media_frame_count > self.media_stop_count,
+                "width": 240,
+                "height": 240,
+                "pixelFormat": "rgb565be",
+            })
         else:
             self.send_json({"ok": True})
 
@@ -501,6 +528,20 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         args = urllib.parse.parse_qs(parsed.query)
+        if path == "/media/frame":
+            length = int(self.headers.get("Content-Length", "0"))
+            self.rfile.read(length)
+            self.__class__.media_frame_count += 1
+            self.__class__.media_upload_bytes = length
+            self.send_json({"ok": True, "width": 240, "height": 240})
+            return
+        if path == "/media/stop":
+            length = int(self.headers.get("Content-Length", "0"))
+            if length:
+                self.rfile.read(length)
+            self.__class__.media_stop_count += 1
+            self.send_json({"ok": True})
+            return
         if path == "/timetable/import/wakeup":
             length = int(self.headers.get("Content-Length", "0"))
             payload = json.loads(self.rfile.read(length) or b"{}")
@@ -1282,6 +1323,159 @@ def run_timetable_import_flow(page: Page, *, stub_mode: bool) -> None:
     print("PASS  课表确认并同步到设备")
 
 
+def make_test_bmp() -> bytes:
+    """Create a dependency-free 2x2 24-bit BMP for browser upload tests."""
+    rows = (
+        b"\xff\x00\x00" + b"\xff\xff\xff" + b"\x00\x00",
+        b"\x00\x00\xff" + b"\x00\xff\x00" + b"\x00\x00",
+    )
+    pixels = b"".join(rows)
+    file_size = 14 + 40 + len(pixels)
+    return (
+        struct.pack("<2sIHHI", b"BM", file_size, 0, 0, 54)
+        + struct.pack(
+            "<IIIHHIIIIII", 40, 2, 2, 1, 24, 0, len(pixels),
+            2835, 2835, 0, 0,
+        )
+        + pixels
+    )
+
+
+def make_test_gif() -> bytes:
+    """Create a looping 1x1 black/white two-frame GIF."""
+    return (
+        b"GIF89a\x01\x00\x01\x00\x80\x00\x00"
+        b"\x00\x00\x00\xff\xff\xff"
+        b"\x21\xff\x0bNETSCAPE2.0\x03\x01\x00\x00\x00"
+        b"\x21\xf9\x04\x00\x0a\x00\x00\x00"
+        b"\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00"
+        b"\x02\x02\x44\x01\x00"
+        b"\x21\xf9\x04\x00\x0a\x00\x00\x00"
+        b"\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00"
+        b"\x02\x02\x4c\x01\x00\x3b"
+    )
+
+
+def run_media_flow(page: Page, *, stub_mode: bool) -> None:
+    open_controller(page)
+    page.locator('button[data-v="19"]').click()
+    page.locator("#mediaWrap.open").wait_for(state="visible")
+    preview = page.locator("#mediaPreview")
+    box = preview.bounding_box()
+    assert box is not None
+    assert round(box["width"]) == 240 and round(box["height"]) == 240, (
+        f"Media preview should be 240x240, got "
+        f"{box['width']:.0f}x{box['height']:.0f}"
+    )
+    page.locator("#mediaFile").set_input_files({
+        "name": "four-colors.bmp",
+        "mimeType": "image/bmp",
+        "buffer": make_test_bmp(),
+    })
+    page.wait_for_function(
+        "() => document.querySelector('#mediaState').textContent === 'IMAGE READY'"
+    )
+    assert not page.locator("#mediaPlay").is_disabled()
+    print("PASS  媒体面板以 240×240 像素画布预览 BMP")
+
+    page.locator("#mediaPlay").click()
+    page.wait_for_function(
+        "() => document.querySelector('#mediaState').textContent === 'DISPLAYED'"
+    )
+    if stub_mode:
+        assert FirmwareStubHandler.media_frame_count == 1
+        assert FirmwareStubHandler.media_upload_bytes > 240 * 240 * 2
+    assert not page.locator("#mediaStop").is_disabled()
+    print("PASS  浏览器转换并上传 240×240 RGB565 帧")
+
+    page.locator("#mediaStop").click()
+    page.wait_for_function(
+        "() => document.querySelector('#mediaState').textContent === 'IMAGE READY'"
+    )
+    if stub_mode:
+        assert FirmwareStubHandler.media_stop_count == 1
+    print("PASS  媒体投屏可停止并释放设备侧会话")
+
+    gif_start_frames = FirmwareStubHandler.media_frame_count
+    page.locator("#mediaFile").set_input_files({
+        "name": "loop.gif",
+        "mimeType": "image/gif",
+        "buffer": make_test_gif(),
+    })
+    page.wait_for_function(
+        "() => document.querySelector('#mediaState').textContent === 'GIF READY'"
+    )
+    page.locator("#mediaPlay").click()
+    page.wait_for_function(
+        "() => document.querySelector('#mediaState').textContent === 'STREAMING'"
+    )
+    if stub_mode:
+        page.wait_for_function(
+            "() => document.querySelector('#mediaState').textContent === 'STREAMING'"
+        )
+        page.wait_for_timeout(450)
+        assert FirmwareStubHandler.media_frame_count >= gif_start_frames + 3
+    page.locator("#mediaStop").click()
+    page.wait_for_function(
+        "() => document.querySelector('#mediaState').textContent === 'GIF READY'"
+    )
+    print("PASS  GIF 以有界 6 FPS 持续投屏并支持主动停止")
+
+    video_start_frames = FirmwareStubHandler.media_frame_count
+    page.evaluate("""
+        async () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 8;
+          canvas.height = 8;
+          const ctx = canvas.getContext('2d');
+          const stream = canvas.captureStream(8);
+          const recorder = new MediaRecorder(stream, {
+            mimeType: 'video/webm;codecs=vp8'
+          });
+          const chunks = [];
+          recorder.ondataavailable = event => {
+            if (event.data.size) chunks.push(event.data);
+          };
+          const stopped = new Promise(resolve => {
+            recorder.onstop = resolve;
+          });
+          recorder.start();
+          ctx.fillStyle = '#ff0000';
+          ctx.fillRect(0, 0, 8, 8);
+          await new Promise(resolve => setTimeout(resolve, 180));
+          ctx.fillStyle = '#0066ff';
+          ctx.fillRect(0, 0, 8, 8);
+          await new Promise(resolve => setTimeout(resolve, 180));
+          recorder.stop();
+          await stopped;
+          stream.getTracks().forEach(track => track.stop());
+          const file = new File(chunks, 'two-colors.webm', {
+            type: 'video/webm'
+          });
+          const transfer = new DataTransfer();
+          transfer.items.add(file);
+          const input = document.querySelector('#mediaFile');
+          input.files = transfer.files;
+          input.dispatchEvent(new Event('change', {bubbles: true}));
+        }
+    """)
+    page.wait_for_function(
+        "() => document.querySelector('#mediaState').textContent === 'VIDEO READY'"
+    )
+    page.locator("#mediaPlay").click()
+    page.wait_for_function(
+        "() => document.querySelector('#mediaState').textContent === 'VIDEO ENDED'",
+        timeout=10_000,
+    )
+    if stub_mode:
+        assert FirmwareStubHandler.media_frame_count > video_start_frames
+    page.locator("#mediaStop").click()
+    page.wait_for_function(
+        "() => document.querySelector('#mediaState').textContent === 'VIDEO READY'"
+    )
+    print("PASS  WebM 视频在浏览器解码后限帧投屏至设备")
+
+
 def run_salary_flow(page: Page) -> None:
     open_controller(page)
     page.locator('button[data-v="17"]').click()
@@ -1913,6 +2107,9 @@ def main() -> int:
             "progressPermille": 0,
         }
         FirmwareStubHandler.salary_actions = []
+        FirmwareStubHandler.media_frame_count = 0
+        FirmwareStubHandler.media_stop_count = 0
+        FirmwareStubHandler.media_upload_bytes = 0
         FirmwareStubHandler.profile = {
             "deviceName": "MOCHI",
             "bootLine1": "HELLO",
@@ -1987,6 +2184,7 @@ def main() -> int:
                 run_timetable_import_flow(
                     page, stub_mode=not bool(args.device_url)
                 )
+                run_media_flow(page, stub_mode=not bool(args.device_url))
                 run_game_arcade_flow(page, stub_mode=not bool(args.device_url))
                 run_market_flow(page, stub_mode=not bool(args.device_url))
                 if device_logs_before is not None:

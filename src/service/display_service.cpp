@@ -73,6 +73,13 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _monoGameBuffer(nullptr)
     , _arcadeCanvas(nullptr)
     , _activeArcadeGame(nullptr)
+    , _mediaRowBuffer(nullptr)
+    , _mediaRow(0), _mediaColumn(0)
+    , _mediaX(0), _mediaY(0)
+    , _mediaWidth(CFG_DISPLAY_WIDTH), _mediaHeight(CFG_DISPLAY_HEIGHT)
+    , _mediaHighByte(0)
+    , _mediaHasHighByte(false), _mediaFrameReceiving(false)
+    , _mediaActive(false)
     , _currentMode(DisplayMode::SETUP), _lastRefreshMs(0)
     , _interactiveView(InteractiveView::EYES_NORMAL), _interactiveActive(false)
     , _busy(false), _animSpeed(1)
@@ -120,6 +127,7 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
 }
 
 DisplayService::~DisplayService() {
+    releaseMediaBuffer();
     delete _salaryCounter;
     _salaryCounter = nullptr;
 }
@@ -1086,6 +1094,8 @@ void DisplayService::enterInteractive() {
 
 void DisplayService::exitInteractive() {
     releaseArcadeGame();
+    releaseMediaBuffer();
+    _mediaActive = false;
     releaseSalaryCounterIfIdle(VIEW_EYES_NORMAL);
     _interactiveActive = false;
     _termMode = false;
@@ -1096,6 +1106,10 @@ void DisplayService::exitInteractive() {
 }
 
 void DisplayService::setInteractiveView(uint8_t view) {
+    if (_mediaActive && view != VIEW_MEDIA) {
+        releaseMediaBuffer();
+        _mediaActive = false;
+    }
     const char* requestedGame = slugForArcadeView(view);
     if (requestedGame &&
         (!_activeArcadeGame ||
@@ -1167,6 +1181,9 @@ void DisplayService::setInteractiveView(uint8_t view) {
             _timetableLayoutDrawn = false;
             drawTimetableView();
             break;
+        case InteractiveView::MEDIA:
+            // 画面由上传回调逐行更新，这里不清屏。
+            break;
         case InteractiveView::DINO_GAME:
         case InteractiveView::SOKOBAN_GAME:
         case InteractiveView::TETRIS_GAME:
@@ -1195,6 +1212,9 @@ void DisplayService::redrawCurrentView() {
         case InteractiveView::TIMETABLE:
             _timetableLayoutDrawn = false;
             drawTimetableView();
+            break;
+        case InteractiveView::MEDIA:
+            // TFT GRAM 已保留最后一帧，无需重画。
             break;
         case InteractiveView::DINO_GAME:
         case InteractiveView::SOKOBAN_GAME:
@@ -1385,6 +1405,10 @@ bool DisplayService::handleArcadeAction(const String& action, int value) {
 void DisplayService::exitArcadeGame() {
     if (!_activeArcadeGame) return;
     releaseArcadeGame();
+    restoreAfterExclusiveView();
+}
+
+void DisplayService::restoreAfterExclusiveView() {
     const auto status = _ccService->getStatus();
     const bool codexActive =
         status == ClaudeCodeService::Status::THINKING ||
@@ -1394,6 +1418,108 @@ void DisplayService::exitArcadeGame() {
         status == ClaudeCodeService::Status::SLEEPING;
     if (_claudeStatusEnabled && codexActive) switchToInfoMode();
     else switchToIdleDisplay();
+}
+
+bool DisplayService::beginMediaFrame(uint16_t x, uint16_t y,
+                                     uint16_t width, uint16_t height) {
+    if (width == 0 || height == 0 || x + width > CFG_DISPLAY_WIDTH ||
+        y + height > CFG_DISPLAY_HEIGHT) {
+        return false;
+    }
+    releaseArcadeGame();
+    releaseSalaryCounterIfIdle(VIEW_MEDIA);
+    if (!_mediaRowBuffer) {
+        _mediaRowBuffer = new (std::nothrow) uint16_t[CFG_DISPLAY_WIDTH];
+        if (!_mediaRowBuffer) {
+            LOG_ERROR("Media", "行缓冲分配失败");
+            return false;
+        }
+        MemoryMonitor::logSnapshot("media loaded");
+    }
+
+    _interactiveActive = true;
+    _currentMode = DisplayMode::INTERACTIVE;
+    _interactiveView = InteractiveView::MEDIA;
+    _expressionPreferred = false;
+    _termMode = false;
+    _mediaActive = true;
+    _mediaFrameReceiving = true;
+    _mediaRow = 0;
+    _mediaColumn = 0;
+    _mediaX = x;
+    _mediaY = y;
+    _mediaWidth = width;
+    _mediaHeight = height;
+    _mediaHighByte = 0;
+    _mediaHasHighByte = false;
+    return true;
+}
+
+bool DisplayService::writeMediaFrameBytes(const uint8_t* data, size_t length) {
+    if (!_mediaFrameReceiving || !_mediaRowBuffer || !data) return false;
+
+    for (size_t i = 0; i < length; i++) {
+        if (!_mediaHasHighByte) {
+            _mediaHighByte = data[i];
+            _mediaHasHighByte = true;
+            continue;
+        }
+
+        if (_mediaRow >= _mediaHeight) {
+            _mediaFrameReceiving = false;
+            return false;
+        }
+        _mediaRowBuffer[_mediaColumn++] =
+            static_cast<uint16_t>(_mediaHighByte) << 8 | data[i];
+        _mediaHasHighByte = false;
+
+        if (_mediaColumn == _mediaWidth) {
+            _tft->pushRgb565Row(_mediaX, _mediaY + _mediaRow,
+                                _mediaRowBuffer, _mediaWidth);
+            _mediaColumn = 0;
+            _mediaRow++;
+        }
+    }
+    return true;
+}
+
+bool DisplayService::finishMediaFrame() {
+    const bool complete = _mediaFrameReceiving && !_mediaHasHighByte &&
+                          _mediaRow == _mediaHeight &&
+                          _mediaColumn == 0;
+    _mediaFrameReceiving = false;
+    if (!complete) {
+        LOG_WARN("Media", "媒体帧不完整 row=%u col=%u pending=%u",
+                 static_cast<unsigned int>(_mediaRow),
+                 static_cast<unsigned int>(_mediaColumn),
+                 _mediaHasHighByte ? 1U : 0U);
+    }
+    return complete;
+}
+
+void DisplayService::abortMediaFrame() {
+    _mediaFrameReceiving = false;
+    _mediaHasHighByte = false;
+    _mediaRow = 0;
+    _mediaColumn = 0;
+}
+
+void DisplayService::releaseMediaBuffer() {
+    const bool hadBuffer = _mediaRowBuffer != nullptr;
+    delete[] _mediaRowBuffer;
+    _mediaRowBuffer = nullptr;
+    _mediaFrameReceiving = false;
+    _mediaHasHighByte = false;
+    _mediaRow = 0;
+    _mediaColumn = 0;
+    if (hadBuffer) MemoryMonitor::logSnapshot("media released");
+}
+
+void DisplayService::stopMedia() {
+    if (!_mediaActive && !_mediaRowBuffer) return;
+    releaseMediaBuffer();
+    _mediaActive = false;
+    restoreAfterExclusiveView();
 }
 
 String DisplayService::getArcadeGameStateJson(const String& slug) const {
@@ -1877,7 +2003,7 @@ void DisplayService::updateSalarySchedule(unsigned long now) {
             _preferenceService->setSalaryLastAutoDate(today);
             if (_currentMode != DisplayMode::INFO &&
                 _currentMode != DisplayMode::PROVISIONING &&
-                !isGameActive()) {
+                !isExclusiveDisplayActive()) {
                 showSalaryCounter();
             }
             LOG_INFO("Salary", "自动上班触发 date=%lu",
@@ -2240,10 +2366,10 @@ void DisplayService::reloadIdleDisplayPreferences() {
 // 本方法只负责按当前 _currentMode 渲染。
 void DisplayService::update() {
     unsigned long now = millis();
-    const bool gameActive = isGameActive();
-    // 游戏渲染与 TLS 都需要短时内存和 CPU 峰值。游戏期间保留现有数据，
-    // 退出后服务会按原有刷新/重试逻辑继续，不让后台请求干扰帧率。
-    if (!gameActive) {
+    const bool exclusiveDisplayActive = isExclusiveDisplayActive();
+    // 游戏/媒体与 TLS 都需要短时内存和 CPU 峰值。独占视图期间
+    // 保留现有数据，退出后按原有刷新/重试逻辑继续。
+    if (!exclusiveDisplayActive) {
         if (_holidayService) _holidayService->update();
         if (_weatherService) _weatherService->update();
         if (_cryptoService) _cryptoService->update();

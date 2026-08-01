@@ -47,7 +47,8 @@ enum class InteractiveView {
     GAME_2048,
     BREAKOUT_GAME,
     SALARY_COUNTER,
-    TIMETABLE
+    TIMETABLE,
+    MEDIA
 };
 
 enum class PomodoroPhase {
@@ -57,6 +58,9 @@ enum class PomodoroPhase {
 
 class DisplayService {
 public:
+    static constexpr size_t MEDIA_ROW_BUFFER_BYTES =
+        CFG_DISPLAY_WIDTH * sizeof(uint16_t);
+
     DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
                    WifiConfigService* wifiService, TimeService* timeService,
                    PreferenceService* preferenceService,
@@ -124,6 +128,19 @@ public:
     bool isSokobanGameActive() const;
     bool isGameActive() const;
     String getSokobanStateJson() const;
+
+    // 媒体投屏。浏览器统一转换为 240x240 RGB565 大端字节序，
+    // 设备仅保留一行缓冲并边收边显示。
+    bool beginMediaFrame(uint16_t x, uint16_t y,
+                         uint16_t width, uint16_t height);
+    bool writeMediaFrameBytes(const uint8_t* data, size_t length);
+    bool finishMediaFrame();
+    void abortMediaFrame();
+    void stopMedia();
+    bool isMediaActive() const { return _mediaActive; }
+    bool isExclusiveDisplayActive() const {
+        return isGameActive() || _mediaActive;
+    }
 
     // 可扩展游戏注册入口
     bool startArcadeGame(const String& slug);
@@ -205,6 +222,17 @@ private:
     uint8_t* _monoGameBuffer;
     ArcadeCanvas* _arcadeCanvas;
     IArcadeGame* _activeArcadeGame;
+    uint16_t* _mediaRowBuffer;
+    uint16_t _mediaRow;
+    uint16_t _mediaColumn;
+    uint16_t _mediaX;
+    uint16_t _mediaY;
+    uint16_t _mediaWidth;
+    uint16_t _mediaHeight;
+    uint8_t _mediaHighByte;
+    bool _mediaHasHighByte;
+    bool _mediaFrameReceiving;
+    bool _mediaActive;
     DisplayMode _currentMode;
     unsigned long _lastRefreshMs;
 
@@ -282,6 +310,8 @@ private:
 
     IArcadeGame* createArcadeGame(const String& slug);
     void releaseArcadeGame();
+    void releaseMediaBuffer();
+    void restoreAfterExclusiveView();
     bool isKnownArcadeGame(const String& slug) const;
     uint8_t viewForArcadeGame(ArcadeGameId id) const;
     const char* slugForArcadeView(uint8_t view) const;

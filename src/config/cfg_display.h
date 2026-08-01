@@ -53,6 +53,7 @@
 #define VIEW_BREAKOUT   16
 #define VIEW_SALARY     17
 #define VIEW_TIMETABLE  18
+#define VIEW_MEDIA      19
 #define CAROUSEL_VIEW_COUNT 5
 
 // 系统显示主题
