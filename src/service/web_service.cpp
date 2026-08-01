@@ -9,6 +9,7 @@
 #include "operation_mode_service.h"
 #include "../config/cfg_display.h"
 #include <ArduinoJson.h>
+#include <new>
 
 namespace {
 void appendUInt64(String& output, uint64_t value) {
@@ -39,6 +40,13 @@ WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiServ
     , _mediaUploadComplete(false)
     , _mediaUploadStatusCode(400)
     , _mediaExpectedBytes(0)
+    , _mediaAnimationUploadFile(nullptr)
+    , _mediaAnimationUploadAccepted(false)
+    , _mediaAnimationUploadComplete(false)
+    , _mediaAnimationUploadStatusCode(400)
+    , _mediaAnimationUploadBytes(0)
+    , _mediaAnimationMaxBytes(0)
+    , _mediaAnimationUploadStartedMs(0)
 {
 }
 
@@ -67,6 +75,9 @@ void WebService::setupRoutes() {
     });
     _server.on("/gif_reader.js", HTTP_GET, [this]() {
         handleFile("/gif_reader.js", "application/javascript");
+    });
+    _server.on("/gif_encoder.js", HTTP_GET, [this]() {
+        handleFile("/gif_encoder.js", "application/javascript");
     });
     _server.on("/cmd",         HTTP_GET, [this]() { handleCmd(); });
     _server.on("/char",        HTTP_GET, [this]() { handleChar(); });
@@ -132,6 +143,9 @@ void WebService::setupRoutes() {
     _server.on("/media/frame", HTTP_POST,
         [this]() { handleMediaFrame(); },
         [this]() { handleMediaFrameUpload(); });
+    _server.on("/media/animation", HTTP_POST,
+        [this]() { handleMediaAnimation(); },
+        [this]() { handleMediaAnimationUpload(); });
     _server.on("/media/stop", HTTP_POST, [this]() { handleMediaStop(); });
     _server.on("/media/status", HTTP_GET, [this]() { handleMediaStatus(); });
 
@@ -249,6 +263,117 @@ void WebService::handleMediaFrame() {
     _mediaUploadComplete = false;
 }
 
+void WebService::handleMediaAnimationUpload() {
+    static constexpr size_t MEDIA_FS_RESERVE_BYTES = 64U * 1024U;
+    HTTPUpload& upload = _server.upload();
+    switch (upload.status) {
+        case UPLOAD_FILE_START: {
+            _displayService->stopMedia();
+            if (_mediaAnimationUploadFile) {
+                _mediaAnimationUploadFile->close();
+                delete _mediaAnimationUploadFile;
+                _mediaAnimationUploadFile = nullptr;
+            }
+            if (LittleFS.exists("/media_animation.tmp")) {
+                LittleFS.remove("/media_animation.tmp");
+            }
+            if (LittleFS.exists("/media_animation.gif")) {
+                LittleFS.remove("/media_animation.gif");
+            }
+            const size_t freeBytes = LittleFS.totalBytes() - LittleFS.usedBytes();
+            _mediaAnimationMaxBytes = freeBytes > MEDIA_FS_RESERVE_BYTES
+                ? freeBytes - MEDIA_FS_RESERVE_BYTES : 0;
+            _mediaAnimationUploadBytes = 0;
+            _mediaAnimationUploadComplete = false;
+            _mediaAnimationUploadStatusCode = 400;
+            _mediaAnimationUploadStartedMs = millis();
+            fs::File opened = LittleFS.open("/media_animation.tmp", "w");
+            _mediaAnimationUploadFile = new (std::nothrow) fs::File(opened);
+            _mediaAnimationUploadAccepted = _mediaAnimationUploadFile &&
+                *_mediaAnimationUploadFile && _mediaAnimationMaxBytes >= 16;
+            if (!_mediaAnimationUploadAccepted) {
+                if (_mediaAnimationUploadFile) {
+                    _mediaAnimationUploadFile->close();
+                    delete _mediaAnimationUploadFile;
+                    _mediaAnimationUploadFile = nullptr;
+                }
+                _mediaAnimationUploadStatusCode = 507;
+            }
+            break;
+        }
+        case UPLOAD_FILE_WRITE:
+            if (_mediaAnimationUploadAccepted) {
+                if (_mediaAnimationUploadBytes + upload.currentSize >
+                        _mediaAnimationMaxBytes ||
+                    _mediaAnimationUploadFile->write(
+                        upload.buf, upload.currentSize) != upload.currentSize) {
+                    _mediaAnimationUploadAccepted = false;
+                    _mediaAnimationUploadStatusCode = 507;
+                } else {
+                    _mediaAnimationUploadBytes += upload.currentSize;
+                }
+            }
+            break;
+        case UPLOAD_FILE_END: {
+            if (_mediaAnimationUploadFile) {
+                _mediaAnimationUploadFile->flush();
+                _mediaAnimationUploadFile->close();
+                delete _mediaAnimationUploadFile;
+                _mediaAnimationUploadFile = nullptr;
+            }
+            const bool stored = _mediaAnimationUploadAccepted &&
+                upload.totalSize == _mediaAnimationUploadBytes &&
+                _mediaAnimationUploadBytes >= 16 &&
+                LittleFS.rename("/media_animation.tmp", "/media_animation.gif");
+            _mediaAnimationUploadComplete = stored &&
+                _displayService->startMediaGif("/media_animation.gif");
+            _mediaAnimationUploadStatusCode = _mediaAnimationUploadComplete
+                ? 200 : (_mediaAnimationUploadStatusCode == 507 ? 507 : 400);
+            if (!_mediaAnimationUploadComplete) {
+                LittleFS.remove("/media_animation.tmp");
+                LittleFS.remove("/media_animation.gif");
+            } else {
+                LOG_INFO("Media", "GIF upload=%u bytes elapsed=%lums",
+                         static_cast<unsigned int>(_mediaAnimationUploadBytes),
+                         millis() - _mediaAnimationUploadStartedMs);
+            }
+            break;
+        }
+        case UPLOAD_FILE_ABORTED:
+            if (_mediaAnimationUploadFile) {
+                _mediaAnimationUploadFile->close();
+                delete _mediaAnimationUploadFile;
+                _mediaAnimationUploadFile = nullptr;
+            }
+            LittleFS.remove("/media_animation.tmp");
+            _mediaAnimationUploadAccepted = false;
+            _mediaAnimationUploadComplete = false;
+            _mediaAnimationUploadStatusCode = 400;
+            break;
+    }
+}
+
+void WebService::handleMediaAnimation() {
+    String json;
+    if (_mediaAnimationUploadComplete) {
+        json.reserve(96);
+        json = "{\"ok\":true,\"bytes\":";
+        json += static_cast<unsigned int>(_mediaAnimationUploadBytes);
+        json += ",\"uploadMs\":";
+        json += millis() - _mediaAnimationUploadStartedMs;
+        json += "}";
+        _server.send(200, "application/json", json);
+    } else if (_mediaAnimationUploadStatusCode == 507) {
+        _server.send(507, "application/json",
+                     "{\"error\":\"not enough LittleFS space\"}");
+    } else {
+        _server.send(400, "application/json",
+                     "{\"error\":\"invalid GIF animation\"}");
+    }
+    _mediaAnimationUploadAccepted = false;
+    _mediaAnimationUploadComplete = false;
+}
+
 void WebService::handleMediaStop() {
     _displayService->stopMedia();
     _server.send(200, "application/json", "{\"ok\":true}");
@@ -257,7 +382,14 @@ void WebService::handleMediaStop() {
 void WebService::handleMediaStatus() {
     String json = "{\"active\":";
     json += _displayService->isMediaActive() ? "true" : "false";
-    json += ",\"width\":240,\"height\":240,\"pixelFormat\":\"rgb565be\"}";
+    json += ",\"width\":240,\"height\":240,\"pixelFormat\":\"rgb565be\"";
+    json += ",\"fsFree\":";
+    json += static_cast<unsigned int>(LittleFS.totalBytes() - LittleFS.usedBytes());
+    json += ",\"renderMs\":";
+    json += _displayService->getMediaLastRenderMs();
+    json += ",\"frames\":";
+    json += _displayService->getMediaRenderedFrames();
+    json += "}";
     _server.send(200, "application/json", json);
 }
 

@@ -194,16 +194,22 @@ void TftDisplay::fillEllipse(int x, int y, int rx, int ry, uint16_t color) {
     _tft.endWrite();
 }
 
-void TftDisplay::pushRgb565Row(int16_t x, int16_t y, const uint16_t* pixels,
-                               uint16_t width) {
-    if (!pixels || x < 0 || y < 0 || y >= CFG_DISPLAY_HEIGHT || width == 0 ||
-        x + width > CFG_DISPLAY_WIDTH) {
+void TftDisplay::pushRgb565Rect(int16_t x, int16_t y, uint16_t width,
+                                uint16_t height, const uint16_t* pixels) {
+    if (!pixels || x < 0 || y < 0 || width == 0 || height == 0 ||
+        x + width > CFG_DISPLAY_WIDTH || y + height > CFG_DISPLAY_HEIGHT) {
         return;
     }
     _tft.startWrite();
-    _tft.setAddrWindow(x, y, width, 1);
-    _tft.writePixels(const_cast<uint16_t*>(pixels), width, true, false);
+    _tft.setAddrWindow(x, y, width, height);
+    _tft.writePixels(const_cast<uint16_t*>(pixels),
+                     static_cast<uint32_t>(width) * height, true, false);
     _tft.endWrite();
+}
+
+void TftDisplay::pushRgb565Row(int16_t x, int16_t y, const uint16_t* pixels,
+                               uint16_t width) {
+    pushRgb565Rect(x, y, width, 1, pixels);
 }
 
 int TftDisplay::getTextWidth(const char* text, uint8_t size) {

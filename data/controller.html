@@ -662,7 +662,7 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
   <button class="vbtn" data-v="19" onclick="openMediaPanel()">
     <span class="ic">IMG / GIF</span>
     <span class="nm">Media Cast</span>
-    <span class="ht">images &amp; video</span>
+    <span class="ht">images &amp; local GIF</span>
   </button>
   <button class="vbtn" data-v="11" id="dinoViewBtn" onclick="openArcade()">
     <span class="ic">PLAY</span>
@@ -689,9 +689,9 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <button class="media-btn" type="button" onclick="closeMediaPanel()">CLOSE</button>
   </div>
   <input class="media-file" id="mediaFile" type="file"
-         accept="image/png,image/jpeg,image/webp,image/bmp,image/gif,video/mp4,video/webm,video/quicktime"
+         accept="image/png,image/jpeg,image/webp,image/bmp,image/gif"
          onchange="selectMediaFile(this.files[0])">
-  <div class="media-help">PNG · JPEG · WEBP · BMP display as a still frame. GIF and browser-supported video stream while this page stays open. Video is muted and automatically capped at 6 FPS.</div>
+  <div class="media-help">PNG · JPEG · WEBP · BMP display as a still frame. GIF is optimized in your browser, uploaded once, then decoded locally for smooth playback. GIFs up to 240x240 keep their dimensions; larger files are fitted once to the native display. Maximum GIF size: 560 KB.</div>
 </div>
 <div class="uwrap" id="uwrap">
   <div class="uhead">
@@ -1055,6 +1055,7 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
 <div class="toast" id="toast"></div>
 <script src="/wakeup_import.js"></script>
 <script src="/gif_reader.js"></script>
+<script src="/gif_encoder.js"></script>
 <script src="/media.js"></script>
 <script>
 let activeView=0,termOpen=false,canvasOpen=false,arcadeOpen=false,dinoOpen=false,dinoPollTimer=null,dinoJumpPending=false,sokobanOpen=false,sokobanMovePending=false,sokobanStateData=null,arcadeGameOpen='',arcadeGameState=null,arcadeGamePending=false,arcadeGamePollTimer=null,breakoutPositionTimer=null,wifiSetupOpen=false,wifiConnecting=false,lastWifiStatus=null,blOn=true,claudeStatusOn=true,displayTheme=1,fontStyle='pixel',isBusy=false,drawing=false,initialLoadComplete=false;

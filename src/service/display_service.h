@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <FS.h>
 #include "../hardware/tft_display.h"
 #include "claude_code_service.h"
 #include "../view/claude_code_view.h"
@@ -19,6 +20,9 @@
 #include "../config/cfg_display.h"
 
 class U8G2_FOR_ADAFRUIT_GFX;
+class AnimatedGIF;
+struct gif_file_tag;
+struct gif_draw_tag;
 
 enum class DisplayMode {
     SETUP,
@@ -58,8 +62,9 @@ enum class PomodoroPhase {
 
 class DisplayService {
 public:
+    static constexpr uint8_t MEDIA_STRIP_ROWS = 16;
     static constexpr size_t MEDIA_ROW_BUFFER_BYTES =
-        CFG_DISPLAY_WIDTH * sizeof(uint16_t);
+        CFG_DISPLAY_WIDTH * MEDIA_STRIP_ROWS * sizeof(uint16_t);
 
     DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
                    WifiConfigService* wifiService, TimeService* timeService,
@@ -129,15 +134,17 @@ public:
     bool isGameActive() const;
     String getSokobanStateJson() const;
 
-    // 媒体投屏。浏览器统一转换为 240x240 RGB565 大端字节序，
-    // 设备仅保留一行缓冲并边收边显示。
+    // 静态图投屏，以及 LittleFS 中 GIF 的本地流式解码播放。
     bool beginMediaFrame(uint16_t x, uint16_t y,
                          uint16_t width, uint16_t height);
     bool writeMediaFrameBytes(const uint8_t* data, size_t length);
     bool finishMediaFrame();
     void abortMediaFrame();
+    bool startMediaGif(const char* path);
     void stopMedia();
     bool isMediaActive() const { return _mediaActive; }
+    unsigned long getMediaLastRenderMs() const { return _mediaLastRenderMs; }
+    uint32_t getMediaRenderedFrames() const { return _mediaRenderedFrames; }
     bool isExclusiveDisplayActive() const {
         return isGameActive() || _mediaActive;
     }
@@ -223,6 +230,8 @@ private:
     ArcadeCanvas* _arcadeCanvas;
     IArcadeGame* _activeArcadeGame;
     uint16_t* _mediaRowBuffer;
+    fs::File* _mediaFile;
+    AnimatedGIF* _mediaGif;
     uint16_t _mediaRow;
     uint16_t _mediaColumn;
     uint16_t _mediaX;
@@ -233,6 +242,17 @@ private:
     bool _mediaHasHighByte;
     bool _mediaFrameReceiving;
     bool _mediaActive;
+    bool _mediaGifPlaying;
+    unsigned long _mediaNextFrameMs;
+    int16_t _mediaGifOffsetX;
+    int16_t _mediaGifOffsetY;
+    uint16_t _mediaGifStripX;
+    uint16_t _mediaGifStripY;
+    uint16_t _mediaGifStripWidth;
+    uint16_t _mediaGifStripRows;
+    bool _mediaGifStripActive;
+    unsigned long _mediaLastRenderMs;
+    uint32_t _mediaRenderedFrames;
     DisplayMode _currentMode;
     unsigned long _lastRefreshMs;
 
@@ -311,6 +331,14 @@ private:
     IArcadeGame* createArcadeGame(const String& slug);
     void releaseArcadeGame();
     void releaseMediaBuffer();
+    void updateMediaGif(unsigned long now);
+    bool flushMediaGifStrip();
+    static void* openMediaGif(const char* path, int32_t* fileSize);
+    static void closeMediaGif(void* handle);
+    static int32_t readMediaGif(gif_file_tag* file, uint8_t* data,
+                                int32_t length);
+    static int32_t seekMediaGif(gif_file_tag* file, int32_t position);
+    static void drawMediaGif(gif_draw_tag* draw);
     void restoreAfterExclusiveView();
     bool isKnownArcadeGame(const String& slug) const;
     uint8_t viewForArcadeGame(ArcadeGameId id) const;

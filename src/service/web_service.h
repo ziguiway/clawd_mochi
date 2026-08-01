@@ -41,6 +41,13 @@ private:
     bool _mediaUploadComplete;
     int _mediaUploadStatusCode;
     size_t _mediaExpectedBytes;
+    fs::File* _mediaAnimationUploadFile;
+    bool _mediaAnimationUploadAccepted;
+    bool _mediaAnimationUploadComplete;
+    int _mediaAnimationUploadStatusCode;
+    size_t _mediaAnimationUploadBytes;
+    size_t _mediaAnimationMaxBytes;
+    unsigned long _mediaAnimationUploadStartedMs;
 
     void setupRoutes();
 
@@ -107,6 +114,8 @@ private:
     void handleWakeUpProxy();
     void handleMediaFrame();
     void handleMediaFrameUpload();
+    void handleMediaAnimation();
+    void handleMediaAnimationUpload();
     void handleMediaStop();
     void handleMediaStatus();
 

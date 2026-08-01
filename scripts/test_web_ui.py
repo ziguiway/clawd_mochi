@@ -177,10 +177,13 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
     html = extract_index_html()
     wakeup_js = (ROOT / "data" / "wakeup_import.js").read_text()
     gif_reader_js = (ROOT / "data" / "gif_reader.js").read_text()
+    gif_encoder_js = (ROOT / "data" / "gif_encoder.js").read_text()
     media_js = (ROOT / "data" / "media.js").read_text()
     media_frame_count = 0
+    media_animation_count = 0
     media_stop_count = 0
     media_upload_bytes = 0
+    media_animation_bytes = 0
     assets: list[dict[str, Any]] = [dict(item) for item in INITIAL_ASSETS]
     market_assets: list[dict[str, Any]] = [
         dict(item) for item in INITIAL_MARKET_ASSETS
@@ -334,6 +337,13 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
             self.wfile.write(body)
         elif path == "/gif_reader.js":
             body = self.gif_reader_js.encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/javascript")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        elif path == "/gif_encoder.js":
+            body = self.gif_encoder_js.encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/javascript")
             self.send_header("Content-Length", str(len(body)))
@@ -516,10 +526,14 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
             })
         elif path == "/media/status":
             self.send_json({
-                "active": self.media_frame_count > self.media_stop_count,
+                "active": (
+                    self.media_frame_count + self.media_animation_count
+                    > self.media_stop_count
+                ),
                 "width": 240,
                 "height": 240,
                 "pixelFormat": "rgb565be",
+                "fsFree": 700 * 1024,
             })
         else:
             self.send_json({"ok": True})
@@ -534,6 +548,13 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
             self.__class__.media_frame_count += 1
             self.__class__.media_upload_bytes = length
             self.send_json({"ok": True, "width": 240, "height": 240})
+            return
+        if path == "/media/animation":
+            length = int(self.headers.get("Content-Length", "0"))
+            self.rfile.read(length)
+            self.__class__.media_animation_count += 1
+            self.__class__.media_animation_bytes = length
+            self.send_json({"ok": True, "bytes": length, "uploadMs": 1})
             return
         if path == "/media/stop":
             length = int(self.headers.get("Content-Length", "0"))
@@ -1386,7 +1407,7 @@ def run_media_flow(page: Page, *, stub_mode: bool) -> None:
         assert FirmwareStubHandler.media_frame_count == 1
         assert FirmwareStubHandler.media_upload_bytes > 240 * 240 * 2
     assert not page.locator("#mediaStop").is_disabled()
-    print("PASS  浏览器转换并上传 240×240 RGB565 帧")
+    print("PASS  静态图转换并上传 240×240 RGB565 帧")
 
     page.locator("#mediaStop").click()
     page.wait_for_function(
@@ -1396,7 +1417,7 @@ def run_media_flow(page: Page, *, stub_mode: bool) -> None:
         assert FirmwareStubHandler.media_stop_count == 1
     print("PASS  媒体投屏可停止并释放设备侧会话")
 
-    gif_start_frames = FirmwareStubHandler.media_frame_count
+    gif_start_animations = FirmwareStubHandler.media_animation_count
     page.locator("#mediaFile").set_input_files({
         "name": "loop.gif",
         "mimeType": "image/gif",
@@ -1407,73 +1428,16 @@ def run_media_flow(page: Page, *, stub_mode: bool) -> None:
     )
     page.locator("#mediaPlay").click()
     page.wait_for_function(
-        "() => document.querySelector('#mediaState').textContent === 'STREAMING'"
+        "() => document.querySelector('#mediaState').textContent === 'GIF PLAYING'"
     )
     if stub_mode:
-        page.wait_for_function(
-            "() => document.querySelector('#mediaState').textContent === 'STREAMING'"
-        )
-        page.wait_for_timeout(450)
-        assert FirmwareStubHandler.media_frame_count >= gif_start_frames + 3
+        assert FirmwareStubHandler.media_animation_count == gif_start_animations + 1
+        assert FirmwareStubHandler.media_animation_bytes > 16
     page.locator("#mediaStop").click()
     page.wait_for_function(
         "() => document.querySelector('#mediaState').textContent === 'GIF READY'"
     )
-    print("PASS  GIF 以有界 6 FPS 持续投屏并支持主动停止")
-
-    video_start_frames = FirmwareStubHandler.media_frame_count
-    page.evaluate("""
-        async () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = 8;
-          canvas.height = 8;
-          const ctx = canvas.getContext('2d');
-          const stream = canvas.captureStream(8);
-          const recorder = new MediaRecorder(stream, {
-            mimeType: 'video/webm;codecs=vp8'
-          });
-          const chunks = [];
-          recorder.ondataavailable = event => {
-            if (event.data.size) chunks.push(event.data);
-          };
-          const stopped = new Promise(resolve => {
-            recorder.onstop = resolve;
-          });
-          recorder.start();
-          ctx.fillStyle = '#ff0000';
-          ctx.fillRect(0, 0, 8, 8);
-          await new Promise(resolve => setTimeout(resolve, 180));
-          ctx.fillStyle = '#0066ff';
-          ctx.fillRect(0, 0, 8, 8);
-          await new Promise(resolve => setTimeout(resolve, 180));
-          recorder.stop();
-          await stopped;
-          stream.getTracks().forEach(track => track.stop());
-          const file = new File(chunks, 'two-colors.webm', {
-            type: 'video/webm'
-          });
-          const transfer = new DataTransfer();
-          transfer.items.add(file);
-          const input = document.querySelector('#mediaFile');
-          input.files = transfer.files;
-          input.dispatchEvent(new Event('change', {bubbles: true}));
-        }
-    """)
-    page.wait_for_function(
-        "() => document.querySelector('#mediaState').textContent === 'VIDEO READY'"
-    )
-    page.locator("#mediaPlay").click()
-    page.wait_for_function(
-        "() => document.querySelector('#mediaState').textContent === 'VIDEO ENDED'",
-        timeout=10_000,
-    )
-    if stub_mode:
-        assert FirmwareStubHandler.media_frame_count > video_start_frames
-    page.locator("#mediaStop").click()
-    page.wait_for_function(
-        "() => document.querySelector('#mediaState').textContent === 'VIDEO READY'"
-    )
-    print("PASS  WebM 视频在浏览器解码后限帧投屏至设备")
+    print("PASS  GIF 经浏览器优化后上传，并在设备端本地解码")
 
 
 def run_salary_flow(page: Page) -> None:
@@ -2108,8 +2072,10 @@ def main() -> int:
         }
         FirmwareStubHandler.salary_actions = []
         FirmwareStubHandler.media_frame_count = 0
+        FirmwareStubHandler.media_animation_count = 0
         FirmwareStubHandler.media_stop_count = 0
         FirmwareStubHandler.media_upload_bytes = 0
+        FirmwareStubHandler.media_animation_bytes = 0
         FirmwareStubHandler.profile = {
             "deviceName": "MOCHI",
             "bootLine1": "HELLO",

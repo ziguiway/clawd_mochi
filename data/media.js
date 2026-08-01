@@ -3,9 +3,8 @@
 
   const WIDTH = 240;
   const HEIGHT = 240;
-  const STREAM_FPS = 6;
-  const FRAME_INTERVAL_MS = 1000 / STREAM_FPS;
   const MAX_FILE_BYTES = 100 * 1024 * 1024;
+  const MAX_ANIMATION_BYTES = 560 * 1024;
 
   let selectedFile = null;
   let sourceElement = null;
@@ -14,7 +13,6 @@
   let casting = false;
   let deviceActive = false;
   let castGeneration = 0;
-  let lastFrame = null;
   let gifReader = null;
   let gifPixels = null;
   let gifPreviousInfo = null;
@@ -37,18 +35,13 @@
   }
 
   function setControls() {
-    byId('mediaPlay').disabled = !selectedFile || casting;
+    byId('mediaPlay').disabled = !selectedFile || casting || deviceActive;
     byId('mediaStop').disabled = !casting && !deviceActive;
     byId('mediaFit').disabled = casting;
     byId('mediaBg').disabled = casting;
   }
 
   function releaseSource() {
-    if (sourceElement instanceof HTMLVideoElement) {
-      sourceElement.pause();
-      sourceElement.removeAttribute('src');
-      sourceElement.load();
-    }
     sourceElement = null;
     if (objectUrl) URL.revokeObjectURL(objectUrl);
     objectUrl = '';
@@ -59,9 +52,6 @@
   }
 
   function sourceSize() {
-    if (sourceElement instanceof HTMLVideoElement) {
-      return [sourceElement.videoWidth, sourceElement.videoHeight];
-    }
     return [sourceElement?.naturalWidth || 0, sourceElement?.naturalHeight || 0];
   }
 
@@ -165,32 +155,6 @@
     return output;
   }
 
-  function dirtyRegion(frame) {
-    if (!lastFrame) return {x: 0, y: 0, width: WIDTH, height: HEIGHT};
-    let left = WIDTH;
-    let top = HEIGHT;
-    let right = -1;
-    let bottom = -1;
-    for (let y = 0; y < HEIGHT; y++) {
-      const row = y * WIDTH;
-      for (let x = 0; x < WIDTH; x++) {
-        const index = row + x;
-        if (frame[index] === lastFrame[index]) continue;
-        if (x < left) left = x;
-        if (x > right) right = x;
-        if (y < top) top = y;
-        if (y > bottom) bottom = y;
-      }
-    }
-    if (right < left) return null;
-    return {
-      x: left,
-      y: top,
-      width: right - left + 1,
-      height: bottom - top + 1,
-    };
-  }
-
   function encodeRegion(frame, region) {
     const output = new Uint8Array(region.width * region.height * 2);
     let target = 0;
@@ -205,93 +169,84 @@
     return output;
   }
 
-  async function sendCurrentFrame(generation) {
+  async function buildOptimizedGif() {
+    if (!window.GifEnc) return selectedFile;
+    const {GIFEncoder, quantize, applyPalette} = window.GifEnc;
+    const encoder = GIFEncoder();
+    const normalizeForDisplay = gifReader.width > WIDTH ||
+      gifReader.height > HEIGHT;
+    const outputWidth = normalizeForDisplay ? WIDTH : gifReader.width;
+    const outputHeight = normalizeForDisplay ? HEIGHT : gifReader.height;
+    const repeat = gifReader.loopCount() === null
+      ? -1 : gifReader.loopCount();
+    resetGifComposition();
+    for (let index = 0; index < gifReader.numFrames(); index++) {
+      const info = decodeGifFrame(index);
+      let pixels = gifPixels;
+      if (normalizeForDisplay) {
+        drawGifPixels();
+        pixels = context().getImageData(0, 0, WIDTH, HEIGHT).data;
+      }
+      const palette = quantize(pixels, 256, {format: 'rgb565'});
+      const indexed = applyPalette(pixels, palette, 'rgb565');
+      encoder.writeFrame(indexed, outputWidth, outputHeight, {
+        palette,
+        delay: Math.min(10_000,
+          Math.max(20, info.delay > 0 ? info.delay * 10 : 100)),
+        repeat,
+        dispose: 1,
+      });
+      if ((index & 3) === 3) await wait(0);
+    }
+    encoder.finish();
+    const optimized = new Blob([encoder.bytes()], {type: 'image/gif'});
+    return normalizeForDisplay || optimized.size < selectedFile.size
+      ? optimized : selectedFile;
+  }
+
+  async function uploadAnimation(animation, generation) {
     if (generation !== castGeneration) return false;
-    const frame = currentRgb565Frame();
-    const region = dirtyRegion(frame);
-    if (!region) return true;
     const form = new FormData();
-    form.append('frame', new Blob([encodeRegion(frame, region)], {
-      type: 'application/octet-stream',
-    }), 'frame.rgb565');
-    const query = new URLSearchParams({
-      x: region.x,
-      y: region.y,
-      w: region.width,
-      h: region.height,
-    });
-    const response = await fetch(`/media/frame?${query}`, {
-      method: 'POST',
-      body: form,
-      cache: 'no-store',
+    form.append('animation', animation, 'animation.gif');
+    const response = await fetch('/media/animation', {
+      method: 'POST', body: form, cache: 'no-store',
     });
     let payload = {};
     try { payload = await response.json(); } catch (_) {}
     if (!response.ok) {
-      throw new Error(payload.error || 'frame upload failed');
+      throw new Error(payload.error || 'GIF upload failed');
     }
-    lastFrame = frame;
     deviceActive = true;
-    setControls();
+    return generation === castGeneration;
+  }
+
+  async function uploadGifAnimation(generation) {
+    setState('OPTIMIZING GIF');
+    const animation = await buildOptimizedGif();
+    if (animation.size > MAX_ANIMATION_BYTES) {
+      throw new Error('GIF exceeds the 560 KB device limit after optimization');
+    }
+    setState('UPLOADING GIF');
+    return uploadAnimation(animation, generation);
+  }
+
+  async function sendStaticFrame(generation) {
+    const frame = currentRgb565Frame();
+    const region = {x: 0, y: 0, width: WIDTH, height: HEIGHT};
+    const form = new FormData();
+    form.append('frame', new Blob([encodeRegion(frame, region)], {
+      type: 'application/octet-stream',
+    }), 'frame.rgb565');
+    const response = await fetch('/media/frame?x=0&y=0&w=240&h=240', {
+      method: 'POST', body: form, cache: 'no-store',
+    });
+    if (!response.ok) throw new Error('image upload failed');
+    deviceActive = true;
     return generation === castGeneration;
   }
 
   function wait(milliseconds) {
     return new Promise(resolve => setTimeout(resolve, milliseconds));
-  }
-
-  async function streamAnimatedSource(generation) {
-    if (sourceKind === 'gif') {
-      await streamDecodedGif(generation);
-      return;
-    }
-    if (sourceKind === 'video') {
-      sourceElement.currentTime = 0;
-      sourceElement.muted = true;
-      sourceElement.playsInline = true;
-      await sourceElement.play();
-    }
-
-    while (casting && generation === castGeneration) {
-      if (sourceKind === 'video' && sourceElement.ended) break;
-      const started = performance.now();
-      drawSource();
-      await sendCurrentFrame(generation);
-      const remaining = FRAME_INTERVAL_MS - (performance.now() - started);
-      if (remaining > 0) await wait(remaining);
-    }
-
-    if (generation !== castGeneration) return;
-    casting = false;
-    if (sourceKind === 'video') sourceElement.pause();
-    setState(sourceKind === 'video' ? 'VIDEO ENDED' : 'DISPLAYED');
-    setControls();
-  }
-
-  async function streamDecodedGif(generation) {
-    const loopCount = gifReader.loopCount();
-    const totalPlays = loopCount === 0 ? Infinity
-      : loopCount === null ? 1 : loopCount + 1;
-    let play = 0;
-    while (casting && generation === castGeneration && play < totalPlays) {
-      resetGifComposition();
-      for (let index = 0; index < gifReader.numFrames(); index++) {
-        if (!casting || generation !== castGeneration) return;
-        const started = performance.now();
-        const info = decodeGifFrame(index);
-        drawGifPixels();
-        await sendCurrentFrame(generation);
-        const frameDelay = Math.min(10_000,
-          Math.max(20, info.delay > 0 ? info.delay * 10 : 100));
-        const remaining = frameDelay - (performance.now() - started);
-        if (remaining > 0) await wait(remaining);
-      }
-      play++;
-    }
-    if (generation !== castGeneration) return;
-    casting = false;
-    setState('GIF ENDED');
-    setControls();
   }
 
   window.openMediaPanel = function openMediaPanel() {
@@ -326,6 +281,12 @@
 
   window.selectMediaFile = async function selectMediaFile(file) {
     if (!file) return;
+    if (file.type.startsWith('video/')) {
+      setState('VIDEO COMING LATER', true);
+      toast('video support is deferred until GIF playback is validated', false);
+      byId('mediaFile').value = '';
+      return;
+    }
     if (file.size > MAX_FILE_BYTES) {
       setState('FILE TOO LARGE', true);
       toast('media is limited to 100 MB', false);
@@ -336,33 +297,18 @@
     releaseSource();
     selectedFile = file;
     objectUrl = URL.createObjectURL(file);
-    sourceKind = file.type.startsWith('video/') ? 'video'
-      : file.type === 'image/gif' ? 'gif' : 'image';
+    sourceKind = file.type === 'image/gif' ? 'gif' : 'image';
     setState('DECODING');
 
     try {
-      if (sourceKind === 'video') {
-        const video = document.createElement('video');
-        video.preload = 'auto';
-        video.muted = true;
-        video.playsInline = true;
-        video.src = objectUrl;
-        await new Promise((resolve, reject) => {
-          video.addEventListener('loadeddata', resolve, {once: true});
-          video.addEventListener('error', () => reject(
-            new Error('browser cannot decode this video')), {once: true});
-        });
-        sourceElement = video;
-      } else {
-        const image = new Image();
-        image.src = objectUrl;
-        if (image.decode) await image.decode();
-        else await new Promise((resolve, reject) => {
-          image.onload = resolve;
-          image.onerror = () => reject(new Error('image decode failed'));
-        });
-        sourceElement = image;
-      }
+      const image = new Image();
+      image.src = objectUrl;
+      if (image.decode) await image.decode();
+      else await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = () => reject(new Error('image decode failed'));
+      });
+      sourceElement = image;
       if (sourceKind === 'gif') {
         if (typeof GifReader !== 'function') {
           throw new Error('GIF decoder unavailable');
@@ -410,14 +356,19 @@
     try {
       if (sourceKind === 'gif') drawGifPixels();
       else drawSource();
-      if (sourceKind === 'image') {
-        await sendCurrentFrame(generation);
+      if (sourceKind === 'gif') {
+        if (await uploadGifAnimation(generation)) {
+          casting = false;
+          setState('GIF PLAYING');
+          setControls();
+          toast('GIF uploaded and playing locally');
+        }
+      } else if (sourceKind === 'image') {
+        await sendStaticFrame(generation);
         casting = false;
         setState('DISPLAYED');
         setControls();
         toast('image displayed');
-      } else {
-        await streamAnimatedSource(generation);
       }
     } catch (error) {
       if (generation !== castGeneration) return;
@@ -432,23 +383,19 @@
     const shouldNotifyDevice = deviceActive || casting;
     castGeneration++;
     casting = false;
-    if (sourceElement instanceof HTMLVideoElement) sourceElement.pause();
     if (shouldNotifyDevice) {
       try {
         await fetch('/media/stop', {method: 'POST', cache: 'no-store'});
       } catch (_) {}
     }
     deviceActive = false;
-    lastFrame = null;
     setState(selectedFile ? `${sourceKind.toUpperCase()} READY` : 'CHOOSE FILE');
     setControls();
     if (!silent && shouldNotifyDevice) toast('media stopped');
   };
 
   window.addEventListener('beforeunload', () => {
-    if (deviceActive || casting) {
-      navigator.sendBeacon('/media/stop', new Blob([], {type: 'text/plain'}));
-    }
+    // 静态图和 GIF 已完整存入设备，页面退出后可继续显示。
     releaseSource();
   });
 })();

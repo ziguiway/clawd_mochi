@@ -11,6 +11,8 @@
 #include "../view/tetris_game.h"
 #include "../utils/logger.h"
 #include "../utils/memory_monitor.h"
+#include <LittleFS.h>
+#include <AnimatedGIF.h>
 #include <U8g2_for_Adafruit_GFX.h>
 #include <qrcode.h>
 #include <time.h>
@@ -23,6 +25,8 @@
 #define EYE_OY  40
 
 namespace {
+DisplayService* s_mediaGifOwner = nullptr;
+
 void prepareTimetableText(U8G2_FOR_ADAFRUIT_GFX& text,
                           const uint8_t* font, uint16_t foreground) {
     text.setFont(font);
@@ -74,12 +78,21 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _arcadeCanvas(nullptr)
     , _activeArcadeGame(nullptr)
     , _mediaRowBuffer(nullptr)
+    , _mediaFile(nullptr)
+    , _mediaGif(nullptr)
     , _mediaRow(0), _mediaColumn(0)
     , _mediaX(0), _mediaY(0)
     , _mediaWidth(CFG_DISPLAY_WIDTH), _mediaHeight(CFG_DISPLAY_HEIGHT)
     , _mediaHighByte(0)
     , _mediaHasHighByte(false), _mediaFrameReceiving(false)
     , _mediaActive(false)
+    , _mediaGifPlaying(false)
+    , _mediaNextFrameMs(0)
+    , _mediaGifOffsetX(0), _mediaGifOffsetY(0)
+    , _mediaGifStripX(0), _mediaGifStripY(0)
+    , _mediaGifStripWidth(0), _mediaGifStripRows(0)
+    , _mediaGifStripActive(false)
+    , _mediaLastRenderMs(0), _mediaRenderedFrames(0)
     , _currentMode(DisplayMode::SETUP), _lastRefreshMs(0)
     , _interactiveView(InteractiveView::EYES_NORMAL), _interactiveActive(false)
     , _busy(false), _animSpeed(1)
@@ -1429,7 +1442,8 @@ bool DisplayService::beginMediaFrame(uint16_t x, uint16_t y,
     releaseArcadeGame();
     releaseSalaryCounterIfIdle(VIEW_MEDIA);
     if (!_mediaRowBuffer) {
-        _mediaRowBuffer = new (std::nothrow) uint16_t[CFG_DISPLAY_WIDTH];
+        _mediaRowBuffer = new (std::nothrow) uint16_t[
+            MEDIA_ROW_BUFFER_BYTES / sizeof(uint16_t)];
         if (!_mediaRowBuffer) {
             LOG_ERROR("Media", "行缓冲分配失败");
             return false;
@@ -1505,14 +1519,28 @@ void DisplayService::abortMediaFrame() {
 }
 
 void DisplayService::releaseMediaBuffer() {
-    const bool hadBuffer = _mediaRowBuffer != nullptr;
+    const bool hadResources = _mediaRowBuffer != nullptr ||
+                              _mediaFile != nullptr || _mediaGif != nullptr;
+    if (_mediaGif) {
+        _mediaGif->close();
+        delete _mediaGif;
+        _mediaGif = nullptr;
+    }
+    if (_mediaFile) {
+        _mediaFile->close();
+        delete _mediaFile;
+        _mediaFile = nullptr;
+    }
     delete[] _mediaRowBuffer;
     _mediaRowBuffer = nullptr;
     _mediaFrameReceiving = false;
     _mediaHasHighByte = false;
     _mediaRow = 0;
     _mediaColumn = 0;
-    if (hadBuffer) MemoryMonitor::logSnapshot("media released");
+    _mediaGifPlaying = false;
+    _mediaGifStripActive = false;
+    if (s_mediaGifOwner == this) s_mediaGifOwner = nullptr;
+    if (hadResources) MemoryMonitor::logSnapshot("media released");
 }
 
 void DisplayService::stopMedia() {
@@ -1520,6 +1548,185 @@ void DisplayService::stopMedia() {
     releaseMediaBuffer();
     _mediaActive = false;
     restoreAfterExclusiveView();
+}
+
+void* DisplayService::openMediaGif(const char* path, int32_t* fileSize) {
+    if (!s_mediaGifOwner || !fileSize) return nullptr;
+    fs::File opened = LittleFS.open(path, "r");
+    if (!opened) return nullptr;
+    s_mediaGifOwner->_mediaFile = new (std::nothrow) fs::File(opened);
+    if (!s_mediaGifOwner->_mediaFile) return nullptr;
+    *fileSize = static_cast<int32_t>(s_mediaGifOwner->_mediaFile->size());
+    return s_mediaGifOwner->_mediaFile;
+}
+
+void DisplayService::closeMediaGif(void* handle) {
+    fs::File* file = static_cast<fs::File*>(handle);
+    if (file) file->close();
+}
+
+int32_t DisplayService::readMediaGif(gif_file_tag* gifFile, uint8_t* data,
+                                     int32_t length) {
+    if (!gifFile || !gifFile->fHandle || length <= 0) return 0;
+    fs::File* file = static_cast<fs::File*>(gifFile->fHandle);
+    const int32_t remaining = gifFile->iSize - gifFile->iPos;
+    if (length > remaining) length = remaining;
+    if (length <= 0) return 0;
+    const int32_t read = static_cast<int32_t>(file->read(data, length));
+    gifFile->iPos = static_cast<int32_t>(file->position());
+    return read;
+}
+
+int32_t DisplayService::seekMediaGif(gif_file_tag* gifFile,
+                                     int32_t position) {
+    if (!gifFile || !gifFile->fHandle || position < 0 ||
+        position > gifFile->iSize) return -1;
+    fs::File* file = static_cast<fs::File*>(gifFile->fHandle);
+    if (!file->seek(position)) return -1;
+    gifFile->iPos = static_cast<int32_t>(file->position());
+    return gifFile->iPos;
+}
+
+bool DisplayService::flushMediaGifStrip() {
+    if (!_mediaGifStripActive || !_mediaRowBuffer) return true;
+    _tft->pushRgb565Rect(_mediaGifStripX, _mediaGifStripY,
+                         _mediaGifStripWidth, _mediaGifStripRows,
+                         _mediaRowBuffer);
+    _mediaGifStripActive = false;
+    _mediaGifStripRows = 0;
+    return true;
+}
+
+void DisplayService::drawMediaGif(gif_draw_tag* draw) {
+    DisplayService* service = draw
+        ? static_cast<DisplayService*>(draw->pUser) : nullptr;
+    if (!service || !service->_mediaRowBuffer) return;
+    uint8_t* source = draw->pPixels;
+    uint16_t* palette = draw->pPalette;
+    int width = min(draw->iWidth,
+                    CFG_DISPLAY_WIDTH - draw->iX - service->_mediaGifOffsetX);
+    const int screenX = service->_mediaGifOffsetX + draw->iX;
+    const int screenY = service->_mediaGifOffsetY + draw->iY + draw->y;
+    if (width <= 0 || screenX < 0 || screenY < 0 ||
+        screenY >= CFG_DISPLAY_HEIGHT) return;
+
+    if (draw->ucDisposalMethod == 2) {
+        for (int x = 0; x < width; x++) {
+            if (source[x] == draw->ucTransparent) {
+                source[x] = draw->ucBackground;
+            }
+        }
+        draw->ucHasTransparency = 0;
+    }
+
+    if (draw->ucHasTransparency) {
+        service->flushMediaGifStrip();
+        int x = 0;
+        while (x < width) {
+            while (x < width && source[x] == draw->ucTransparent) x++;
+            const int runStart = x;
+            while (x < width && source[x] != draw->ucTransparent) {
+                service->_mediaRowBuffer[x - runStart] = palette[source[x]];
+                x++;
+            }
+            if (x > runStart) {
+                service->_tft->pushRgb565Row(screenX + runStart, screenY,
+                                             service->_mediaRowBuffer,
+                                             x - runStart);
+            }
+        }
+        return;
+    }
+
+    const bool continuesStrip = service->_mediaGifStripActive &&
+        service->_mediaGifStripX == screenX &&
+        service->_mediaGifStripWidth == width &&
+        service->_mediaGifStripY + service->_mediaGifStripRows == screenY &&
+        service->_mediaGifStripRows < MEDIA_STRIP_ROWS;
+    if (!continuesStrip) {
+        service->flushMediaGifStrip();
+        service->_mediaGifStripActive = true;
+        service->_mediaGifStripX = screenX;
+        service->_mediaGifStripY = screenY;
+        service->_mediaGifStripWidth = width;
+        service->_mediaGifStripRows = 0;
+    }
+    uint16_t* target = service->_mediaRowBuffer +
+                       service->_mediaGifStripRows * width;
+    for (int x = 0; x < width; x++) target[x] = palette[source[x]];
+    service->_mediaGifStripRows++;
+    if (service->_mediaGifStripRows == MEDIA_STRIP_ROWS ||
+        draw->y == draw->iHeight - 1) {
+        service->flushMediaGifStrip();
+    }
+}
+
+bool DisplayService::startMediaGif(const char* path) {
+    releaseMediaBuffer();
+    releaseArcadeGame();
+    releaseSalaryCounterIfIdle(VIEW_MEDIA);
+    _mediaRowBuffer = new (std::nothrow) uint16_t[
+        MEDIA_ROW_BUFFER_BYTES / sizeof(uint16_t)];
+    _mediaGif = new (std::nothrow) AnimatedGIF();
+    if (!_mediaRowBuffer || !_mediaGif) {
+        releaseMediaBuffer();
+        return false;
+    }
+    s_mediaGifOwner = this;
+    // Adafruit_SPITFT::writePixels() receives host-endian RGB565 values and
+    // performs the wire-order swap itself.
+    _mediaGif->begin(LITTLE_ENDIAN_PIXELS);
+    if (!_mediaGif->open(path, &DisplayService::openMediaGif,
+                         &DisplayService::closeMediaGif,
+                         &DisplayService::readMediaGif,
+                         &DisplayService::seekMediaGif,
+                         &DisplayService::drawMediaGif)) {
+        releaseMediaBuffer();
+        return false;
+    }
+    const int width = _mediaGif->getCanvasWidth();
+    const int height = _mediaGif->getCanvasHeight();
+    if (width <= 0 || height <= 0 || width > CFG_DISPLAY_WIDTH ||
+        height > CFG_DISPLAY_HEIGHT) {
+        releaseMediaBuffer();
+        return false;
+    }
+    _mediaGifOffsetX = (CFG_DISPLAY_WIDTH - width) / 2;
+    _mediaGifOffsetY = (CFG_DISPLAY_HEIGHT - height) / 2;
+    _tft->fillScreen(COLOR_BLACK);
+    _interactiveActive = true;
+    _currentMode = DisplayMode::INTERACTIVE;
+    _interactiveView = InteractiveView::MEDIA;
+    _expressionPreferred = false;
+    _termMode = false;
+    _mediaActive = true;
+    _mediaGifPlaying = true;
+    _mediaNextFrameMs = millis();
+    MemoryMonitor::logSnapshot("media GIF loaded");
+    return true;
+}
+
+void DisplayService::updateMediaGif(unsigned long now) {
+    if (!_mediaGifPlaying || !_mediaGif ||
+        static_cast<long>(now - _mediaNextFrameMs) < 0) return;
+    const unsigned long started = millis();
+    int delayMs = 0;
+    if (!_mediaGif->playFrame(false, &delayMs, this)) {
+        _mediaGif->reset();
+        if (!_mediaGif->playFrame(false, &delayMs, this)) {
+            LOG_ERROR("Media", "GIF 重置后仍无法解码");
+            stopMedia();
+            return;
+        }
+    }
+    flushMediaGifStrip();
+    _mediaLastRenderMs = millis() - started;
+    _mediaRenderedFrames++;
+    const unsigned long frameDelay = max(20, delayMs);
+    _mediaNextFrameMs += frameDelay;
+    if (static_cast<long>(now - _mediaNextFrameMs) > 1000L) {
+        _mediaNextFrameMs = millis();
+    }
 }
 
 String DisplayService::getArcadeGameStateJson(const String& slug) const {
@@ -2382,6 +2589,10 @@ void DisplayService::update() {
         applyNightDimming();
     }
     if (_currentMode == DisplayMode::INTERACTIVE) {
+        if (_interactiveView == InteractiveView::MEDIA) {
+            updateMediaGif(now);
+            return;
+        }
         if (isArcadeGameView() && _activeArcadeGame) {
             _activeArcadeGame->update();
             return;
