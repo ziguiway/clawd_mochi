@@ -6,6 +6,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Clawd Mochi is an ESP32-C3 desk companion that displays animated expressions and Claude Code status on a 1.54" ST7789 TFT (240x240). It hosts a WiFi AP + web controller — no cloud required. Built with PlatformIO (Arduino framework).
 
+## Implemented Features (as of 2026-08-03)
+
+A snapshot of what the firmware already does, so a new session does not have to re-scan the tree. Keep this in sync when a feature ships; see the relevant section below for architecture details.
+
+**Services** (`src/service/`, all have real `.cpp` implementations — no stubs): `DisplayService` (master renderer), `WebService` (HTTP + ~60 REST routes), `WifiConfigService`, `MarketService` (stocks, Tencent), `PreferenceService` (NVS), `OtaService`, `ClaudeCodeService` (UDP 4210 status, 4211 discovery), `CryptoService` (CoinLore), `SalaryCounterService` (earn-while-working), `HolidayService`, `TimetableService` (lazy, LittleFS JSON), `SerialCommandService`, `WeatherService` (IP-located), `TimeService` (NTP), `OperationModeService`, `BootButtonService`.
+
+**Display modes / views**: `DisplayMode` = SETUP / EXPRESSION (eyes) / INFO (Claude Code panel) / PROVISIONING / INTERACTIVE (web-controlled). `InteractiveView` (20 screens, `VIEW_*` in `cfg_display.h:37-57`): EYES_NORMAL, EYES_SQUISH, CODE_VIEW, DRAW (canvas), THINKING, WORKING, CLOCK, POMODORO, WEATHER, CRYPTO, MARKET, SALARY_COUNTER, TIMETABLE, MEDIA (image/GIF casting), plus 6 arcade games (DINO, SOKOBAN, TETRIS, SNAKE, GAME_2048, BREAKOUT). Idle carousel cycles 5 info views.
+
+**Expressions** (`expression_id.h`): 8 faces (NORMAL, HAPPY, THINKING, SLEEPING, CURIOUS, SURPRISED, GRUMPY, LOVE) with MANUAL/AUTO modes.
+
+**Themes**: 5 (orange-black, orange-white, dark-orange, mint, pink) + brightness + night dimming.
+
+**Web controller** (`data/`): `index.html` (Chinese status page), `controller.html` (full English touch controller — display/brightness/expression/theme/font/profile/OTA/WiFi/arcade/media/timetable panels), `wifi_setup.html`, `logs.html`. JS: `app.js`, `claude_code.js`, `media.js`, `gif_encoder.js`, `gif_reader.js`, `wakeup_import.js`, `wifi.js`.
+
+**Games**: 6 under `src/view/`, all `IArcadeGame`, full-color via 16-row `ArcadeCanvas` strip buffer; Dino/Sokoban 1-bit via shared `GameRenderBuffer`. Dino + Sokoban have dedicated endpoints; the other four use the generic arcade API.
+
+**OTA**: full pipeline — remote manifest check (daily 03:30), version compare, firmware + LittleFS download with SHA256 verify, manual upload. `cfg_ota.h` notes `CFG_OTA_ROOT_CA` is empty (not pinned) and `CFG_OTA_MANIFEST_URL` is still the `example.com` placeholder.
+
+**Hardware in use**: ST7789 SPI (MOSI=10, SCK=8, CS=4, DC=1, RST=2, BL=3, 40 MHz) with PWM backlight; BOOT button GPIO9 (5s hold = factory reset only); WiFi; UDP. **Unused**: GPIO0/5/6/7/20/21, I2C, ADC, extra PWM — but the project direction is software-only, so new features should not assume extra hardware.
+
+**Forward-looking markers**: `operation_mode_service.h` lists unimplemented future modes BLE / USB_CDC_ONLY / AP_ONLY. No `TODO`/`FIXME` markers exist in `src/`.
+
 ## Build & Flash Commands
 
 ```bash
