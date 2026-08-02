@@ -2,11 +2,13 @@
 
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
+#include <esp_ota_ops.h>
 
 #include "../utils/memory_monitor.h"
 #include "../utils/network_request_gate.h"
 #include "../config/app_config.h"
 #include "operation_mode_service.h"
+#include "ota_service.h"
 #include "../config/cfg_display.h"
 #include <ArduinoJson.h>
 #include <new>
@@ -27,7 +29,8 @@ WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiServ
                        PreferenceService* preferenceService,
                        CryptoService* cryptoService,
                        MarketService* marketService,
-                       TimetableService* timetableService)
+                       TimetableService* timetableService,
+                       OtaService* otaService)
     : _server(CFG_WIFI_WEB_PORT)
     , _started(false)
     , _ccService(ccService), _wifiService(wifiService)
@@ -36,6 +39,7 @@ WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiServ
     , _cryptoService(cryptoService)
     , _marketService(marketService)
     , _timetableService(timetableService)
+    , _otaService(otaService)
     , _mediaUploadAccepted(false)
     , _mediaUploadComplete(false)
     , _mediaUploadStatusCode(400)
@@ -60,6 +64,7 @@ void WebService::init() {
 
 void WebService::update() {
     if (!_started) return;
+    if (_otaService) _otaService->update();
     _server.handleClient();
 }
 
@@ -148,6 +153,18 @@ void WebService::setupRoutes() {
         [this]() { handleMediaAnimationUpload(); });
     _server.on("/media/stop", HTTP_POST, [this]() { handleMediaStop(); });
     _server.on("/media/status", HTTP_GET, [this]() { handleMediaStatus(); });
+    _server.on("/ota/status", HTTP_GET, [this]() { handleOtaStatus(); });
+    _server.on("/ota/check", HTTP_POST, [this]() { handleOtaCheck(); });
+    _server.on("/ota/install", HTTP_POST, [this]() { handleOtaInstall(); });
+    _server.on("/ota/cancel", HTTP_POST, [this]() { handleOtaCancel(); });
+    _server.on("/ota/upload", HTTP_POST,
+        [this]() { handleOtaUpload(); },
+        [this]() { handleOtaUploadData(); });
+    _server.on("/ota/status", HTTP_OPTIONS, [this]() { handleOtaOptions(); });
+    _server.on("/ota/check", HTTP_OPTIONS, [this]() { handleOtaOptions(); });
+    _server.on("/ota/install", HTTP_OPTIONS, [this]() { handleOtaOptions(); });
+    _server.on("/ota/cancel", HTTP_OPTIONS, [this]() { handleOtaOptions(); });
+    _server.on("/ota/upload", HTTP_OPTIONS, [this]() { handleOtaOptions(); });
 
     // Existing routes
     _server.on("/wifi_setup", [this]() { handleWifiSetup(); });
@@ -1730,6 +1747,92 @@ void WebService::handleLogsClear() {
 
 void WebService::handleLogsStatus() {
     _server.send(200, "application/json", "{\"size\":" + String(Logger::getInstance().getLogSize()) + "}");
+}
+
+void WebService::handleOtaStatus() {
+    if (!_otaService) { _server.send(503, "application/json", "{\"error\":\"ota unavailable\"}"); return; }
+    _server.sendHeader("Access-Control-Allow-Origin", "*");
+    bool bootPending = false;
+    const esp_partition_t* running = esp_ota_get_running_partition();
+    esp_ota_img_states_t imageState;
+    if (running && esp_ota_get_state_partition(running, &imageState) == ESP_OK) {
+        bootPending = imageState == ESP_OTA_IMG_PENDING_VERIFY;
+    }
+    String json = "{\"version\":\"" + _otaService->currentVersion() +
+        "\",\"latestVersion\":\"" + _otaService->latestVersion() +
+        "\",\"channel\":\"" + _otaService->channel() +
+        "\",\"state\":\"" + String(_otaService->stateText()) +
+        "\",\"available\":" + String(_otaService->updateAvailable() ? "true" : "false") +
+        ",\"bootPending\":" + String(bootPending ? "true" : "false") +
+        ",\"progress\":" + String(_otaService->progressBytes()) +
+        ",\"total\":" + String(_otaService->totalBytes()) +
+        ",\"lastCheck\":\"" + _otaService->lastCheck() +
+        "\",\"error\":\"" + _otaService->lastError() +
+        "\",\"releaseNotes\":\"" + _otaService->releaseNotes() + "\"}";
+    _server.send(200, "application/json", json);
+}
+
+void WebService::handleOtaCheck() {
+    _server.sendHeader("Access-Control-Allow-Origin", "*");
+    if (!_otaService || !_otaService->checkNow()) {
+        handleOtaStatus();
+        return;
+    }
+    handleOtaStatus();
+}
+
+void WebService::handleOtaInstall() {
+    _server.sendHeader("Access-Control-Allow-Origin", "*");
+    if (!_otaService || !_otaService->updateAvailable()) {
+        _server.send(409, "application/json", "{\"error\":\"no update available\"}");
+        return;
+    }
+    if (!_otaService->installRemote()) handleOtaStatus();
+}
+
+void WebService::handleOtaUploadData() {
+    if (!_otaService) return;
+    HTTPUpload& upload = _server.upload();
+    switch (upload.status) {
+        case UPLOAD_FILE_START:
+            if (!_otaService->beginUpload(upload.filename, upload.totalSize)) {
+                _otaService->cancel();
+            }
+            break;
+        case UPLOAD_FILE_WRITE:
+            if (!_otaService->writeUpload(upload.buf, upload.currentSize)) {
+                _otaService->cancel();
+            }
+            break;
+        case UPLOAD_FILE_END:
+            if (!_otaService->finishUpload()) _otaService->cancel();
+            break;
+        case UPLOAD_FILE_ABORTED:
+            _otaService->abortUpload();
+            break;
+    }
+}
+
+void WebService::handleOtaUpload() {
+    if (!_otaService) { _server.send(503, "application/json", "{\"error\":\"ota unavailable\"}"); return; }
+    _server.sendHeader("Access-Control-Allow-Origin", "*");
+    if (_otaService->state() == OtaService::State::REBOOTING) return;
+    const bool failed = _otaService->state() == OtaService::State::FAILED;
+    _server.send(failed ? 400 : 200, "application/json",
+                 failed ? "{\"ok\":false,\"error\":\"ota upload failed\"}" : "{\"ok\":true}");
+}
+
+void WebService::handleOtaCancel() {
+    if (_otaService) _otaService->cancel();
+    _server.sendHeader("Access-Control-Allow-Origin", "*");
+    _server.send(200, "application/json", "{\"ok\":true}");
+}
+
+void WebService::handleOtaOptions() {
+    _server.sendHeader("Access-Control-Allow-Origin", "*");
+    _server.sendHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    _server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
+    _server.send(204, "text/plain", "");
 }
 
 String WebService::getContentType(const String& path) {

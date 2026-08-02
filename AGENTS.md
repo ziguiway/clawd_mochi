@@ -29,12 +29,43 @@ uv run scripts/test_web_ui.py
 
 # Positive Web UI regression against the live CoinLore directory
 uv run scripts/test_web_ui.py --live-directory
+
+# OTA end-to-end suite (builds isolated variants, flashes, tests, restores)
+uv run scripts/ota_test.py \
+  --device-url http://<device-ip>/ \
+  --advertise-host <host-ip> \
+  --serial-port /dev/cu.usbmodem...
 ```
+
+The OTA runner creates disposable PlatformIO project copies under the system
+temporary directory. It injects the test manifest URL, test versions, and
+failed-boot variant only into those copies. It must restore production firmware
+and LittleFS, verify the version read from the production configuration, and
+delete all temporary projects even when a case fails.
 
 After changing the embedded Web controller, run the mocked positive UI
 regression. When changing Crypto search or its directory integration, run both
 the mocked and live-directory variants. These tests intentionally cover the
 happy path only.
+
+## Test organization
+
+- `scripts/web_ui_test/cases/` contains browser-only feature cases and is
+  orchestrated by `scripts/test_web_ui.py`.
+- `scripts/ota_test/` contains OTA transport, release-server, upload, interrupt,
+  checksum, and rollback cases. It must not be added to `web_ui_test`.
+- `scripts/ota_test.py` is the OTA end-to-end entry point. It requires a real
+  ESP32 connected over USB and a host IP reachable from the device. The runner
+  builds and flashes its own isolated baseline before executing any cases.
+- OTA tests build three disposable variants: baseline, valid update, and
+  boot-failure injection. Test environments must not be added to the tracked
+  `platformio.ini` or production configuration headers.
+- A successful OTA test must include remote upgrade, checksum rejection,
+  interrupted local upload, failed-boot rollback, and offline upload. Do not
+  report OTA as complete from a build-only or mocked HTTP test.
+- Restoration and cleanup belong to the runner's `finally` path. A test run is
+  incomplete unless the device reports the production version afterward and
+  the temporary build root has been removed.
 
 ## Architecture
 

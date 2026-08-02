@@ -49,6 +49,9 @@ body{background:#1c1c20;font-family:'Courier New',monospace;color:#e8e4dc;
   padding:12px 4px;cursor:pointer;text-align:center;transition:all .12s}
 .cbtn:active:not(:disabled){transform:scale(.94)}
 .cbtn:disabled{opacity:.3;cursor:default}
+.ota-panel{width:100%;max-width:390px;background:#101014;border:1.5px solid #38343a;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:9px}
+.ota-head,.ota-meta{display:flex;justify-content:space-between;gap:8px;font-size:10px;letter-spacing:1px;color:#8a8278}
+.ota-head span:last-child{color:#c96a3e}.ota-meta strong{color:#e8e4dc;font-size:12px}.ota-notes{font-size:10px;color:#8a8278;line-height:1.4;white-space:pre-line}
 .cbtn.on{border-color:#c96a3e;color:#c96a3e;background:#201408}
 .cbtn.dim{border-color:#2e2a28;color:#4a4540}
 .vgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:390px}
@@ -579,6 +582,16 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
   <div class="ctrl"><button class="cbtn" id="configExport" onclick="exportConfig()">export JSON</button><button class="cbtn" id="configImport" onclick="document.getElementById('configFile').click()">import JSON</button></div>
   <input id="configFile" type="file" accept="application/json,.json" hidden onchange="importConfig(this.files[0])">
   <div class="minfo">Printable ASCII only. Changes to boot text appear after restart.</div>
+</div>
+<div class="sec">// firmware</div>
+<div class="ota-panel">
+  <div class="ota-head"><span>FIRMWARE</span><span id="otaState">NOT CHECKED</span></div>
+  <div class="ota-meta"><span>NOW <strong id="otaVersion">--</strong></span><span>LATEST <strong id="otaLatest">--</strong></span></div>
+  <div class="ota-notes" id="otaNotes">Local firmware and LittleFS updates are available through this device.</div>
+  <div class="ctrl"><button class="cbtn" id="otaCheckBtn" onclick="checkOta()">CHECK NOW</button><button class="cbtn" id="otaInstallBtn" onclick="installOta()" disabled>INSTALL</button></div>
+  <div class="ctrl"><button class="cbtn" onclick="document.getElementById('otaFirmwareFile').click()">UPLOAD FIRMWARE</button><button class="cbtn" onclick="document.getElementById('otaFsFile').click()">UPLOAD LITTLEFS</button></div>
+  <input id="otaFirmwareFile" type="file" accept=".bin" hidden onchange="uploadOta(this.files[0])">
+  <input id="otaFsFile" type="file" accept=".bin" hidden onchange="uploadOta(this.files[0])">
 </div>
 <div class="sec">// network</div>
 <div class="wwrap" id="wwrap">
@@ -1156,6 +1169,11 @@ async function saveProfile(){const payload={deviceName:document.getElementById('
 async function resetProfile(){try{const r=await fetch('/profile/reset',{method:'POST'});if(!r.ok)throw new Error();applyProfile(await r.json());await loadExpressions();toast('profile defaults restored');}catch(e){toast('profile reset failed',false);}}
 async function exportConfig(){try{const r=await fetch('/config/export',{cache:'no-store'});if(!r.ok)throw new Error();const blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='clawd-mochi-config.json';a.click();URL.revokeObjectURL(url);toast('config exported');}catch(e){toast('config export failed',false);}}
 async function importConfig(file){if(!file)return;try{const text=await file.text();JSON.parse(text);const r=await fetch('/config/import',{method:'POST',headers:{'Content-Type':'application/json'},body:text});const result=await r.json();if(!r.ok)throw new Error(result.error||'invalid config');await loadProfile();await loadPrefs();await loadExpressions();toast('config imported');}catch(e){toast(e.message||'config import failed',false);}finally{document.getElementById('configFile').value='';}}
+function renderOta(j){if(!j)return;const state=String(j.state||'idle').replace('_',' ').toUpperCase();document.getElementById('otaState').textContent=state;document.getElementById('otaVersion').textContent=j.version||'--';document.getElementById('otaLatest').textContent=j.latestVersion||'--';document.getElementById('otaNotes').textContent=j.releaseNotes||'No release notes';document.getElementById('otaInstallBtn').disabled=!j.available;}
+async function loadOta(){try{const r=await fetch('/ota/status',{cache:'no-store'});if(r.ok)renderOta(await r.json());}catch(e){}}
+async function checkOta(){const b=document.getElementById('otaCheckBtn');b.disabled=true;b.textContent='CHECKING...';try{const r=await fetch('/ota/check',{method:'POST'});renderOta(await r.json());}catch(e){toast('OTA check failed',false);}finally{b.disabled=false;b.textContent='CHECK NOW';}}
+async function installOta(){if(!confirm('Install the available update and restart the device?'))return;const b=document.getElementById('otaInstallBtn');b.disabled=true;b.textContent='INSTALLING...';try{const r=await fetch('/ota/install',{method:'POST'});if(!r.ok)throw new Error();toast('device is restarting');}catch(e){toast('OTA install failed',false);loadOta();}}
+async function uploadOta(file){if(!file)return;if(!confirm('Upload '+file.name+' and restart the device?'))return;try{const form=new FormData();form.append('file',file,file.name);const r=await fetch('/ota/upload',{method:'POST',body:form});const j=await r.json();if(!r.ok)throw new Error(j.error||'upload failed');toast('device is restarting');}catch(e){toast(e.message||'OTA upload failed',false);}finally{document.getElementById('otaFirmwareFile').value='';document.getElementById('otaFsFile').value='';}}
 async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(activeView===19)await leaveMediaForView();if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e',9:'m',10:'k',17:'y',18:'u'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);document.getElementById('ywrap').classList.toggle('open',v===17);document.getElementById('mwrap').classList.toggle('open',v===9);document.getElementById('swrap').classList.toggle('open',v===10);document.getElementById('uwrap').classList.toggle('open',v===18);if(v===18){await Promise.all([loadTimetable(),pollTimetableStatus()]);toast('timetable open');return;}if(v===17){await loadSalaryConfig();await pollSalary();toast('live ledger open');return;}if(v===9){await loadMarketConfig();loadMarketDirectory();toast('crypto open');return;}if(v===10){await loadStockConfig();toast('market open');return;}if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
 function timetableDay(day){return['','MON','TUE','WED','THU','FRI','SAT','SUN'][Number(day)]||'---';}
 function timetablePreviewNode(className,text){const node=document.createElement('span');node.className=className;if(text!==undefined)node.textContent=text;return node;}
@@ -1635,7 +1653,7 @@ async function endDraw(e){if(!drawing)return;drawing=false;if(!canvasOpen||strok
 cvs.addEventListener('mousedown',startDraw);cvs.addEventListener('mousemove',moveDraw);cvs.addEventListener('mouseup',endDraw);cvs.addEventListener('mouseleave',endDraw);
 cvs.addEventListener('touchstart',startDraw,{passive:false});cvs.addEventListener('touchmove',moveDraw,{passive:false});cvs.addEventListener('touchend',endDraw);
 async function clearAll(){const bg=document.getElementById('bgCol').value;redrawCanvas(bg);await req('/draw/clear?bg='+encodeURIComponent(bg));toast('cleared');}
-(async()=>{requestAnimationFrame(animateSalaryAmount);await loadExpressions();await loadProfile();await loadPrefs();try{const r=await fetch('/state');const j=await r.json();const bv=typeof j.brightness==='number'?j.brightness:(j.bl===false?0:100);document.getElementById('bright').value=bv;document.getElementById('brightV').textContent=bv+'%';blOn=bv>0;updateBlButton();}catch(e){}initialLoadComplete=true;if(!testMode){pollWifiStatus();pollTimer();setInterval(pollTimer,1000);setInterval(pollSalary,1000);setInterval(pollTimetableStatus,30000);setInterval(()=>{if(activeView===9&&!marketSaving&&!marketDrag)loadMarketConfig();if(activeView===10&&!stockSaving&&!stockDrag)loadStockConfig();},30000);}})();
+(async()=>{requestAnimationFrame(animateSalaryAmount);await loadExpressions();await loadProfile();await loadPrefs();await loadOta();try{const r=await fetch('/state');const j=await r.json();const bv=typeof j.brightness==='number'?j.brightness:(j.bl===false?0:100);document.getElementById('bright').value=bv;document.getElementById('brightV').textContent=bv+'%';blOn=bv>0;updateBlButton();}catch(e){}initialLoadComplete=true;if(!testMode){pollWifiStatus();pollTimer();setInterval(pollTimer,1000);setInterval(pollSalary,1000);setInterval(pollTimetableStatus,30000);setInterval(loadOta,30000);setInterval(()=>{if(activeView===9&&!marketSaving&&!marketDrag)loadMarketConfig();if(activeView===10&&!stockSaving&&!stockDrag)loadStockConfig();},30000);}})();
 </script>
 </body>
 </html>

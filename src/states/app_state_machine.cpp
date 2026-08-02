@@ -2,6 +2,11 @@
 #include "../config/cfg_display.h"
 #include "../utils/logger.h"
 #include "../utils/memory_monitor.h"
+#include <esp_ota_ops.h>
+
+namespace {
+constexpr uint32_t OTA_BOOT_CONFIRM_DELAY_MS = 5000;
+}
 
 AppStateMachine::AppStateMachine()
     : _cc(&_sm)
@@ -9,14 +14,17 @@ AppStateMachine::AppStateMachine()
     , _crypto(&_wifi)
     , _market(&_wifi)
     , _holiday(&_wifi, &_time)
+    , _ota(&_wifi, &_time)
     , _display(&_tft, &_cc, &_wifi, &_time, &_prefs, &_weather, &_crypto,
                &_market, &_holiday, &_timetable)
     , _web(&_cc, &_wifi, &_time, &_display, &_prefs, &_crypto, &_market,
-           &_timetable)
+           &_timetable, &_ota)
     , _serial(&_wifi, &_cc, &_time)
     , _bootButton(&_tft, &_wifi)
     , _currentId(BOOT)
     , _current(nullptr)
+    , _otaBootReadyMs(0)
+    , _otaBootConfirmed(false)
 {
 }
 
@@ -42,6 +50,7 @@ void AppStateMachine::init() {
     _tft.init();
     _tft.clear(COLOR_BLACK);
     _time.init();
+    _ota.init();
     _cc.init();
     _bootButton.init();
 
@@ -62,6 +71,7 @@ void AppStateMachine::init() {
 void AppStateMachine::update() {
     if (_current) _current->onUpdate();
     _bootButton.update();
+    confirmOtaBootIfReady();
 }
 
 void AppStateMachine::transitionTo(StateId id) {
@@ -73,9 +83,35 @@ void AppStateMachine::transitionTo(StateId id) {
         _current->_ctx = this;
         LOG_INFO("App", "→ 状态: %s", _current->getName());
         _current->onEnter();
+        if (_otaBootReadyMs == 0 && (id == LAN_IDLE || id == SERIAL_IDLE)) {
+            _otaBootReadyMs = millis();
+        }
     }
 }
 
 void AppStateMachine::registerState(StateId id, State* state) {
     _states[id] = state;
+}
+
+void AppStateMachine::confirmOtaBootIfReady() {
+    if (_otaBootConfirmed || _otaBootReadyMs == 0 ||
+        millis() - _otaBootReadyMs < OTA_BOOT_CONFIRM_DELAY_MS) {
+        return;
+    }
+
+    const esp_partition_t* running = esp_ota_get_running_partition();
+    esp_ota_img_states_t state;
+    if (!running || esp_ota_get_state_partition(running, &state) != ESP_OK) {
+        LOG_ERROR("OTA", "无法读取当前启动分区状态，暂不确认固件");
+        return;
+    }
+
+    if (state == ESP_OTA_IMG_PENDING_VERIFY) {
+        if (esp_ota_mark_app_valid_cancel_rollback() != ESP_OK) {
+            LOG_ERROR("OTA", "启动自检通过，但确认当前固件失败");
+            return;
+        }
+        LOG_INFO("OTA", "启动自检通过，当前固件已确认");
+    }
+    _otaBootConfirmed = true;
 }

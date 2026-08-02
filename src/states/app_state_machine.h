@@ -21,6 +21,7 @@
 #include "../service/market_service.h"
 #include "../service/holiday_service.h"
 #include "../service/timetable_service.h"
+#include "../service/ota_service.h"
 #include "../service/web_service.h"
 #include "../service/display_service.h"
 #include "../service/serial_command_service.h"
@@ -73,6 +74,7 @@ private:
     MarketService        _market;
     HolidayService       _holiday;
     TimetableService     _timetable;
+    OtaService           _ota;
     DisplayService       _display;
     WebService           _web;
     SerialCommandService _serial;
@@ -92,6 +94,9 @@ private:
     State* _states[8] = {nullptr};
     StateId _currentId;
     State* _current;
+    uint32_t _otaBootReadyMs;
+    bool _otaBootConfirmed;
 
     void registerState(StateId id, State* state);
+    void confirmOtaBootIfReady();
 };

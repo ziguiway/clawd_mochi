@@ -24,7 +24,8 @@ public:
                PreferenceService* preferenceService,
                CryptoService* cryptoService,
                MarketService* marketService,
-               TimetableService* timetableService);
+               TimetableService* timetableService,
+               class OtaService* otaService);
     void init();
     void update();
 
@@ -39,6 +40,7 @@ private:
     CryptoService* _cryptoService;
     MarketService* _marketService;
     TimetableService* _timetableService;
+    OtaService* _otaService;
     bool _mediaUploadAccepted;
     bool _mediaUploadComplete;
     int _mediaUploadStatusCode;
@@ -120,6 +122,13 @@ private:
     void handleMediaAnimationUpload();
     void handleMediaStop();
     void handleMediaStatus();
+    void handleOtaStatus();
+    void handleOtaCheck();
+    void handleOtaInstall();
+    void handleOtaUpload();
+    void handleOtaUploadData();
+    void handleOtaCancel();
+    void handleOtaOptions();
 
     // Existing routes
     void handleWifiSetup();
