@@ -10,9 +10,9 @@ Clawd Mochi is an ESP32-C3 desk companion that displays animated expressions and
 
 A snapshot of what the firmware already does, so a new session does not have to re-scan the tree. Keep this in sync when a feature ships; see the relevant section below for architecture details.
 
-**Services** (`src/service/`, all have real `.cpp` implementations — no stubs): `DisplayService` (master renderer), `WebService` (HTTP + ~60 REST routes), `WifiConfigService`, `MarketService` (stocks, Tencent), `PreferenceService` (NVS), `OtaService`, `ClaudeCodeService` (UDP 4210 status, 4211 discovery), `CryptoService` (CoinLore), `SalaryCounterService` (earn-while-working), `HolidayService`, `TimetableService` (lazy, LittleFS JSON), `SerialCommandService`, `WeatherService` (IP-located), `TimeService` (NTP), `OperationModeService`, `BootButtonService`.
+**Services** (`src/service/`, all have real `.cpp` implementations — no stubs): `DisplayService` (master renderer), `WebService` (HTTP + ~60 REST routes), `WifiConfigService`, `MarketService` (stocks, Tencent), `PreferenceService` (NVS), `OtaService`, `ClaudeCodeService` (UDP 4210 status, 4211 discovery; also accumulates session/today WORKING stats + DONE/ERROR/PERMISSION counts in `mochi-ccstats` NVS, exposed via `/cc/stats`), `CryptoService` (CoinLore), `SalaryCounterService` (earn-while-working), `HolidayService`, `TimetableService` (lazy, LittleFS JSON), `SerialCommandService`, `WeatherService` (IP-located), `TimeService` (NTP), `OperationModeService`, `BootButtonService`.
 
-**Display modes / views**: `DisplayMode` = SETUP / EXPRESSION (eyes) / INFO (Claude Code panel) / PROVISIONING / INTERACTIVE (web-controlled). `InteractiveView` (20 screens, `VIEW_*` in `cfg_display.h:37-57`): EYES_NORMAL, EYES_SQUISH, CODE_VIEW, DRAW (canvas), THINKING, WORKING, CLOCK, POMODORO, WEATHER, CRYPTO, MARKET, SALARY_COUNTER, TIMETABLE, MEDIA (image/GIF casting), plus 6 arcade games (DINO, SOKOBAN, TETRIS, SNAKE, GAME_2048, BREAKOUT). Idle carousel cycles 5 info views.
+**Display modes / views**: `DisplayMode` = SETUP / EXPRESSION (eyes) / INFO (Claude Code panel) / PROVISIONING / INTERACTIVE (web-controlled). `InteractiveView` (21 screens, `VIEW_*` in `cfg_display.h`): EYES_NORMAL, EYES_SQUISH, CODE_VIEW, DRAW (canvas), THINKING, WORKING, CLOCK, POMODORO, WEATHER, CRYPTO, MARKET, SALARY_COUNTER, TIMETABLE, MEDIA (image/GIF casting), STATS (Claude Code session/today focus panel), plus 6 arcade games (DINO, SOKOBAN, TETRIS, SNAKE, GAME_2048, BREAKOUT). Idle carousel cycles 5 info views.
 
 **Expressions** (`expression_id.h`): 8 faces (NORMAL, HAPPY, THINKING, SLEEPING, CURIOUS, SURPRISED, GRUMPY, LOVE) with MANUAL/AUTO modes.
 
@@ -73,7 +73,8 @@ happy path only.
 ## Test organization
 
 - `scripts/web_ui_test/cases/` contains browser-only feature cases and is
-  orchestrated by `scripts/test_web_ui.py`.
+  orchestrated by `scripts/test_web_ui.py`. New feature cases live in their own
+  module (e.g. `cases/cc_stats.py` for the Claude Code session stats panel).
 - `scripts/ota_test/` contains OTA transport, release-server, upload, interrupt,
   checksum, and rollback cases. It must not be added to `web_ui_test`.
 - `scripts/ota_test.py` is the OTA end-to-end entry point. It requires a real

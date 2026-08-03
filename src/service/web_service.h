@@ -136,6 +136,8 @@ private:
     void handleFile(const char* path, const char* contentType);
     void handleCCStatus();
     void handleCCTest();
+    void handleCCStats();
+    void handleCCStatsReset();
     void handleTime();
     void handleLogsApi();
     void handleLogsClear();
