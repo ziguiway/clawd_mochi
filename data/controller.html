@@ -85,6 +85,7 @@ body{background:#1c1c20;font-family:'Courier New',monospace;color:#e8e4dc;
 .vbtn[data-v="17"].active{border-color:#f0a060;background:#22140a}
 .vbtn[data-v="18"].active{border-color:#f0a060;background:#22140a}
 .vbtn[data-v="19"].active{border-color:#f0a060;background:#22140a}
+.vbtn[data-v="20"].active{border-color:#f0a060;background:#22140a}
 .media-wrap{width:100%;max-width:390px;background:#151418;border:1.5px solid #c96a3e;
   border-radius:14px;padding:14px;display:none;flex-direction:column;gap:12px}
 .media-wrap.open{display:flex}
@@ -652,6 +653,11 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <span class="nm">Live Ledger</span>
     <span class="ht">work earnings</span>
   </button>
+  <button class="vbtn" data-v="20" onclick="setView(20)">
+    <span class="ic">1:42</span>
+    <span class="nm">Focus</span>
+    <span class="ht">Claude session stats</span>
+  </button>
   <button class="vbtn" data-v="8" onclick="setView(8)">
     <span class="ic">31&#176; / CLOUD</span>
     <span class="nm">Weather</span>
@@ -996,6 +1002,18 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
   </div>
   <div class="yprivacy">LOCAL DEVICE ONLY · ESTIMATED EARNINGS</div>
 </div>
+<div class="mwrap" id="fwrap">
+  <div class="mttl">// CLAUDE FOCUS</div>
+  <div class="mlabel">SESSION &amp; TODAY STATS</div>
+  <div class="msel" id="fStats">
+    <div class="yfield" style="flex-direction:column;align-items:flex-start;gap:4px"><label>TODAY WORKED</label><strong id="fToday">0:00</strong></div>
+    <div class="yfield" style="flex-direction:column;align-items:flex-start;gap:4px"><label>SESSION</label><strong id="fSession">0:00</strong></div>
+    <div class="yfield" style="flex-direction:column;align-items:flex-start;gap:4px"><label>LONGEST RUN</label><strong id="fLongest">0:00</strong></div>
+    <div class="yfield" style="flex-direction:column;align-items:flex-start;gap:4px"><label>DONE / ERR / PERM</label><strong id="fCounts">0 / 0 / 0</strong></div>
+  </div>
+  <div class="ctrl"><button class="cbtn" id="fReset" onclick="resetStats()">RESET STATS</button></div>
+  <div class="minfo">Today's WORKING time × your pay rate. Persists across reboots; resets at midnight.</div>
+</div>
 <div class="mwrap" id="mwrap">
   <div class="mttl">// crypto display</div>
   <div class="mlabel">LIVE PREVIEW (240x240)</div>
@@ -1174,7 +1192,7 @@ async function loadOta(){try{const r=await fetch('/ota/status',{cache:'no-store'
 async function checkOta(){const b=document.getElementById('otaCheckBtn');b.disabled=true;b.textContent='CHECKING...';try{const r=await fetch('/ota/check',{method:'POST'});renderOta(await r.json());}catch(e){toast('OTA check failed',false);}finally{b.disabled=false;b.textContent='CHECK NOW';}}
 async function installOta(){if(!confirm('Install the available update and restart the device?'))return;const b=document.getElementById('otaInstallBtn');b.disabled=true;b.textContent='INSTALLING...';try{const r=await fetch('/ota/install',{method:'POST'});if(!r.ok)throw new Error();toast('device is restarting');}catch(e){toast('OTA install failed',false);loadOta();}}
 async function uploadOta(file){if(!file)return;if(!confirm('Upload '+file.name+' and restart the device?'))return;try{const form=new FormData();form.append('file',file,file.name);const r=await fetch('/ota/upload',{method:'POST',body:form});const j=await r.json();if(!r.ok)throw new Error(j.error||'upload failed');toast('device is restarting');}catch(e){toast(e.message||'OTA upload failed',false);}finally{document.getElementById('otaFirmwareFile').value='';document.getElementById('otaFsFile').value='';}}
-async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(activeView===19)await leaveMediaForView();if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e',9:'m',10:'k',17:'y',18:'u'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);document.getElementById('ywrap').classList.toggle('open',v===17);document.getElementById('mwrap').classList.toggle('open',v===9);document.getElementById('swrap').classList.toggle('open',v===10);document.getElementById('uwrap').classList.toggle('open',v===18);if(v===18){await Promise.all([loadTimetable(),pollTimetableStatus()]);toast('timetable open');return;}if(v===17){await loadSalaryConfig();await pollSalary();toast('live ledger open');return;}if(v===9){await loadMarketConfig();loadMarketDirectory();toast('crypto open');return;}if(v===10){await loadStockConfig();toast('market open');return;}if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
+async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(activeView===19)await leaveMediaForView();if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e',9:'m',10:'k',17:'y',18:'u',20:'t'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);document.getElementById('ywrap').classList.toggle('open',v===17);document.getElementById('mwrap').classList.toggle('open',v===9);document.getElementById('swrap').classList.toggle('open',v===10);document.getElementById('uwrap').classList.toggle('open',v===18);document.getElementById('fwrap').classList.toggle('open',v===20);if(v===18){await Promise.all([loadTimetable(),pollTimetableStatus()]);toast('timetable open');return;}if(v===20){await pollStats();toast('focus open');return;}if(v===17){await loadSalaryConfig();await pollSalary();toast('live ledger open');return;}if(v===9){await loadMarketConfig();loadMarketDirectory();toast('crypto open');return;}if(v===10){await loadStockConfig();toast('market open');return;}if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
 function timetableDay(day){return['','MON','TUE','WED','THU','FRI','SAT','SUN'][Number(day)]||'---';}
 function timetablePreviewNode(className,text){const node=document.createElement('span');node.className=className;if(text!==undefined)node.textContent=text;return node;}
 function splitTimetableCourse(course){const name=String(course.name||'UNTITLED CLASS'),fits=(value,size)=>value.length*size*.6<=212;if(fits(name,27))return{name,size:4};for(let i=name.length-1;i>0;i--){if(name[i]===' '&&fits(name.slice(0,i),27)&&fits(name.slice(i+1),27))return{name:name.slice(0,i)+'\n'+name.slice(i+1),size:4};}const shortName=String(course.shortName||name);return{name:shortName,size:fits(shortName,21)?3:2};}
@@ -1411,6 +1429,12 @@ async function salaryPrimary(){
 }
 async function salaryFinish(){if(!confirm('Clock out and finish today?'))return;if(await salaryPost('/salary/finish'))toast('day finished');}
 async function salaryReset(){if(!confirm("Reset today's earnings?"))return;if(await salaryPost('/salary/reset'))toast('today reset');}
+
+// —— Claude Code 会话/今日统计 ——
+function fmtDuration(ms){const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;return h>0?(h+':'+String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0')):(m+':'+String(ss).padStart(2,'0'));}
+async function pollStats(){if(activeView!==20)return;try{const r=await fetch('/cc/stats',{cache:'no-store'}),j=await r.json();if(!r.ok)return;document.getElementById('fToday').textContent=fmtDuration(j.todayMs||0);document.getElementById('fSession').textContent=fmtDuration(j.sessionMs||0);document.getElementById('fLongest').textContent=fmtDuration(j.longestMs||0);document.getElementById('fCounts').textContent=(j.done||0)+' / '+(j.error||0)+' / '+(j.permission||0);}catch(e){}}
+async function resetStats(){if(!confirm('Reset Claude session stats?'))return;try{const r=await fetch('/cc/stats/reset',{method:'POST'});if(r.ok){await pollStats();toast('stats reset');}else toast('reset failed',false);}catch(e){toast('reset failed',false);}}
+
 function toggleSalarySettings(force){salarySettingsOpen=typeof force==='boolean'?force:!salarySettingsOpen;document.getElementById('ySettings').classList.toggle('open',salarySettingsOpen);document.getElementById('ySettingsState').textContent=salarySettingsOpen?'CLOSE':'OPEN';}
 function marketPrice(v){if(v==null)return'--';if(v>=1000000)return'$'+(v/1000000).toFixed(2)+'M';if(v>=100000)return'$'+Math.round(v/1000)+'K';if(v>=10000)return'$'+(v/1000).toFixed(1)+'K';if(v>=1000)return'$'+Math.round(v);if(v>=100)return'$'+v.toFixed(1);if(v>=1)return'$'+v.toFixed(2);if(v>=.01)return'$'+v.toFixed(4);return'$'+v.toFixed(6);}
 function marketChange(v){return v==null?'--':(v>=0?'+':'')+Number(v).toFixed(1)+'%';}

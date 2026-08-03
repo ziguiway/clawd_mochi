@@ -1195,6 +1195,9 @@ void DisplayService::setInteractiveView(uint8_t view) {
             _timetableLayoutDrawn = false;
             drawTimetableView();
             break;
+        case InteractiveView::STATS:
+            showStatsView();
+            break;
         case InteractiveView::MEDIA:
             // 画面由上传回调逐行更新，这里不清屏。
             break;
@@ -1223,6 +1226,10 @@ void DisplayService::redrawCurrentView() {
         case InteractiveView::CRYPTO:      drawCryptoView(); break;
         case InteractiveView::MARKET:      drawMarketView(); break;
         case InteractiveView::SALARY_COUNTER: drawSalaryCounterView(); break;
+        case InteractiveView::STATS:
+            drawStatsLayout();
+            drawStatsView();
+            break;
         case InteractiveView::TIMETABLE:
             _timetableLayoutDrawn = false;
             drawTimetableView();
@@ -1970,7 +1977,7 @@ bool DisplayService::isSalarySessionActive() const {
 }
 
 void DisplayService::releaseSalaryCounterIfIdle(uint8_t nextView) {
-    if (!_salaryCounter || nextView == VIEW_SALARY ||
+    if (!_salaryCounter || nextView == VIEW_SALARY || nextView == VIEW_STATS ||
         _salaryCounter->isSessionActive()) {
         return;
     }
@@ -2164,6 +2171,176 @@ void DisplayService::drawSalaryCounterView() {
         strncpy(_lastSalaryState, stateText,
                 sizeof(_lastSalaryState) - 1);
         _lastSalaryState[sizeof(_lastSalaryState) - 1] = '\0';
+    }
+}
+
+// ============================================================
+// Claude Code 会话/今日统计面板
+// ============================================================
+
+bool DisplayService::showStatsView() {
+    _interactiveActive = true;
+    _currentMode = DisplayMode::INTERACTIVE;
+    _interactiveView = InteractiveView::STATS;
+    _expressionPreferred = false;
+    _termMode = false;
+    _lastStatsRenderMs = 0;
+    _lastStatsWorked[0] = '\0';
+    _lastStatsEarned[0] = '\0';
+    _lastStatsCounts[0] = '\0';
+    _lastStatsLongest[0] = '\0';
+    _lastStatsSession[0] = '\0';
+    drawStatsLayout();
+    drawStatsView();
+    return true;
+}
+
+void DisplayService::drawStatsLayout() {
+    constexpr uint16_t foreground = COLOR_WHITE;
+    _tft->fillScreen(COLOR_ORANGE);
+
+    // 顶部标题
+    _tft->drawText(12, 8, "CC FOCUS", foreground, COLOR_ORANGE, FONT_MEDIUM);
+    _tft->drawText(168, 12, "TODAY", foreground, COLOR_ORANGE, FONT_SMALL);
+    _tft->fillRect(12, 30, 216, 2, foreground);
+
+    // 中央大字:今日工作时长
+    _tft->drawText(14, 60, "WORKED", foreground, COLOR_ORANGE, FONT_SMALL);
+    _tft->fillRect(12, 124, 216, 1, foreground);
+
+    // 收益行标签
+    _tft->drawText(14, 138, "CC EARNED", foreground, COLOR_ORANGE, FONT_SMALL);
+
+    // 计数行分隔
+    _tft->fillRect(12, 162, 216, 1, foreground);
+    _tft->drawText(12, 168, "DONE", foreground, COLOR_ORANGE, FONT_SMALL);
+    _tft->drawText(92, 168, "ERR", foreground, COLOR_ORANGE, FONT_SMALL);
+    _tft->drawText(160, 168, "PERM", foreground, COLOR_ORANGE, FONT_SMALL);
+
+    // 底部:最长 + 会话
+    _tft->fillRect(12, 188, 216, 1, foreground);
+    _tft->drawText(12, 194, "MAX", foreground, COLOR_ORANGE, FONT_SMALL);
+    _tft->drawText(124, 194, "SESS", foreground, COLOR_ORANGE, FONT_SMALL);
+    _tft->drawTextCentered(222, "EVERY SECOND COUNTS", foreground,
+                           COLOR_ORANGE, FONT_SMALL);
+}
+
+// 把毫秒格式化成 H:MM:SS(或 M:SS),写到 out(>=sizeBytes)
+static void formatDuration(uint32_t ms, char* out, size_t sizeBytes) {
+    const uint32_t totalSec = ms / 1000UL;
+    const uint32_t h = totalSec / 3600UL;
+    const uint32_t m = (totalSec / 60UL) % 60UL;
+    const uint32_t s = totalSec % 60UL;
+    if (h > 0) {
+        snprintf(out, sizeBytes, "%lu:%02lu:%02lu",
+                 static_cast<unsigned long>(h),
+                 static_cast<unsigned long>(m),
+                 static_cast<unsigned long>(s));
+    } else {
+        snprintf(out, sizeBytes, "%lu:%02lu",
+                 static_cast<unsigned long>(m),
+                 static_cast<unsigned long>(s));
+    }
+}
+
+void DisplayService::drawStatsView() {
+    if (!_ccService) return;
+    constexpr uint16_t foreground = COLOR_WHITE;
+
+    // —— 今日工作时长(大字,逐字符 dirty) ——
+    char workedText[16];
+    formatDuration(_ccService->getTodayWorkingMs(), workedText,
+                   sizeof(workedText));
+    if (strcmp(workedText, _lastStatsWorked) != 0) {
+        constexpr uint8_t workedSize = FONT_LARGE;
+        constexpr int16_t workedX = 14;
+        const size_t workedLen = strlen(workedText);
+        const bool layoutChanged = _lastStatsWorked[0] == '\0' ||
+                                   strlen(_lastStatsWorked) != workedLen;
+        if (layoutChanged) {
+            _tft->fillRect(12, 78, 216, 40, COLOR_ORANGE);
+            _tft->drawText(workedX, 82, workedText, foreground,
+                           COLOR_ORANGE, workedSize);
+        } else {
+            const int16_t charWidth = _tft->getTextWidth("0", workedSize);
+            char glyph[2] = {'\0', '\0'};
+            for (size_t i = 0; i < workedLen; i++) {
+                if (_lastStatsWorked[i] == workedText[i]) continue;
+                glyph[0] = workedText[i];
+                _tft->drawText(workedX + static_cast<int16_t>(i) * charWidth,
+                               82, glyph, foreground, COLOR_ORANGE,
+                               workedSize);
+            }
+        }
+        strncpy(_lastStatsWorked, workedText, sizeof(_lastStatsWorked) - 1);
+        _lastStatsWorked[sizeof(_lastStatsWorked) - 1] = '\0';
+    }
+
+    // —— 收益 = 今日 WORKING 秒数 × 时薪(十毫分之一元) ——
+    char earnedText[16];
+    SalaryCounterService* counter = salaryCounter();
+    const bool payConfigured = counter && counter->isConfigured();
+    if (payConfigured) {
+        const uint32_t workedSec = _ccService->getTodayWorkingMs() / 1000UL;
+        const uint32_t rate = counter->getRateTenThousandthsPerSecond();
+        const uint64_t earned = static_cast<uint64_t>(workedSec) *
+                               static_cast<uint64_t>(rate);
+        const uint64_t integerPart = earned / 10000ULL;
+        snprintf(earnedText, sizeof(earnedText), "%llu.%02llu",
+                 static_cast<unsigned long long>(integerPart),
+                 static_cast<unsigned long long>(
+                     (earned % 10000ULL) / 100ULL));
+    } else {
+        snprintf(earnedText, sizeof(earnedText), "SET PAY");
+    }
+    if (strcmp(earnedText, _lastStatsEarned) != 0) {
+        _tft->fillRect(12, 142, 216, 18, COLOR_ORANGE);
+        _tft->drawText(14, 145, earnedText, foreground, COLOR_ORANGE,
+                       FONT_MEDIUM);
+        strncpy(_lastStatsEarned, earnedText, sizeof(_lastStatsEarned) - 1);
+        _lastStatsEarned[sizeof(_lastStatsEarned) - 1] = '\0';
+    }
+
+    // —— 计数行(整段 dirty) ——
+    char countsText[24];
+    snprintf(countsText, sizeof(countsText), "%u   %u   %u",
+             _ccService->getDoneCount(),
+             _ccService->getErrorCount(),
+             _ccService->getPermissionCount());
+    if (strcmp(countsText, _lastStatsCounts) != 0) {
+        _tft->fillRect(40, 168, 184, 14, COLOR_ORANGE);
+        // 三段分别定位到对应标签右侧
+        char num[8];
+        snprintf(num, sizeof(num), "%u", _ccService->getDoneCount());
+        _tft->drawText(46, 168, num, foreground, COLOR_ORANGE, FONT_SMALL);
+        snprintf(num, sizeof(num), "%u", _ccService->getErrorCount());
+        _tft->drawText(118, 168, num, foreground, COLOR_ORANGE, FONT_SMALL);
+        snprintf(num, sizeof(num), "%u", _ccService->getPermissionCount());
+        _tft->drawText(190, 168, num, foreground, COLOR_ORANGE, FONT_SMALL);
+        strncpy(_lastStatsCounts, countsText, sizeof(_lastStatsCounts) - 1);
+        _lastStatsCounts[sizeof(_lastStatsCounts) - 1] = '\0';
+    }
+
+    // —— 最长连续 + 会话时长 ——
+    char longestText[12];
+    formatDuration(_ccService->getLongestWorkingMs(), longestText,
+                   sizeof(longestText));
+    if (strcmp(longestText, _lastStatsLongest) != 0) {
+        _tft->fillRect(40, 194, 80, 14, COLOR_ORANGE);
+        _tft->drawText(46, 194, longestText, foreground, COLOR_ORANGE,
+                       FONT_SMALL);
+        strncpy(_lastStatsLongest, longestText, sizeof(_lastStatsLongest) - 1);
+        _lastStatsLongest[sizeof(_lastStatsLongest) - 1] = '\0';
+    }
+    char sessionText[12];
+    formatDuration(_ccService->getSessionWorkingMs(), sessionText,
+                   sizeof(sessionText));
+    if (strcmp(sessionText, _lastStatsSession) != 0) {
+        _tft->fillRect(152, 194, 80, 14, COLOR_ORANGE);
+        _tft->drawText(158, 194, sessionText, foreground, COLOR_ORANGE,
+                       FONT_SMALL);
+        strncpy(_lastStatsSession, sessionText, sizeof(_lastStatsSession) - 1);
+        _lastStatsSession[sizeof(_lastStatsSession) - 1] = '\0';
     }
 }
 
@@ -2643,7 +2820,8 @@ void DisplayService::update() {
         if (_interactiveView != InteractiveView::CLOCK &&
             _interactiveView != InteractiveView::POMODORO &&
             _interactiveView != InteractiveView::SALARY_COUNTER &&
-            _interactiveView != InteractiveView::TIMETABLE) {
+            _interactiveView != InteractiveView::TIMETABLE &&
+            _interactiveView != InteractiveView::STATS) {
             return;
         }
         if (_interactiveView == InteractiveView::TIMETABLE) {
@@ -2652,6 +2830,12 @@ void DisplayService::update() {
             if (minute == _lastTimetableRenderMinute) return;
             _lastTimetableRenderMinute = minute;
             drawTimetableView();
+            return;
+        }
+        if (_interactiveView == InteractiveView::STATS) {
+            if (now - _lastStatsRenderMs < 250UL) return;
+            _lastStatsRenderMs = now;
+            drawStatsView();
             return;
         }
         const unsigned long sec = now / 1000UL;

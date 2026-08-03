@@ -15,6 +15,7 @@ from .cases.common import mock_coinlore
 from .cases.games import run_game_arcade_flow
 from .cases.market import run_market_flow
 from .cases.media import run_media_flow
+from .cases.cc_stats import run_cc_stats_flow
 from .cases.productivity import run_salary_flow, run_timetable_import_flow
 from .cases.settings import (
     run_carousel_flow,
@@ -213,6 +214,17 @@ def main() -> int:
             "progressPermille": 0,
         }
         FirmwareStubHandler.salary_actions = []
+        FirmwareStubHandler.cc_stats = {
+            "todayMs": 12_345_000,
+            "sessionMs": 600_000,
+            "longestMs": 24_000,
+            "done": 3,
+            "error": 1,
+            "permission": 2,
+            "dateKey": 20_260_803,
+            "working": False,
+        }
+        FirmwareStubHandler.cc_stats_reset_count = 0
         FirmwareStubHandler.media_frame_count = 0
         FirmwareStubHandler.media_animation_count = 0
         FirmwareStubHandler.media_stop_count = 0
@@ -283,6 +295,7 @@ def main() -> int:
                         "INFO  实机模式跳过 Live Ledger 状态变更，"
                         "避免覆盖真实工资记录"
                     )
+                run_cc_stats_flow(page, stub_mode=not bool(args.device_url))
                 run_expression_flow(page, stub_mode=not bool(args.device_url))
                 run_profile_flow(page, stub_mode=not bool(args.device_url))
                 run_theme_flow(page, stub_mode=not bool(args.device_url))

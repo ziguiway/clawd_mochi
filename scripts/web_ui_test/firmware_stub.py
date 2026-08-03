@@ -125,6 +125,17 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
         "progressPermille": 0,
     }
     salary_actions: list[str] = []
+    cc_stats: dict[str, Any] = {
+        "todayMs": 12_345_000,
+        "sessionMs": 600_000,
+        "longestMs": 24_000,
+        "done": 3,
+        "error": 1,
+        "permission": 2,
+        "dateKey": 20_260_803,
+        "working": False,
+    }
+    cc_stats_reset_count = 0
     timetable: dict[str, Any] = {
         "schemaVersion": 1,
         "school": "GDUFS",
@@ -355,6 +366,8 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
             )
         elif path == "/salary/status":
             self.send_json(self.salary_status)
+        elif path == "/cc/stats":
+            self.send_json(self.cc_stats)
         elif path == "/timetable":
             self.send_json(self.timetable)
         elif path == "/timetable/status":
@@ -387,6 +400,19 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         args = urllib.parse.parse_qs(parsed.query)
+        if path == "/cc/stats/reset":
+            length = int(self.headers.get("Content-Length", "0"))
+            if length:
+                self.rfile.read(length)
+            self.__class__.cc_stats = {
+                "todayMs": 0, "sessionMs": 0, "longestMs": 0,
+                "done": 0, "error": 0, "permission": 0,
+                "dateKey": self.cc_stats.get("dateKey", 0),
+                "working": self.cc_stats.get("working", False),
+            }
+            self.__class__.cc_stats_reset_count += 1
+            self.send_json(self.cc_stats)
+            return
         if path == "/media/frame":
             length = int(self.headers.get("Content-Length", "0"))
             self.rfile.read(length)

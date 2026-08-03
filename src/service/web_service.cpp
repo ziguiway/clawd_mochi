@@ -173,6 +173,8 @@ void WebService::setupRoutes() {
     _server.on("/logs.html", [this]() { handleLogs(); });
     _server.on("/cc/status", [this]() { handleCCStatus(); });
     _server.on("/cc/test", [this]() { handleCCTest(); });
+    _server.on("/cc/stats", HTTP_GET, [this]() { handleCCStats(); });
+    _server.on("/cc/stats/reset", HTTP_POST, [this]() { handleCCStatsReset(); });
     _server.on("/wifi/scan", [this]() { _wifiService->handleScanRequest(_server); });
     _server.on("/wifi/connect", HTTP_POST, [this]() { _wifiService->handleConnectRequest(_server); });
     _server.on("/wifi/status", [this]() { _wifiService->handleStatusRequest(_server); });
@@ -488,6 +490,10 @@ void WebService::handleCmd() {
         case 'u':
             rememberedView = VIEW_TIMETABLE;
             _displayService->setInteractiveView(VIEW_TIMETABLE);
+            break;
+        case 't':
+            rememberedView = VIEW_STATS;
+            _displayService->setInteractiveView(VIEW_STATS);
             break;
         case 'a': _displayService->animLogoReveal(); break;
     }
@@ -1729,6 +1735,15 @@ void WebService::handleFile(const char* path, const char* contentType) {
 
 void WebService::handleCCStatus() { _server.send(200, "application/json", _ccService->getStatusJson()); }
 void WebService::handleCCTest() { _server.send(200, "application/json", "{\"status\":\"ok\",\"device\":\"ClawdMochi\"}"); }
+void WebService::handleCCStats() { _server.send(200, "application/json", _ccService->getStatsJson()); }
+void WebService::handleCCStatsReset() {
+    _ccService->resetStats();
+    if (_displayService->isInteractive() &&
+        _displayService->getInteractiveView() == VIEW_STATS) {
+        _displayService->redrawCurrentView();
+    }
+    _server.send(200, "application/json", _ccService->getStatsJson());
+}
 
 void WebService::handleTime() {
     String json = "{\"time\":\"" + _timeService->getDateTime() + "\",\"synced\":" + String(_timeService->isSynced() ? "true" : "false") + "}";
