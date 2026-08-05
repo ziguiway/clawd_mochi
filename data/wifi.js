@@ -28,6 +28,11 @@ function selectNetwork(ssid) {
     document.querySelectorAll('.wifi-item').forEach(item => item.classList.toggle('selected', item.querySelector('.ssid')?.textContent === (ssid || '(hidden)')));
     document.getElementById('password-input')?.focus();
 }
+function showManualEntry() {
+    const f = document.getElementById('connect-form');
+    if (f) f.style.display = 'block';
+    document.getElementById('ssid-input')?.focus();
+}
 async function connectWifi() {
     const ssid = document.getElementById('ssid-input').value, pw = document.getElementById('password-input').value;
     const msg = document.getElementById('connect-msg');
