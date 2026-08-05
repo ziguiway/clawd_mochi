@@ -1,6 +1,7 @@
 #include "web_service.h"
 
 #include <HTTPClient.h>
+#include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <esp_ota_ops.h>
 
@@ -193,9 +194,18 @@ void WebService::setupRoutes() {
         String path = _server.uri();
         if (LittleFS.exists(path)) {
             handleFile(path.c_str(), getContentType(path).c_str());
-        } else {
-            _server.send(404, "text/plain", "Not Found");
+            return;
         }
+        // captive portal:手机连上 ClaWD-Mochi AP 后访问任意网址都引导到配网页。
+        // 仅在未连上路由器(或请求来自 AP 网段)时重定向,避免干扰 LAN 侧正常访问。
+        const bool apSide = !_wifiService->isConnected()
+            || _server.client().localIP() == WiFi.softAPIP();
+        if (apSide) {
+            _server.sendHeader("Location", "http://192.168.4.1/wifi_setup");
+            _server.send(302, "text/plain", "");
+            return;
+        }
+        _server.send(404, "text/plain", "Not Found");
     });
 }
 
