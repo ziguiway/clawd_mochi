@@ -1,4 +1,4 @@
-# Mochi Desktop (上位机)
+# MochiDesktop (上位机)
 
 Clawd Mochi 的桌面控制台：把 PC 屏幕无线推流到 Mochi 的 240×240 屏幕，后续将迁入网页端 controller 的设备控制功能。
 
@@ -24,7 +24,9 @@ npm run build      # 渲染层构建到 dist/renderer
 ## 打包
 
 ```bash
-npm run pack:mac   # dist → release/ 下出 universal .dmg
+npm run pack:mac   # dist → release/ 下出 universal .dmg (x86_64+arm64)
+# 注意: 国内网络建议预先经 npmmirror 下载好 Electron 缓存并校验 SHA256
+# (electron-builder 的分片断点续传可能拼出损坏 zip, 导致打包时 ENOENT 重命名失败)
 npm run pack:win   # 出 NSIS 安装包 + portable exe（需在 Windows 或 wine 环境）
 ```
 
