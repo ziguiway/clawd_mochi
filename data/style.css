@@ -64,3 +64,6 @@ input:focus{outline:none;border-color:#ff8c00}
 .connect-panel input:focus{border-color:#ff8c00;box-shadow:0 0 0 3px rgba(255,140,0,.12)}
 .back-link{display:block;text-align:center;color:#f3c48b;text-decoration:none;margin:18px 0 0;font-size:.85rem}
 .back-link:hover{color:#ff9f2e}
+.hidden-net-link{text-align:center;margin:14px 0 0}
+.hidden-net-link a{color:#f3c48b;text-decoration:none;font-size:.85rem}
+.hidden-net-link a:hover{color:#ff9f2e}

@@ -2732,6 +2732,7 @@ void DisplayService::showCarouselCurrentView() {
 }
 
 void DisplayService::switchToIdleDisplay() {
+    if (provisioningScreenProtected()) return;
     if (_carouselEnabled) {
         showCarouselCurrentView();
         return;
@@ -3079,7 +3080,15 @@ void DisplayService::updateProvisioning() {
     }
 }
 
+bool DisplayService::provisioningScreenProtected() const {
+    // 仅保护短暂的成功确认窗(窗口长度即 wifi_config_service.cpp update() 中的 3000ms CONNECTED 定时);AP/CONNECTING/RETRY_WAIT 由状态机驱动,不在此拦截
+    return _wifiService &&
+           _wifiService->getProvisioningMode() ==
+               WifiConfigService::ProvisioningMode::CONNECTED;
+}
+
 void DisplayService::switchToExpressionMode() {
+    if (provisioningScreenProtected()) return;
     _currentMode = DisplayMode::EXPRESSION;
     if (!_claudeStatusEnabled) {
         applyIdleDefaultView();
