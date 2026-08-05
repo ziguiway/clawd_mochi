@@ -1,0 +1,21 @@
+appId: com.clawd.mochi
+productName: Mochi Desktop
+directories:
+  output: release
+files:
+  - src/main/**
+  - src/preload/**
+  - dist/renderer/**
+  - package.json
+mac:
+  category: public.app-category.utilities
+  target:
+    - target: dmg
+      arch: [universal]
+win:
+  target:
+    - nsis
+    - portable
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

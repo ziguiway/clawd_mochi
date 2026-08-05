@@ -17,6 +17,7 @@
 #include "holiday_service.h"
 #include "salary_counter_service.h"
 #include "timetable_service.h"
+#include "desktop_stream_service.h"
 #include "../config/cfg_display.h"
 
 class U8G2_FOR_ADAFRUIT_GFX;
@@ -53,7 +54,8 @@ enum class InteractiveView {
     SALARY_COUNTER,
     TIMETABLE,
     MEDIA,
-    STATS
+    STATS,
+    DESKTOP_STREAM
 };
 
 enum class PomodoroPhase {
@@ -74,7 +76,8 @@ public:
                    CryptoService* cryptoService,
                    MarketService* marketService,
                    HolidayService* holidayService,
-                   TimetableService* timetableService);
+                   TimetableService* timetableService,
+                   DesktopStreamService* streamService);
     ~DisplayService();
     void init();
     void update();
@@ -147,8 +150,14 @@ public:
     unsigned long getMediaLastRenderMs() const { return _mediaLastRenderMs; }
     uint32_t getMediaRenderedFrames() const { return _mediaRenderedFrames; }
     bool isExclusiveDisplayActive() const {
-        return isGameActive() || _mediaActive;
+        return isGameActive() || _mediaActive || _streamActive;
     }
+
+    // 桌面投屏(Desktop Stream):进入/退出视图与状态查询
+    bool enterDesktopStream();
+    void exitDesktopStream();
+    bool isStreamActive() const { return _streamActive; }
+    String getStreamStatusJson() const;
 
     // 可扩展游戏注册入口
     bool startArcadeGame(const String& slug);
@@ -233,6 +242,8 @@ private:
     uint8_t* _monoGameBuffer;
     ArcadeCanvas* _arcadeCanvas;
     IArcadeGame* _activeArcadeGame;
+    DesktopStreamService* _streamService;
+    bool _streamActive;
     uint16_t* _mediaRowBuffer;
     fs::File* _mediaFile;
     AnimatedGIF* _mediaGif;
@@ -347,6 +358,7 @@ private:
     IArcadeGame* createArcadeGame(const String& slug);
     void releaseArcadeGame();
     void releaseMediaBuffer();
+    void releaseStreamIfActive(uint8_t nextView);
     void updateMediaGif(unsigned long now);
     bool flushMediaGifStrip();
     static void* openMediaGif(const char* path, int32_t* fileSize);

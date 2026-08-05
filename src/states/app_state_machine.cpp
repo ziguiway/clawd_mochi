@@ -15,8 +15,9 @@ AppStateMachine::AppStateMachine()
     , _market(&_wifi)
     , _holiday(&_wifi, &_time)
     , _ota(&_wifi, &_time)
+    , _stream(&_tft)
     , _display(&_tft, &_cc, &_wifi, &_time, &_prefs, &_weather, &_crypto,
-               &_market, &_holiday, &_timetable)
+               &_market, &_holiday, &_timetable, &_stream)
     , _web(&_cc, &_wifi, &_time, &_display, &_prefs, &_crypto, &_market,
            &_timetable, &_ota)
     , _serial(&_wifi, &_cc, &_time)

@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mochi Desktop — Design Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <!-- ─────────── Sidebar ─────────── -->
+  <aside class="sidebar">
+    <div class="brand">
+      <canvas id="mochiEyes" width="48" height="24" aria-label="Mochi eyes"></canvas>
+      <div class="brand-txt">
+        <span class="brand-name">MOCHI</span>
+        <span class="brand-sub">DESKTOP CONSOLE</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-group">
+        <div class="nav-label">STREAM</div>
+        <button class="nav-item active" data-page="stream">
+          <span class="nav-ico">▣</span> Desktop Stream
+          <span class="nav-dot on" title="connected"></span>
+        </button>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">FACE</div>
+        <button class="nav-item" data-page="expressions"><span class="nav-ico">◉</span> Expressions <span class="nav-soon">soon</span></button>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">TIME</div>
+        <button class="nav-item" data-page="clock"><span class="nav-ico">◷</span> Clock &amp; Pomodoro <span class="nav-soon">soon</span></button>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">INFO PANELS</div>
+        <button class="nav-item" data-page="weather"><span class="nav-ico">☁</span> Weather <span class="nav-soon">soon</span></button>
+        <button class="nav-item" data-page="market"><span class="nav-ico">↗</span> Stocks &amp; Crypto <span class="nav-soon">soon</span></button>
+        <button class="nav-item" data-page="stats"><span class="nav-ico">∑</span> Focus Stats <span class="nav-soon">soon</span></button>
+        <button class="nav-item" data-page="timetable"><span class="nav-ico">☷</span> Timetable <span class="nav-soon">soon</span></button>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">PLAY</div>
+        <button class="nav-item" data-page="arcade"><span class="nav-ico">▶</span> Arcade <span class="nav-soon">soon</span></button>
+        <button class="nav-item" data-page="media"><span class="nav-ico">▤</span> Media Cast <span class="nav-soon">soon</span></button>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">DEVICE</div>
+        <button class="nav-item" data-page="system"><span class="nav-ico">⚙</span> System</button>
+      </div>
+    </nav>
+
+    <div class="sidebar-foot">
+      <span class="dev-pill"><span class="dev-dot"></span> ClawdMochi · 192.168.1.42</span>
+    </div>
+  </aside>
+
+  <!-- ─────────── Main ─────────── -->
+  <main class="main">
+    <!-- DESKTOP STREAM -->
+    <section class="page active" id="page-stream">
+      <header class="page-head">
+        <h1>Desktop Stream</h1>
+        <p class="page-sub">Push your PC screen to Mochi over LAN · TCP 3333 · JPEG</p>
+      </header>
+
+      <div class="stream-grid">
+        <!-- preview -->
+        <div class="card preview-card">
+          <div class="card-title">LIVE PREVIEW <span class="fps-badge">8.0 FPS</span></div>
+          <div class="mochi-screen">
+            <div class="mochi-screen-inner">
+              <!-- Pixel-accurate replica of firmware VIEW_STATS (240x240 grid):
+                   orange #fb6b10 panel, white text, absolute firmware coordinates -->
+              <div class="dev-screen" role="img" aria-label="Device screen: focus stats view">
+                <span class="ds-txt ds-m" style="left:12px;top:8px">CC FOCUS</span>
+                <span class="ds-txt ds-s" style="left:168px;top:12px">TODAY</span>
+                <i class="ds-line" style="left:12px;top:30px;width:216px;height:2px"></i>
+                <span class="ds-txt ds-s" style="left:14px;top:60px">WORKED</span>
+                <span class="ds-txt ds-l" style="left:14px;top:82px">1:42:37</span>
+                <i class="ds-line" style="left:12px;top:124px;width:216px;height:1px"></i>
+                <span class="ds-txt ds-s" style="left:14px;top:138px">CC EARNED</span>
+                <span class="ds-txt ds-m" style="left:110px;top:136px">&yen;58.20</span>
+                <i class="ds-line" style="left:12px;top:162px;width:216px;height:1px"></i>
+                <span class="ds-txt ds-s" style="left:12px;top:168px">DONE</span>
+                <span class="ds-txt ds-s" style="left:92px;top:168px">ERR</span>
+                <span class="ds-txt ds-s" style="left:160px;top:168px">PERM</span>
+                <span class="ds-txt ds-s" style="left:12px;top:180px">12</span>
+                <span class="ds-txt ds-s" style="left:92px;top:180px">1</span>
+                <span class="ds-txt ds-s" style="left:160px;top:180px">3</span>
+                <i class="ds-line" style="left:12px;top:188px;width:216px;height:1px"></i>
+                <span class="ds-txt ds-s" style="left:12px;top:194px">MAX</span>
+                <span class="ds-txt ds-s" style="left:124px;top:194px">SESS</span>
+                <span class="ds-txt ds-s" style="left:12px;top:206px">38:12</span>
+                <span class="ds-txt ds-s" style="left:124px;top:206px">1:42:37</span>
+                <span class="ds-txt ds-s ds-center" style="top:222px">EVERY SECOND COUNTS</span>
+              </div>
+            </div>
+            <div class="mochi-chin">MOCHI</div>
+          </div>
+          <div class="preview-meta">
+            <span>240 × 240 · q50</span>
+            <span class="meta-dim">mouse-follow crop</span>
+          </div>
+        </div>
+
+        <!-- controls -->
+        <div class="card">
+          <div class="card-title">CAPTURE MODE</div>
+          <div class="mode-list" role="radiogroup">
+            <label class="mode-item selected">
+              <input type="radio" name="mode" checked>
+              <span class="mode-box">
+                <span class="mode-name">Mouse Follow <em>default</em></span>
+                <span class="mode-desc">240×240 crop centered on the cursor — text stays readable</span>
+              </span>
+            </label>
+            <label class="mode-item">
+              <input type="radio" name="mode">
+              <span class="mode-box">
+                <span class="mode-name">Full Screen</span>
+                <span class="mode-desc">Whole display scaled down — see overall layout</span>
+              </span>
+            </label>
+            <label class="mode-item">
+              <input type="radio" name="mode">
+              <span class="mode-box">
+                <span class="mode-name">Fixed Region</span>
+                <span class="mode-desc">Pick a screen area once, keep streaming it</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="card-title" style="margin-top:18px">PARAMETERS</div>
+          <div class="param-row">
+            <label>Frame rate</label>
+            <input type="range" min="3" max="15" value="8">
+            <span class="param-val">8 fps</span>
+          </div>
+          <div class="param-row">
+            <label>JPEG quality</label>
+            <input type="range" min="30" max="80" value="50">
+            <span class="param-val">50</span>
+          </div>
+          <div class="param-row">
+            <label>Display</label>
+            <select class="sel"><option>Built-in Retina</option><option>External 27"</option></select>
+          </div>
+
+          <button class="cta" id="streamToggle">■ STOP STREAMING</button>
+        </div>
+      </div>
+
+      <!-- devices -->
+      <div class="card" style="margin-top:16px">
+        <div class="card-title">DEVICES ON LAN <button class="mini-btn">RESCAN</button></div>
+        <div class="dev-list">
+          <div class="dev-row connected">
+            <span class="dev-eyes">◉‿◉</span>
+            <div class="dev-info"><b>ClawdMochi</b><span>192.168.1.42 · found via broadcast</span></div>
+            <span class="dev-badge">CONNECTED</span>
+          </div>
+          <div class="dev-row">
+            <span class="dev-eyes idle">◉_◉</span>
+            <div class="dev-info"><b>ClawdMochi-2</b><span>192.168.1.77 · found via broadcast</span></div>
+            <button class="mini-btn">CONNECT</button>
+          </div>
+          <div class="dev-row dim">
+            <span class="dev-eyes idle">◉x◉</span>
+            <div class="dev-info"><b>Manual device</b><span>enter an IP to add</span></div>
+            <input class="ip-input" placeholder="192.168.1.___">
+            <button class="mini-btn">ADD</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SYSTEM -->
+    <section class="page" id="page-system">
+      <header class="page-head">
+        <h1>System</h1>
+        <p class="page-sub">Connection &amp; device health — more device settings arrive with the web-console migration</p>
+      </header>
+      <div class="card">
+        <div class="card-title">CONNECTION</div>
+        <div class="kv"><span>Device</span><b>ClawdMochi · 192.168.1.42</b></div>
+        <div class="kv"><span>Firmware</span><b>v1.4.0</b></div>
+        <div class="kv"><span>Stream uptime</span><b>12:47</b></div>
+        <div class="kv"><span>Frames pushed</span><b>6,041</b></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="card-title">COMING HERE SOON</div>
+        <div class="soon-grid">
+          <span>Themes ×5</span><span>Brightness &amp; night dim</span><span>Idle carousel</span>
+          <span>WiFi setup</span><span>OTA update</span><span>Device logs</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- placeholder pages -->
+    <section class="page soon-page" id="page-expressions">
+      <div class="soon-art">◉ ‿ ◉</div><h2>Expressions</h2>
+      <p>8 pixel faces, manual / auto mode and blink speed — coming in the web-console migration.</p>
+    </section>
+    <section class="page soon-page" id="page-clock">
+      <div class="soon-art">◷</div><h2>Clock &amp; Pomodoro</h2><p>Coming soon.</p>
+    </section>
+    <section class="page soon-page" id="page-weather">
+      <div class="soon-art">☁</div><h2>Weather</h2><p>Coming soon.</p>
+    </section>
+    <section class="page soon-page" id="page-market">
+      <div class="soon-art">↗</div><h2>Stocks &amp; Crypto</h2><p>Coming soon.</p>
+    </section>
+    <section class="page soon-page" id="page-stats">
+      <div class="soon-art">∑</div><h2>Focus Stats</h2><p>Coming soon.</p>
+    </section>
+    <section class="page soon-page" id="page-timetable">
+      <div class="soon-art">☷</div><h2>Timetable</h2><p>Coming soon.</p>
+    </section>
+    <section class="page soon-page" id="page-arcade">
+      <div class="soon-art">▶</div><h2>Arcade</h2><p>6 games — coming soon.</p>
+    </section>
+    <section class="page soon-page" id="page-media">
+      <div class="soon-art">▤</div><h2>Media Cast</h2><p>Images &amp; GIF — coming soon.</p>
+    </section>
+  </main>
+</div>
+
+<script>
+// nav switching (prototype only)
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + btn.dataset.page).classList.add('active');
+  });
+});
+// mode radio visual
+document.querySelectorAll('.mode-item input').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('.mode-item').forEach(m => m.classList.remove('selected'));
+    r.closest('.mode-item').classList.add('selected');
+  });
+});
+// pixel eyes blink
+const c = document.getElementById('mochiEyes').getContext('2d');
+function drawEyes(open) {
+  c.clearRect(0, 0, 48, 24);
+  c.fillStyle = '#fb6b10';
+  if (open) { c.fillRect(4, 2, 12, 20); c.fillRect(32, 2, 12, 20); }
+  else { c.fillRect(4, 10, 12, 4); c.fillRect(32, 10, 12, 4); }
+}
+(function blink() {
+  drawEyes(true);
+  setTimeout(() => { drawEyes(false); setTimeout(() => { drawEyes(true); }, 140); },
+             1800 + Math.random() * 2600);
+  setTimeout(blink, 1800 + Math.random() * 2600);
+})();
+</script>
+</body>
+</html>

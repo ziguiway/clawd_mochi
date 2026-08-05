@@ -683,6 +683,11 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <span class="nm">Media Cast</span>
     <span class="ht">images &amp; local GIF</span>
   </button>
+  <button class="vbtn" data-v="21" onclick="toggleStreamPanel()">
+    <span class="ic">PC &#8594;</span>
+    <span class="nm">Desktop Stream</span>
+    <span class="ht">wireless PC display</span>
+  </button>
   <button class="vbtn" data-v="11" id="dinoViewBtn" onclick="openArcade()">
     <span class="ic">PLAY</span>
     <span class="nm">Game Arcade</span>
@@ -711,6 +716,19 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
          accept="image/png,image/jpeg,image/webp,image/bmp,image/gif"
          onchange="selectMediaFile(this.files[0])">
   <div class="media-help">PNG · JPEG · WEBP · BMP display as a still frame. GIF is optimized in your browser, uploaded once, then decoded locally for smooth playback. GIFs up to 240x240 keep their dimensions; larger files are fitted once to the native display. Maximum GIF size: 560 KB.</div>
+</div>
+<div class="media-wrap" id="streamWrap">
+  <div class="media-head">
+    <div class="media-title">DESKTOP STREAM<small>PC WIRELESS DISPLAY · TCP 3333</small></div>
+    <span class="media-state" id="streamState">OFF</span>
+  </div>
+  <div class="media-help">Run the Mochi Desktop app (or scripts/desktop_stream_test.py) on your PC, then enter stream mode here. The PC pushes JPEG frames over your LAN. Unencrypted — trusted networks only.</div>
+  <div class="media-actions">
+    <button class="media-btn primary" id="streamEnter" type="button" onclick="enterStream()">ENTER STREAM</button>
+    <button class="media-btn" id="streamExit" type="button" onclick="exitStream()" disabled>EXIT</button>
+    <button class="media-btn" type="button" onclick="pollStreamStatus()">REFRESH</button>
+    <button class="media-btn" type="button" onclick="closeStreamPanel()">CLOSE</button>
+  </div>
 </div>
 <div class="uwrap" id="uwrap">
   <div class="uhead">
@@ -1087,6 +1105,15 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
 <script src="/wakeup_import.js"></script>
 <script src="/gif_reader.js"></script>
 <script src="/gif_encoder.js"></script>
+
+let streamOpen=false,streamTimer=null;
+async function toggleStreamPanel(){if(isBusy||termOpen||canvasOpen)return;if(activeView===19)await leaveMediaForView();streamOpen=!streamOpen;document.getElementById('streamWrap').classList.toggle('open',streamOpen);document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',streamOpen&&parseInt(b.dataset.v)===21));if(streamOpen){await pollStreamStatus();streamTimer=setInterval(pollStreamStatus,2000);}else if(streamTimer){clearInterval(streamTimer);streamTimer=null;}}
+async function closeStreamPanel(){streamOpen=false;if(streamTimer){clearInterval(streamTimer);streamTimer=null;}document.getElementById('streamWrap').classList.remove('open');document.querySelectorAll('.vbtn').forEach(b=>b.classList.remove('active'));}
+async function enterStream(){try{const r=await fetch('/stream/enter',{method:'POST'});const j=await r.json();if(!r.ok){toast('stream enter failed: low memory',false);}else{activeView=21;toast('stream mode on');}renderStreamState(j);}catch(e){toast('stream enter failed',false);}}
+async function exitStream(){try{const r=await fetch('/stream/exit',{method:'POST'});const j=await r.json();activeView=null;renderStreamState(j);toast('stream off');}catch(e){toast('stream exit failed',false);}}
+async function pollStreamStatus(){try{const r=await fetch('/stream/status',{cache:'no-store'});renderStreamState(await r.json());}catch(e){}}
+function renderStreamState(j){const el=document.getElementById('streamState');if(!el)return;if(!j.active){el.textContent='OFF';}else if(j.connected){el.textContent='STREAMING '+j.fps.toFixed(1)+' FPS';}else{el.textContent='WAITING PC';}const enterBtn=document.getElementById('streamEnter'),exitBtn=document.getElementById('streamExit');if(enterBtn)enterBtn.disabled=!!j.active;if(exitBtn)exitBtn.disabled=!j.active;}
+
 <script src="/media.js"></script>
 <script>
 let activeView=0,termOpen=false,canvasOpen=false,arcadeOpen=false,dinoOpen=false,dinoPollTimer=null,dinoJumpPending=false,sokobanOpen=false,sokobanMovePending=false,sokobanStateData=null,arcadeGameOpen='',arcadeGameState=null,arcadeGamePending=false,arcadeGamePollTimer=null,breakoutPositionTimer=null,wifiSetupOpen=false,wifiConnecting=false,lastWifiStatus=null,blOn=true,claudeStatusOn=true,displayTheme=1,fontStyle='pixel',isBusy=false,drawing=false,initialLoadComplete=false;

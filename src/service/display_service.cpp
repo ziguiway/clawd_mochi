@@ -64,7 +64,8 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
                                CryptoService* cryptoService,
                                MarketService* marketService,
                                HolidayService* holidayService,
-                               TimetableService* timetableService)
+                               TimetableService* timetableService,
+                               DesktopStreamService* streamService)
     : _tft(tft), _ccService(ccService), _wifiService(wifiService), _timeService(timeService)
     , _preferenceService(preferenceService)
     , _weatherService(weatherService)
@@ -72,6 +73,8 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _marketService(marketService)
     , _holidayService(holidayService)
     , _timetableService(timetableService)
+    , _streamService(streamService)
+    , _streamActive(false)
     , _salaryCounter(nullptr)
     , _ccView(tft), _eyesView(tft)
     , _monoGameBuffer(nullptr)
@@ -1098,6 +1101,38 @@ void DisplayService::animLogoReveal() {
     _busy = false;
 }
 
+// ── Desktop Stream ───────────────────────────────────────────
+bool DisplayService::enterDesktopStream() {
+    setInteractiveView(VIEW_DESKTOP_STREAM);
+    return _streamActive;
+}
+
+void DisplayService::exitDesktopStream() {
+    releaseStreamIfActive(VIEW_EYES_NORMAL);
+    restoreAfterExclusiveView();
+}
+
+void DisplayService::releaseStreamIfActive(uint8_t nextView) {
+    if (!_streamActive || nextView == VIEW_DESKTOP_STREAM) return;
+    if (_streamService) _streamService->end();
+    _streamActive = false;
+}
+
+String DisplayService::getStreamStatusJson() const {
+    String json = "{";
+    json += "\"active\":" + String(_streamActive ? "true" : "false");
+    if (_streamActive && _streamService) {
+        json += ",\"connected\":" +
+                String(_streamService->isClientConnected() ? "true" : "false");
+        json += ",\"fps\":" + String(_streamService->getFps(), 1);
+        json += ",\"frames\":" + String(_streamService->getFrameCount());
+    } else {
+        json += ",\"connected\":false,\"fps\":0,\"frames\":0";
+    }
+    json += "}";
+    return json;
+}
+
 // ── Interactive mode ───────────────────────────────────────────
 void DisplayService::enterInteractive() {
     _interactiveActive = false;
@@ -1108,6 +1143,7 @@ void DisplayService::enterInteractive() {
 
 void DisplayService::exitInteractive() {
     releaseArcadeGame();
+    releaseStreamIfActive(VIEW_EYES_NORMAL);
     releaseMediaBuffer();
     _mediaActive = false;
     releaseSalaryCounterIfIdle(VIEW_EYES_NORMAL);
@@ -1124,6 +1160,7 @@ void DisplayService::setInteractiveView(uint8_t view) {
         releaseMediaBuffer();
         _mediaActive = false;
     }
+    releaseStreamIfActive(view);
     const char* requestedGame = slugForArcadeView(view);
     if (requestedGame &&
         (!_activeArcadeGame ||
@@ -1201,6 +1238,13 @@ void DisplayService::setInteractiveView(uint8_t view) {
         case InteractiveView::MEDIA:
             // 画面由上传回调逐行更新，这里不清屏。
             break;
+        case InteractiveView::DESKTOP_STREAM:
+            // 服务 begin() 内部会画等待页或内存不足页。
+            if (_streamService && _streamService->begin()) {
+                _streamActive = true;
+                _streamService->drawWaitingPage();
+            }
+            break;
         case InteractiveView::DINO_GAME:
         case InteractiveView::SOKOBAN_GAME:
         case InteractiveView::TETRIS_GAME:
@@ -1236,6 +1280,9 @@ void DisplayService::redrawCurrentView() {
             break;
         case InteractiveView::MEDIA:
             // TFT GRAM 已保留最后一帧，无需重画。
+            break;
+        case InteractiveView::DESKTOP_STREAM:
+            // 等待页/末帧已保留，无需重画。
             break;
         case InteractiveView::DINO_GAME:
         case InteractiveView::SOKOBAN_GAME:
@@ -2780,6 +2827,10 @@ void DisplayService::update() {
     if (_currentMode == DisplayMode::INTERACTIVE) {
         if (_interactiveView == InteractiveView::MEDIA) {
             updateMediaGif(now);
+            return;
+        }
+        if (_interactiveView == InteractiveView::DESKTOP_STREAM) {
+            if (_streamService) _streamService->update();
             return;
         }
         if (isArcadeGameView() && _activeArcadeGame) {

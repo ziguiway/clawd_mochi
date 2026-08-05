@@ -122,6 +122,9 @@ private:
     void handleMediaAnimationUpload();
     void handleMediaStop();
     void handleMediaStatus();
+    void handleStreamEnter();
+    void handleStreamExit();
+    void handleStreamStatus();
     void handleOtaStatus();
     void handleOtaCheck();
     void handleOtaInstall();

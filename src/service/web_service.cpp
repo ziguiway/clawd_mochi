@@ -154,6 +154,9 @@ void WebService::setupRoutes() {
         [this]() { handleMediaAnimationUpload(); });
     _server.on("/media/stop", HTTP_POST, [this]() { handleMediaStop(); });
     _server.on("/media/status", HTTP_GET, [this]() { handleMediaStatus(); });
+    _server.on("/stream/enter", HTTP_POST, [this]() { handleStreamEnter(); });
+    _server.on("/stream/exit", HTTP_POST, [this]() { handleStreamExit(); });
+    _server.on("/stream/status", HTTP_GET, [this]() { handleStreamStatus(); });
     _server.on("/ota/status", HTTP_GET, [this]() { handleOtaStatus(); });
     _server.on("/ota/check", HTTP_POST, [this]() { handleOtaCheck(); });
     _server.on("/ota/install", HTTP_POST, [this]() { handleOtaInstall(); });
@@ -431,6 +434,21 @@ void WebService::handleMediaAnimation() {
 void WebService::handleMediaStop() {
     _displayService->stopMedia();
     _server.send(200, "application/json", "{\"ok\":true}");
+}
+
+void WebService::handleStreamEnter() {
+    const bool ok = _displayService->enterDesktopStream();
+    _server.send(ok ? 200 : 507, "application/json",
+                 _displayService->getStreamStatusJson());
+}
+
+void WebService::handleStreamExit() {
+    _displayService->exitDesktopStream();
+    _server.send(200, "application/json", _displayService->getStreamStatusJson());
+}
+
+void WebService::handleStreamStatus() {
+    _server.send(200, "application/json", _displayService->getStreamStatusJson());
 }
 
 void WebService::handleMediaStatus() {

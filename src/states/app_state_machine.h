@@ -27,6 +27,7 @@
 #include "../service/serial_command_service.h"
 #include "../service/operation_mode_service.h"
 #include "../service/boot_button_service.h"
+#include "../service/desktop_stream_service.h"
 #include "../utils/state_machine.h"
 #include "../utils/logger.h"
 
@@ -75,6 +76,7 @@ private:
     HolidayService       _holiday;
     TimetableService     _timetable;
     OtaService           _ota;
+    DesktopStreamService _stream;
     DisplayService       _display;
     WebService           _web;
     SerialCommandService _serial;

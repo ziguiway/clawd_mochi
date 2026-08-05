@@ -31,3 +31,8 @@ desktop.ini
 # Python bytecode cache
 __pycache__/
 *.pyc
+
+# Desktop app (Electron)
+desktop_app/node_modules/
+desktop_app/dist/
+desktop_app/release/

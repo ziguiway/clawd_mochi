@@ -55,6 +55,7 @@
 #define VIEW_TIMETABLE  18
 #define VIEW_MEDIA      19
 #define VIEW_STATS      20
+#define VIEW_DESKTOP_STREAM 21
 #define CAROUSEL_VIEW_COUNT 5
 
 // 系统显示主题
