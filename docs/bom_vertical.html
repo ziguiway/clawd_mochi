@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta charset="utf-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    width: 750px; min-height: 1334px;
+    font-family: "PingFang SC","Hiragino Sans GB",sans-serif;
+    background: #ffffff; color: #1d1d1f;
+    padding: 70px 56px;
+  }
+  .logo { text-align:center; margin-bottom: 14px; }
+  h1 { text-align:center; font-size: 40px; font-weight: 700; letter-spacing: 1px; }
+  .sub { text-align:center; font-size: 21px; color:#86868b; margin: 10px 0 44px; }
+  .item {
+    display:flex; align-items:baseline; justify-content:space-between;
+    padding: 22px 4px; border-bottom: 1px solid #e8e8ed;
+  }
+  .item:first-of-type { border-top: 1px solid #e8e8ed; }
+  .left { max-width: 75%; }
+  .name { font-size: 25px; font-weight: 600; }
+  .spec { font-size: 20px; color:#86868b; margin-top: 5px; }
+  .price { font-size: 23px; color:#1d1d1f; font-weight:600; white-space:nowrap; }
+  .total {
+    margin-top: 36px; text-align:center; font-size: 27px; font-weight: 700;
+    background:#f5f5f7; border-radius: 16px; padding: 24px;
+  }
+  .note { margin-top: 34px; font-size: 20px; color:#6e6e73; line-height: 1.9; }
+  .note b { color:#1d1d1f; font-weight:600; }
+  .footer { margin-top: 40px; text-align:center; font-size: 18px; color:#b0b0b5; }
+</style></head>
+<body>
+  <div class="logo"><svg width="180" height="180" viewBox="0 0 240 240">
+  <rect width="240" height="240" rx="24" fill="#fb6b10"/>
+  <rect x="45" y="90" width="30" height="60" rx="6" fill="#1a1a1a"/>
+  <rect x="165" y="90" width="30" height="60" rx="6" fill="#1a1a1a"/>
+</svg></div>
+  <h1>Clawd Mochi 物料清单</h1>
+  <div class="sub">ESP32-C3 桌面小伙伴 · 组装约 1 小时 · 新手友好 · 价格参考淘宝/拼多多</div>
+
+  <div class="item"><div class="left"><div class="name">ESP32-C3 Super Mini</div><div class="spec">主控板，内置 WiFi / BLE</div></div><div class="price">¥6–13</div></div>
+  <div class="item"><div class="left"><div class="name">ST7789 1.54" TFT 屏幕</div><div class="spec">240×240 SPI 彩屏</div></div><div class="price">¥7–12</div></div>
+  <div class="item"><div class="left"><div class="name">杜邦线 ×8</div><div class="spec">8–10 cm 短跳线</div></div><div class="price">¥2–4</div></div>
+  <div class="item"><div class="left"><div class="name">M2×6mm 螺丝 ×2</div><div class="spec">固定屏幕边框</div></div><div class="price">¥1–2</div></div>
+  <div class="item"><div class="left"><div class="name">双面胶</div><div class="spec">固定壳内元件</div></div><div class="price">¥1–2</div></div>
+  <div class="item"><div class="left"><div class="name">USB-C 数据线</div><div class="spec">供电（一般家里有）</div></div><div class="price">—</div></div>
+  <div class="item"><div class="left"><div class="name">3D 打印外壳</div><div class="spec">PLA / PETG，约 30g</div></div><div class="price">¥3–8</div></div>
+
+  <div class="total">合计约 ¥20–40（含屏幕与外壳）</div>
+
+  <div class="note">
+    <b>接线：</b>VCC 只接 3.3V，切勿接 5V；SPI 用 GPIO 8（SCK）和 GPIO 10（MOSI）。<br>
+    <b>外壳：</b>MakerWorld 免费下载打印模型，搜「Clawd Mochi」。<br>
+    <b>焊接：</b>无需焊接，杜邦线直插即可。
+  </div>
+  <div class="footer">Clawd Mochi · 物理版 Claude Code 吉祥物</div>
+</body></html>

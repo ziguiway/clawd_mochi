@@ -1,0 +1,2142 @@
+<!DOCTYPE html>
+<html class="client-nojs" lang="zh-Hans-CN" dir="ltr">
+<head>
+<meta charset="UTF-8"/>
+<title>1.54inch LCD Module - Waveshare Wiki</title>
+<script>document.documentElement.className="client-js";RLCONF={"wgBreakFrames":!1,"wgSeparatorTransformTable":["",""],"wgDigitTransformTable":["",""],"wgDefaultDateFormat":"zh","wgMonthNames":["","1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"],"wgRequestId":"c4f8d54ee43e34a3edfe4ac3","wgCSPNonce":!1,"wgCanonicalNamespace":"","wgCanonicalSpecialPageName":!1,"wgNamespaceNumber":0,"wgPageName":"1.54inch_LCD_Module","wgTitle":"1.54inch LCD Module","wgCurRevisionId":138801,"wgRevisionId":138801,"wgArticleId":8469,"wgIsArticle":!0,"wgIsRedirect":!1,"wgAction":"view","wgUserName":null,"wgUserGroups":["*"],"wgCategories":["SPI接口","模块","LCD","显示屏"],"wgPageContentLanguage":"zh-cn","wgPageContentModel":"wikitext","wgRelevantPageName":"1.54inch_LCD_Module","wgRelevantArticleId":8469,"wgIsProbablyEditable":!1,"wgRelevantPageIsProbablyEditable":!1,"wgRestrictionEdit":[],"wgRestrictionMove":[]};RLSTATE={"ext.gadget.tabber":"ready",
+"site.styles":"ready","noscript":"ready","user.styles":"ready","user":"ready","user.options":"loading","jquery.makeCollapsible.styles":"ready","mediawiki.toc.styles":"ready","skins.tweeki.styles":"ready","skins.tweeki.bootstraptheme.styles":"ready","skins.tweeki.externallinks.styles":"ready","skins.tweeki.awesome.styles":"ready"};RLPAGEMODULES=["site","mediawiki.page.startup","mediawiki.page.ready","jquery.makeCollapsible","mediawiki.toc","ext.FancyBoxThumbs","ext.gadget.subnavber","ext.gadget.slidenav","ext.HighlightjsIntegration","skins.tweeki.messages","skins.tweeki.scripts"];</script>
+<script>(RLQ=window.RLQ||[]).push(function(){mw.loader.implement("user.options@1hzgi",function($,jQuery,require,module){/*@nomin*/mw.user.tokens.set({"patrolToken":"+\\","watchToken":"+\\","csrfToken":"+\\"});mw.user.options.set({"variant":"zh-cn"});
+});});</script>
+<link rel="stylesheet" href="/w/load.php?lang=zh-cn&amp;modules=jquery.makeCollapsible.styles%7Cmediawiki.toc.styles%7Cskins.tweeki.awesome.styles%7Cskins.tweeki.bootstraptheme.styles%7Cskins.tweeki.externallinks.styles%7Cskins.tweeki.styles&amp;only=styles&amp;skin=tweeki"/>
+<script async="" src="/w/load.php?lang=zh-cn&amp;modules=startup&amp;only=scripts&amp;raw=1&amp;skin=tweeki"></script>
+<meta name="ResourceLoaderDynamicStyles" content=""/>
+<link rel="stylesheet" href="/w/load.php?lang=zh-cn&amp;modules=ext.gadget.tabber&amp;only=styles&amp;skin=tweeki"/>
+<link rel="stylesheet" href="/w/load.php?lang=zh-cn&amp;modules=site.styles&amp;only=styles&amp;skin=tweeki"/>
+<meta name="generator" content="MediaWiki 1.35.5"/>
+<meta property="og:image" content="https://www.waveshare.net/w/upload/thumb/5/57/1.54inch_LCD_Module-1.jpg/1200px-1.54inch_LCD_Module-1.jpg"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="shortcut icon" href="/favicon.ico"/>
+<link rel="search" type="application/opensearchdescription+xml" href="/w/opensearch_desc.php" title="Waveshare Wiki (zh-cn)"/>
+<link rel="EditURI" type="application/rsd+xml" href="https://www.waveshare.net/w/api.php?action=rsd"/>
+<link rel="alternate" type="application/atom+xml" title="Waveshare Wiki的Atom feed" href="/w/index.php?title=%E7%89%B9%E6%AE%8A:%E6%9C%80%E8%BF%91%E6%9B%B4%E6%94%B9&amp;feed=atom"/>
+<!--[if lt IE 9]><script src="/w/resources/lib/html5shiv/html5shiv.js"></script><![endif]-->
+</head>
+<body class="mediawiki ltr sitedir-ltr mw-hide-empty-elt ns-0 ns-subject page-1_54inch_LCD_Module rootpage-1_54inch_LCD_Module skin-tweeki action-view tweeki-animateLayout tweeki-non-advanced tweeki-user-anon">			<!-- navbar -->
+			<div id="mw-navigation" class="navbar navbar-default navbar-fixed-top navbar-expand-lg fixed-top navbar-light bg-light" role="navigation">
+				<h2>导航菜单</h2>
+				<div id="mw-head" class="navbar-inner">
+					<div class="container">
+
+						<div class="navbar-header">
+							<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+								<span class="sr-only">Toggle navigation</span>
+								<span class="icon-bar"></span>
+								<span class="icon-bar"></span>
+								<span class="icon-bar"></span>
+							</button>
+
+							<a href="/wiki/Main_Page" class="navbar-brand"><img src="https://www.waveshare.net/w/upload/b/b6/Waveshare-logo.png" alt="Waveshare Wiki" /></a>
+						</div>
+
+						<div id="navbar" class="navbar-collapse collapse">
+													<ul class="nav navbar-nav">
+							<li class="nav"><a href="https://www.waveshare.net" id="n-https.253A.252F.252Fwww.waveshare.net" rel="nofollow" target="_blank">微雪商城</a></li><li class="nav"><a href="#" id="n-raspberry-pi" class="dropdown-toggle" data-toggle="dropdown">Raspberry Pi <b class="caret"></b></a><ul class="dropdown-menu " role="menu"><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523rpi-boards-.25E4.25B8.25BB.25E6.259D.25BF.252F.25E5.25A5.2597.25E4.25BB.25B6.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#RPi-Boards 主板/套件]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#RPi-Boards">主板/套件</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523rpi-displays-.25E6.2598.25BE.25E7.25A4.25BA.25E5.25B1.258F.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#RPi-Displays 显示屏]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#RPi-Displays">显示屏</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523rpi-cameras-.25E6.2591.2584.25E5.2583.258F.25E5.25A4.25B4.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#RPi-Cameras 摄像头]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#RPi-Cameras">摄像头</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523rpi-expansions-.25E6.2589.25A9.25E5.25B1.2595.25E6.259D.25BF.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#RPi-Expansions 扩展板]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#RPi-Expansions">扩展板</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523rpi-laptops-.25E7.25AC.2594.25E8.25AE.25B0.25E6.259C.25AC.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#RPi-Laptops 笔记本]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#RPi-Laptops">笔记本</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523rpi-robots-.25E6.259C.25BA.25E5.2599.25A8.25E4.25BA.25BA.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#RPi-Robots 机器人]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#RPi-Robots">机器人</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523rpi-games-.25E6.25B8.25B8.25E6.2588.258F.25E6.259C.25BA.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#RPi-Games 游戏机]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#RPi-Games">游戏机</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523android-linux-boards-android.252Flinux.25E4.25B8.25BB.25E6.259D.25BF.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Android-Linux-Boards Android/Linux主板]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Android-Linux-Boards">Android/Linux主板</a></a></li></ul></li><li class="nav"><a href="#" id="n-.25E4.25BA.25BA.25E5.25B7.25A5.25E6.2599.25BA.25E8.2583.25BD" class="dropdown-toggle" data-toggle="dropdown">人工智能 <b class="caret"></b></a><ul class="dropdown-menu " role="menu"><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523jetson-ai-boards-.25E4.25B8.25BB.25E6.259D.25BF.252F.25E5.25A5.2597.25E4.25BB.25B6.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Jetson-AI-Boards 主板/套件]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Jetson-AI-Boards">主板/套件</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523jetson-ai-displays-.25E6.2598.25BE.25E7.25A4.25BA.25E5.25B1.258F.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Jetson-AI-Displays 显示屏]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Jetson-AI-Displays">显示屏</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523jetson-ai-cameras-.25E6.2591.2584.25E5.2583.258F.25E5.25A4.25B4.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Jetson-AI-Cameras 摄像头]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Jetson-AI-Cameras">摄像头</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523jetson-ai-hat-.25E6.2589.25A9.25E5.25B1.2595.25E6.259D.25BF.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Jetson-AI-HAT 扩展板]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Jetson-AI-HAT">扩展板</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523jetson-ai-robots-.25E6.259C.25BA.25E5.2599.25A8.25E4.25BA.25BA.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Jetson-AI-Robots 机器人]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Jetson-AI-Robots">机器人</a></a></li></ul></li><li class="nav"><a href="#" id="n-.25E6.2598.25BE.25E7.25A4.25BA.25E5.25B1.258F" class="dropdown-toggle" data-toggle="dropdown">显示屏 <b class="caret"></b></a><ul class="dropdown-menu " role="menu"><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523display-lcd-oleds-lcd.252Foled.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Display-LCD-OLEDs LCD/OLED]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Display-LCD-OLEDs">LCD/OLED</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523display-e-paper-e-paper.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Display-e-Paper e-Paper]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Display-e-Paper">e-Paper</a></a></li></ul></li><li class="nav"><a href="#" id="n-.25E6.25A8.25A1.25E5.259D.2597" class="dropdown-toggle" data-toggle="dropdown">模块 <b class="caret"></b></a><ul class="dropdown-menu " role="menu"><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523long-range-wireless-comm-.25E8.25BF.259C.25E8.25B7.259D.25E7.25A6.25BB.25E6.2597.25A0.25E7.25BA.25BF.25E9.2580.259A.25E4.25BF.25A1.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Long-range-wireless-comm 远距离无线通信]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Long-range-wireless-comm">远距离无线通信</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523short-range-wireless-comm-.25E8.25BF.2591.25E8.25B7.259D.25E7.25A6.25BB.25E6.2597.25A0.25E7.25BA.25BF.25E9.2580.259A.25E4.25BF.25A1.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Short-range-wireless-comm 近距离无线通信]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Short-range-wireless-comm">近距离无线通信</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523wired-communication-.25E6.259C.2589.25E7.25BA.25BF.25E9.2580.259A.25E4.25BF.25A1.252F.25E6.258E.25A5.25E5.258F.25A3.25E8.25BD.25AC.25E6.258D.25A2.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Wired-communication 有线通信/接口转换]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Wired-communication">有线通信/接口转换</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523misc-cameras-av-.25E6.2591.2584.25E5.2583.258F.25E5.25A4.25B4.252F.25E9.259F.25B3.25E8.25A7.2586.25E9.25A2.2591.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Misc-cameras-av 摄像头/音视频]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Misc-cameras-av">摄像头/音视频</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523misc-sensor-modules-.25E4.25BC.25A0.25E6.2584.259F.25E5.2599.25A8.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Misc-sensor-modules 传感器]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Misc-sensor-modules">传感器</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523misc-servos-motors-.25E7.2594.25B5.25E6.259C.25BA.252F.25E8.2588.25B5.25E6.259C.25BA.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Misc-servos-motors 电机/舵机]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Misc-servos-motors">电机/舵机</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523misc-other-modules-.25E5.25A4.25A7.25E6.259D.2582.25E7.2583.25A9.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Misc-other-modules 大杂烩]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Misc-other-modules">大杂烩</a></a></li></ul></li><li class="nav"><a href="#" id="n-.25E6.259C.25BA.25E5.2599.25A8.25E4.25BA.25BA" class="dropdown-toggle" data-toggle="dropdown">机器人 <b class="caret"></b></a><ul class="dropdown-menu " role="menu"><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523robotics-cars-.25E6.2599.25BA.25E8.2583.25BD.25E8.25BD.25A6.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Robotics-cars 智能车]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Robotics-cars">智能车</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523robotics-drivers-sensors-.25E9.25A9.25B1.25E5.258A.25A8.25E5.2599.25A8.252F.25E4.25BC.25A0.25E6.2584.259F.25E5.2599.25A8.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Robotics-drivers-sensors 驱动器/传感器]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Robotics-drivers-sensors">驱动器/传感器</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523robotics-robot-arms-.25E6.259C.25BA.25E6.25A2.25B0.25E6.2589.258B.252F.25E4.25BA.2591.25E5.258F.25B0.25E6.258E.25A7.25E5.2588.25B6.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Robotics-robot-arms 机械手/云台控制]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Robotics-robot-arms">机械手/云台控制</a></a></li></ul></li><li class="nav"><a href="#" id="n-mcu.252Ffpga" class="dropdown-toggle" data-toggle="dropdown">MCU/FPGA <b class="caret"></b></a><ul class="dropdown-menu " role="menu"><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523arduino-main-boards-arduino.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#Arduino-main-boards Arduino]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#Arduino-main-boards">Arduino</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523micro.253Abit-micro.253Abit.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#micro:bit micro:bit]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#micro:bit">micro:bit</a></a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523mcu.2farm-stm32" class="PIC"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#MCU.2FARM STM32" tabindex="-1">LPC</a></li><li id="n-.255Bhttps.253A.252F.252F.257B.257Bservername.257D.257D.252Fwiki.252Fmain_page.2523fpga-fpga.255D"><a href="INVALID-TITLE:[https://www.waveshare.net/wiki/Main_Page#FPGA FPGA]" tabindex="-1"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Main_Page#FPGA">FPGA</a></a></li></ul></li>							</ul>
+						
+													<ul class="nav navbar-nav navbar-right">
+							</ul>
+				<form class="navbar-form navbar-right" action="/w/index.php" id="searchform">
+					<div class="form-group"><input type="search" name="search" placeholder="搜索" title="搜索Waveshare Wiki[f]" accesskey="f" id="searchInput" class="search-query form-control"/><input type="submit" name="go" value="前往" title="若相同标题存在，则直接前往该页面" id="mw-searchButton" class="searchButton btn hidden"/>
+					</div>
+				</form><ul class="nav navbar-nav navbar-right"><li class="nav"><a href="https://docs.waveshare.net" id="n-https.253A.252F.252Fdocs.waveshare.net" rel="nofollow" target="_blank">微雪文档</a></li>							</ul>
+						</div>
+						
+					</div>
+				</div>
+			</div>
+			<!-- /navbar -->
+					<div id="mw-page-base"></div>
+			<div id="mw-head-base"></div>
+			<a id="top"></a>
+
+			<!-- content -->
+			<div id="contentwrapper" class="user-loggedout not-editable container with-navbar with-navbar-fixed">
+
+				
+				<div class="row">
+					<div class="col-md-offset-2 col-md-10" role="main">
+								<div class="mw-body" id="content">
+			<div id="mw-js-message" style="display:none;"></div>
+									<h1 id="firstHeading" class="firstHeading page-header" lang="zh-Hans-CN"><span dir="auto">1.54inch LCD Module</span></h1>
+									<!-- bodyContent -->
+			<div id="bodyContent">
+								<div id="siteSub">来自Waveshare Wiki</div>
+								<div id="contentSub"></div>
+												<div id="jump-to-nav" class="mw-jump">
+					跳转至：					<a href="#mw-navigation">导航</a>、					<a href="#p-search">搜索</a>
+				</div>
+				<div id="mw-content-text" lang="zh-Hans-CN" dir="ltr" class="mw-content-ltr"><div class="mw-parser-output"><div class="wiki-pages blue-color">
+<div class="tabber">
+<table id="infotable" class="a-r at-c roundy bgd-blue bl-blue" style="margin-left: 5px; margin-bottom: 5px;">
+
+<tbody><tr>
+<td colspan="2">
+<table class="at-c roundy" style="background: transparent;width:100%;">
+
+<tbody><tr>
+<td class="at-c textwhite" style="display: none;"><span style="font-size:1.5em; line-height: 36px;"><b>1.54inch LCD Module</b></span>
+</td></tr>
+<tr>
+<td class="at-c bgwhite" style="margin:5px;"><a href="https://www.waveshare.net/shop/1.54inch-LCD-Module.htm" title="1.54inch LCD Module" target="_blank" rel="nofollow noreferrer noopener"><img alt="1.54inch-LCD-Module" src="/w/upload/thumb/5/57/1.54inch_LCD_Module-1.jpg/360px-1.54inch_LCD_Module-1.jpg" decoding="async" loading="lazy" width="360" height="270" srcset="/w/upload/thumb/5/57/1.54inch_LCD_Module-1.jpg/540px-1.54inch_LCD_Module-1.jpg 1.5x, /w/upload/thumb/5/57/1.54inch_LCD_Module-1.jpg/720px-1.54inch_LCD_Module-1.jpg 2x" /></a>
+</td></tr></tbody></table>
+</td></tr>
+<tr style="display:none;">
+<td colspan="2">
+<table class="roundy" style="background: transparent;width:100%;">
+
+<tbody><tr>
+<td class="at-c textwhite"><b>{{{name2}}}</b>
+</td></tr>
+<tr>
+<td class="at-c bgwhite" style="margin:5px;">
+</td></tr></tbody></table>
+</td></tr>
+<tr style="display:none;">
+<td>
+<table class="roundy" style="background: transparent;width:100%;">
+
+<tbody><tr>
+<td class="at-c textwhite"><b>{{{name3}}}</b>
+</td></tr>
+<tr>
+<td class="at-c bgwhite" style="margin:5px;">
+</td></tr></tbody></table>
+</td></tr>
+<tr>
+<td colspan="2">
+<table class="roundy" style="background: transparent; border-collapse:collapse;width:100%;display: none;">
+<tbody><tr>
+<td style="width:2%;">
+</td>
+<td style="width:3%;">
+</td>
+<th colspan="2" width="90%" class="alignt-center roundytop bgl-white">基本信息
+</th>
+<td style="width:3%;">
+</td>
+<td style="width:2%;">
+</td></tr>
+<tr>
+<th colspan="3" width="90px" class="alignt-right roundytl bgwhite b-blue" style="border-width: 0 0 1px 0;">分类：
+</th>
+<td colspan="3" class="at-l roundytr b-blue bgwhite" style="border-width: 0 0 1px 0;">LCD模块
+</td></tr>
+<tr style="display:none;">
+<th colspan="3" width="90px" class="alignt-right bgwhite b-blue" style="border-width: 0 0 1px 0;">{{{userDefinedInfo1}}}：
+</th>
+<td colspan="3" class="at-l b-blue bgwhite" style="border-width: 0 0 1px 0;">{{{userdefinedvalue1}}}
+</td></tr>
+<tr style="display:none;">
+<th colspan="3" width="90px" class="alignt-right bgwhite b-blue" style="border-width: 0 0 1px 0;">{{{userDefinedInfo2}}}：
+</th>
+<td colspan="3" class="at-l b-blue bgwhite" style="border-width: 0 0 1px 0;">{{{userdefinedvalue2}}}
+</td></tr>
+<tr style="display:none;">
+<th colspan="3" width="90px" class="alignt-right bgwhite b-blue" style="border-width: 0 0 1px 0;">{{{userDefinedInfo3}}}：
+</th>
+<td colspan="3" class="at-l b-blue bgwhite" style="border-width: 0 0 1px 0;">{{{userdefinedvalue3}}}
+</td></tr>
+<tr>
+<th colspan="3" width="90px" class="alignt-right roundybl bgwhite">品牌：
+</th>
+<td colspan="3" class="at-l roundybr bgwhite">Waveshare
+</td></tr></tbody></table>
+</td></tr>
+<tr>
+<td colspan="2">
+<table class="align-right roundy" style="background: transparent; border-collapse:collapse;width:100%;">
+<tbody><tr>
+<td style="width:2%;">
+</td>
+<td style="width:3%;">
+</td>
+<th colspan="2" width="90%" class="alignt-center roundytop"><font color="white">功能简介</font>
+</th>
+<td style="width:3%;">
+</td>
+<td style="width:2%;">
+</td></tr>
+<tr>
+<td colspan="6" class="at-c">
+<table class="roundy bd-未知 bgl-未知 textblack bw-1 fulltable">
+
+<tbody><tr>
+<td>
+<table class="roundy bgwhite fulltable" style="text-align:center">
+
+<tbody><tr style="display:none;">
+<td class="roundyleft textwhite bgd-blue bl-blue bw-1" style="width:25%;opacity: 0.8;padding-bottom: 5px;"><small><b>特性</b></small>
+</td>
+<td class="roundyright bl-blue bw-1" colspan="3" style="width:75%;padding-bottom: 5px;color: #666;"><small>无特性，不解释</small>
+</td></tr>
+<tr>
+<td class="roundyleft textwhite bgd-blue bl-blue bw-1" style="width:25%;opacity: 0.8;padding-bottom: 5px;"><small><b>显示尺寸</b></small>
+</td>
+<td class="roundyright bl-blue bw-1" colspan="3" style="width:75%;padding-bottom: 5px;color: #666;"><small>1.54英寸</small>
+</td></tr>
+<tr>
+<td class="roundyleft textwhite bgd-blue bl-blue bw-1" style="width:25%;opacity: 0.8;padding-bottom: 5px;"><small><b>分辨率</b></small>
+</td>
+<td class="roundyright bl-blue bw-1" colspan="3" style="width:75%;padding-bottom: 5px;color: #666;"><small>240×240</small>
+</td></tr>
+<tr style="display:none;">
+<td class="roundyleft textwhite bgd-blue bl-blue bw-1" style="width:25%;opacity: 0.8;padding-bottom: 5px;"><small>'<b><i></i></b></small>
+</td>
+<td class="roundyright bl-blue bw-1" colspan="3" style="width:75%;padding-bottom: 5px;color: #666;"><small>无特性，不解释</small>
+</td></tr>
+<tr style="display:none;">
+<td class="roundyleft textwhite bgd-blue bl-blue bw-1" style="width:25%;opacity: 0.8;padding-bottom: 5px;"><small>'<b><i></i></b></small>
+</td>
+<td class="roundyright bl-blue bw-1" colspan="3" style="width:75%;padding-bottom: 5px;color: #666;"><small>无特性，不解释</small>
+</td></tr>
+<tr>
+<td class="roundyleft textwhite bgd-blue bl-blue bw-1" style="width:25%;opacity: 0.8;padding-bottom: 5px;"><small><b>接口</b></small>
+</td>
+<td class="roundyright bl-blue bw-1 hide" style="width:25%;padding-bottom: 5px;color: #666;"><small></small>
+</td>
+<td class="roundyright bl-blue bw-1 hide" style="width:25%;padding-bottom: 5px;color: #666;"><small></small>
+</td>
+<td class="roundyright bl-blue bw-1" style="width:25%;padding-bottom: 5px;color: #666;"><small><a href="/wiki/%E5%88%86%E7%B1%BB:SPI%E6%8E%A5%E5%8F%A3" title="分类:SPI接口">SPI</a></small>
+</td></tr></tbody></table>
+</td></tr></tbody></table>
+</td></tr></tbody></table>
+</td></tr>
+<tr>
+<td colspan="2">
+<table class="align-right roundy" style="background: transparent; border-collapse:collapse;width:100%;display:none;">
+<tbody><tr>
+<td style="width:2%;">
+</td>
+<td style="width:3%;">
+</td>
+<th colspan="2" width="90%" class="alignt-center roundytop bgl-white">相关产品
+</th>
+<td style="width:3%;">
+</td>
+<td style="width:2%;">
+</td></tr>
+<tr>
+<td colspan="6" class="at-c">
+<table class="roundy bw-1 fulltable table table-striped table-bordered mw-collapsed align-left">
+
+<tbody><tr>
+<th>
+</th></tr>
+<tr>
+<th>♦   LCD Module
+<ul><li><a href="/wiki/0.96inch_LCD_Module" title="0.96inch LCD Module">0.96inch LCD Module</a><br /></li>
+<li><a href="/wiki/1.14inch_LCD_Module" title="1.14inch LCD Module">1.14inch LCD Module</a><br /></li>
+<li><a href="/wiki/1.28inch_LCD_Module" title="1.28inch LCD Module">1.28inch LCD Module</a><br /></li>
+<li><a href="/wiki/1.3inch_LCD_Module" title="1.3inch LCD Module">1.3inch LCD Module</a><br /></li>
+<li><a class="mw-selflink selflink">1.54inch LCD Module</a><br /></li>
+<li><a href="/wiki/1.8inch_LCD_Module" title="1.8inch LCD Module">1.8inch LCD Module</a><br /></li>
+<li><a href="/wiki/2inch_LCD_Module" title="2inch LCD Module">2inch LCD Module</a><br /></li>
+<li><a href="/wiki/2.4inch_LCD_Module" title="2.4inch LCD Module">2.4inch LCD Module</a><br /></li></ul>
+</th></tr>
+<tr style="display:none;">
+<th>♦   {{{Product2}}}
+</th></tr>
+<tr style="display:none;">
+<th>♦   {{{Product3}}}
+</th></tr>
+<tr style="display:none;">
+<th>♦   {{{Product4}}}
+</th></tr>
+<tr style="display:none;">
+<th>♦   {{{Product5}}}
+</th></tr>
+<tr style="display:none;">
+<td>—— <span style="font-size:14px;text-align: left;font-weight: bold;">类目1</span> ——
+</td></tr>
+<tr>
+<td>
+<table class="mw-collapsible mw-collapsed align-left">
+
+<tbody><tr style="display:none;">
+<td><span style="font-size:14px;text-align: left;color: #0645ad;font-weight: bold;">♦   类目1</span>
+</td></tr>
+<tr style="font-size:13px; text-align: left;">
+<td>
+<p>列表1
+</p>
+</td></tr></tbody></table>
+</td></tr>
+<tr>
+<td>
+<table class="mw-collapsible mw-collapsed align-left">
+
+<tbody><tr style="display:none;">
+<td><span style="font-size:14px;text-align: left;color: #0645ad;font-weight: bold;">♦   类目2</span>
+</td></tr>
+<tr style="font-size:13px; text-align: left;">
+<td>
+<p>列表2
+</p>
+</td></tr></tbody></table>
+</td></tr>
+<tr>
+<td>
+<table class="mw-collapsible mw-collapsed align-left">
+
+<tbody><tr style="display:none;">
+<td><span style="font-size:14px;text-align: left;color: #0645ad;font-weight: bold;">♦   类目3</span>
+</td></tr>
+<tr style="font-size:13px; text-align: left;">
+<td>
+<p>列表3
+</p>
+</td></tr></tbody></table>
+</td></tr>
+<tr>
+<td>
+<table class="mw-collapsible mw-collapsed align-left">
+
+<tbody><tr style="display:none;">
+<td><span style="font-size:14px;text-align: left;color: #0645ad;font-weight: bold;">♦   类目4</span>
+</td></tr>
+<tr style="font-size:13px; text-align: left;">
+<td>
+<p>列表4
+</p>
+</td></tr></tbody></table>
+</td></tr>
+<tr>
+<td>
+<table class="mw-collapsible mw-collapsed align-left">
+
+<tbody><tr style="display:none;">
+<td><span style="font-size:14px;text-align: left;color: #0645ad;font-weight: bold;">♦   类目5</span>
+</td></tr>
+<tr style="font-size:13px; text-align: left;">
+<td>
+<p>列表5
+</p>
+</td></tr></tbody></table>
+</td></tr></tbody></table>
+</td></tr></tbody></table>
+</td></tr></tbody></table>
+<div class="tabbertab" title="说明" id="myintro">
+<div id="toc" class="toc" role="navigation" aria-labelledby="mw-toc-heading"><input type="checkbox" role="button" id="toctogglecheckbox" class="toctogglecheckbox" style="display:none" /><div class="toctitle" lang="zh-Hans-CN" dir="ltr"><h2 id="mw-toc-heading">目录</h2><span class="toctogglespan"><label class="toctogglelabel" for="toctogglecheckbox"></label></span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="#.E8.AF.B4.E6.98.8E"><span class="tocnumber">1</span> <span class="toctext">说明</span></a></li>
+<li class="toclevel-1 tocsection-2"><a href="#.E4.BA.A7.E5.93.81.E7.AE.80.E4.BB.8B"><span class="tocnumber">2</span> <span class="toctext">产品简介</span></a>
+<ul>
+<li class="toclevel-2 tocsection-3"><a href="#.E4.BA.A7.E5.93.81.E5.8F.82.E6.95.B0"><span class="tocnumber">2.1</span> <span class="toctext">产品参数</span></a></li>
+<li class="toclevel-2 tocsection-4"><a href="#.E6.8E.A5.E5.8F.A3.E8.AF.B4.E6.98.8E"><span class="tocnumber">2.2</span> <span class="toctext">接口说明</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1"><a href="#.E6.A0.91.E8.8E.93.E6.B4.BE.E7.A1.AC.E4.BB.B6.E8.BF.9E.E6.8E.A5"><span class="tocnumber">3</span> <span class="toctext"><b>树莓派硬件连接</b></span></a></li>
+<li class="toclevel-1"><a href="#STM32.E7.A1.AC.E4.BB.B6.E8.BF.9E.E6.8E.A5"><span class="tocnumber">4</span> <span class="toctext"><b>STM32硬件连接</b></span></a></li>
+<li class="toclevel-1"><a href="#Arduino.E7.A1.AC.E4.BB.B6.E8.BF.9E.E6.8E.A5"><span class="tocnumber">5</span> <span class="toctext"><b>Arduino硬件连接</b></span></a>
+<ul>
+<li class="toclevel-2 tocsection-5"><a href="#LCD_.E5.8F.8A.E5.85.B6.E6.8E.A7.E5.88.B6.E5.99.A8"><span class="tocnumber">5.1</span> <span class="toctext">LCD 及其控制器</span></a></li>
+<li class="toclevel-2 tocsection-6"><a href="#.E9.80.9A.E4.BF.A1.E5.8D.8F.E8.AE.AE"><span class="tocnumber">5.2</span> <span class="toctext">通信协议</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1"><a href="#.E6.A0.91.E8.8E.93.E6.B4.BE.E4.BD.BF.E7.94.A8.E6.95.99.E7.A8.8B"><span class="tocnumber">6</span> <span class="toctext">树莓派使用教程</span></a>
+<ul>
+<li class="toclevel-2"><a href="#.E5.BC.80.E5.90.AFSPI.E6.8E.A5.E5.8F.A3"><span class="tocnumber">6.1</span> <span class="toctext">开启SPI接口</span></a></li>
+<li class="toclevel-2"><a href="#.E5.AE.89.E8.A3.85.E5.BA.93"><span class="tocnumber">6.2</span> <span class="toctext">安装库</span></a>
+<ul>
+<li class="toclevel-3"><a href="#BCM2835"><span class="tocnumber">6.2.1</span> <span class="toctext">BCM2835</span></a></li>
+<li class="toclevel-3"><a href="#wiringPi"><span class="tocnumber">6.2.2</span> <span class="toctext">wiringPi</span></a></li>
+<li class="toclevel-3"><a href="#lgpio"><span class="tocnumber">6.2.3</span> <span class="toctext">lgpio</span></a></li>
+<li class="toclevel-3"><a href="#Python"><span class="tocnumber">6.2.4</span> <span class="toctext">Python</span></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toclevel-1"><a href="#.E4.B8.8B.E8.BD.BD.E6.B5.8B.E8.AF.95.E7.A8.8B.E5.BA.8F"><span class="tocnumber">7</span> <span class="toctext">下载测试程序</span></a></li>
+<li class="toclevel-1"><a href="#.E8.BF.90.E8.A1.8C.E6.B5.8B.E8.AF.95.E7.A8.8B.E5.BA.8F"><span class="tocnumber">8</span> <span class="toctext">运行测试程序</span></a>
+<ul>
+<li class="toclevel-2"><a href="#C.E8.AF.AD.E8.A8.80"><span class="tocnumber">8.1</span> <span class="toctext">C语言</span></a></li>
+<li class="toclevel-2"><a href="#python_2"><span class="tocnumber">8.2</span> <span class="toctext">python</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1"><a href="#FBCP.E7.A7.BB.E6.A4.8D"><span class="tocnumber">9</span> <span class="toctext">FBCP移植</span></a>
+<ul>
+<li class="toclevel-2"><a href="#.E4.B8.8B.E8.BD.BD.E9.A9.B1.E5.8A.A8"><span class="tocnumber">9.1</span> <span class="toctext">下载驱动</span></a></li>
+<li class="toclevel-2"><a href="#.E6.96.B9.E6.B3.95.E4.B8.80.EF.BC.9A.E4.BD.BF.E7.94.A8.E8.84.9A.E6.9C.AC.EF.BC.88.E6.8E.A8.E8.8D.90.EF.BC.89"><span class="tocnumber">9.2</span> <span class="toctext">方法一：使用脚本（推荐）</span></a></li>
+<li class="toclevel-2"><a href="#.E6.96.B9.E6.B3.95.E4.BA.8C.EF.BC.9A.E6.89.8B.E5.8A.A8.E9.85.8D.E7.BD.AE"><span class="tocnumber">9.3</span> <span class="toctext">方法二：手动配置</span></a>
+<ul>
+<li class="toclevel-3"><a href="#.E7.8E.AF.E5.A2.83.E9.85.8D.E7.BD.AE"><span class="tocnumber">9.3.1</span> <span class="toctext">环境配置</span></a></li>
+<li class="toclevel-3"><a href="#.E7.BC.96.E8.AF.91.E4.B8.8E.E8.BF.90.E8.A1.8C"><span class="tocnumber">9.3.2</span> <span class="toctext">编译与运行</span></a></li>
+<li class="toclevel-3"><a href="#.E8.AE.BE.E7.BD.AE.E5.BC.80.E6.9C.BA.E8.87.AA.E5.90.AF.E5.8A.A8"><span class="tocnumber">9.3.3</span> <span class="toctext">设置开机自启动</span></a></li>
+<li class="toclevel-3"><a href="#.E8.AE.BE.E7.BD.AE.E7.94.A8.E6.88.B7.E7.95.8C.E9.9D.A2.E6.98.BE.E7.A4.BA.E5.B0.BA.E5.AF.B8"><span class="tocnumber">9.3.4</span> <span class="toctext">设置用户界面显示尺寸</span></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toclevel-1"><a href="#API.E8.AF.A6.E8.A7.A3.28.E8.AF.B7.E9.80.89.E8.AF.BBc.E6.88.96python.E9.83.A8.E5.88.86.29"><span class="tocnumber">10</span> <span class="toctext">API详解(请选读c或python部分)</span></a>
+<ul>
+<li class="toclevel-2"><a href="#C.E8.AF.AD.E8.A8.80_2"><span class="tocnumber">10.1</span> <span class="toctext">C语言</span></a>
+<ul>
+<li class="toclevel-3"><a href="#.E5.BA.95.E5.B1.82.E7.A1.AC.E4.BB.B6.E6.8E.A5.E5.8F.A3"><span class="tocnumber">10.1.1</span> <span class="toctext">底层硬件接口</span></a></li>
+<li class="toclevel-3"><a href="#.E4.B8.8A.E5.B1.82.E5.BA.94.E7.94.A8"><span class="tocnumber">10.1.2</span> <span class="toctext">上层应用</span></a></li>
+<li class="toclevel-3"><a href="#.E7.94.A8.E6.88.B7.E6.B5.8B.E8.AF.95.E4.BB.A3.E7.A0.81"><span class="tocnumber">10.1.3</span> <span class="toctext">用户测试代码</span></a></li>
+</ul>
+</li>
+<li class="toclevel-2"><a href="#Python.28.E9.80.82.E7.94.A8.E4.BA.8ERaspberry_Pi.29"><span class="tocnumber">10.2</span> <span class="toctext">Python(适用于Raspberry Pi)</span></a>
+<ul>
+<li class="toclevel-3"><a href="#lcdconfig.py"><span class="tocnumber">10.2.1</span> <span class="toctext">lcdconfig.py</span></a></li>
+<li class="toclevel-3"><a href="#.E5.85.B3.E4.BA.8E.E6.97.8B.E8.BD.AC.E8.AE.BE.E7.BD.AE"><span class="tocnumber">10.2.2</span> <span class="toctext">关于旋转设置</span></a></li>
+<li class="toclevel-3"><a href="#.E7.94.BB.E5.9B.BEGUI"><span class="tocnumber">10.2.3</span> <span class="toctext">画图GUI</span></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toclevel-1"><a href="#STM32.E8.BD.AF.E4.BB.B6.E8.AF.B4.E6.98.8E"><span class="tocnumber">11</span> <span class="toctext">STM32软件说明</span></a>
+<ul>
+<li class="toclevel-2"><a href="#.E7.A8.8B.E5.BA.8F.E8.AF.B4.E6.98.8E"><span class="tocnumber">11.1</span> <span class="toctext">程序说明</span></a>
+<ul>
+<li class="toclevel-3"><a href="#.E5.BA.95.E5.B1.82.E7.A1.AC.E4.BB.B6.E6.8E.A5.E5.8F.A3_2"><span class="tocnumber">11.1.1</span> <span class="toctext">底层硬件接口</span></a></li>
+<li class="toclevel-3"><a href="#.E4.B8.8A.E5.B1.82.E5.BA.94.E7.94.A8_2"><span class="tocnumber">11.1.2</span> <span class="toctext">上层应用</span></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toclevel-1"><a href="#Arduino.E8.BD.AF.E4.BB.B6.E8.AF.B4.E6.98.8E"><span class="tocnumber">12</span> <span class="toctext">Arduino软件说明</span></a>
+<ul>
+<li class="toclevel-2"><a href="#arduino_IDE_.E5.AE.89.E8.A3.85.E6.95.99.E7.A8.8B"><span class="tocnumber">12.1</span> <span class="toctext">arduino IDE 安装教程</span></a></li>
+<li class="toclevel-2"><a href="#.E8.BF.90.E8.A1.8C.E7.A8.8B.E5.BA.8F"><span class="tocnumber">12.2</span> <span class="toctext">运行程序</span></a></li>
+<li class="toclevel-2"><a href="#.E7.A8.8B.E5.BA.8F.E8.AF.B4.E6.98.8E_2"><span class="tocnumber">12.3</span> <span class="toctext">程序说明</span></a>
+<ul>
+<li class="toclevel-3"><a href="#.E6.96.87.E4.BB.B6.E4.BB.8B.E7.BB.8D"><span class="tocnumber">12.3.1</span> <span class="toctext">文件介绍</span></a></li>
+</ul>
+</li>
+<li class="toclevel-2"><a href="#.E5.BA.95.E5.B1.82.E7.A1.AC.E4.BB.B6.E6.8E.A5.E5.8F.A3_3"><span class="tocnumber">12.4</span> <span class="toctext">底层硬件接口</span></a>
+<ul>
+<li class="toclevel-3"><a href="#.E5.86.99.E7.AE.A1.E8.84.9A.E7.94.B5.E5.B9.B3"><span class="tocnumber">12.4.1</span> <span class="toctext">写管脚电平</span></a></li>
+<li class="toclevel-3"><a href="#.E8.AF.BB.E7.AE.A1.E8.84.9A.E7.94.B5.E5.B9.B3"><span class="tocnumber">12.4.2</span> <span class="toctext">读管脚电平</span></a></li>
+<li class="toclevel-3"><a href="#.E5.BB.B6.E6.97.B6"><span class="tocnumber">12.4.3</span> <span class="toctext">延时</span></a></li>
+<li class="toclevel-3"><a href="#SPI.E8.BE.93.E5.87.BA.E6.95.B0.E6.8D.AE"><span class="tocnumber">12.4.4</span> <span class="toctext">SPI输出数据</span></a></li>
+<li class="toclevel-3"><a href="#.E4.B8.8A.E5.B1.82.E5.BA.94.E7.94.A8_3"><span class="tocnumber">12.4.5</span> <span class="toctext">上层应用</span></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toclevel-1"><a href="#VisionFive2"><span class="tocnumber">13</span> <span class="toctext"><b>VisionFive2</b></span></a>
+<ul>
+<li class="toclevel-2"><a href="#.E9.80.82.E9.85.8D.E5.9E.8B.E5.8F.B7"><span class="tocnumber">13.1</span> <span class="toctext">适配型号</span></a></li>
+<li class="toclevel-2"><a href="#.E7.A1.AC.E4.BB.B6.E8.BF.9E.E6.8E.A5"><span class="tocnumber">13.2</span> <span class="toctext">硬件连接</span></a></li>
+<li class="toclevel-2"><a href="#.E5.AE.89.E8.A3.85.E5.AF.B9.E5.BA.94.E7.9A.84.E5.BA.93.E6.96.87.E4.BB.B6"><span class="tocnumber">13.3</span> <span class="toctext">安装对应的库文件</span></a></li>
+<li class="toclevel-2"><a href="#.E4.B8.8B.E8.BD.BD.E7.A8.8B.E5.BA.8F"><span class="tocnumber">13.4</span> <span class="toctext">下载程序</span></a></li>
+<li class="toclevel-2"><a href="#.E6.A0.B9.E6.8D.AE.E6.82.A8.E6.89.80.E8.B4.AD.E4.B9.B0.E7.9A.84.E5.B1.8F.E5.B9.95.E8.BF.90.E8.A1.8C.E4.B8.8B.E9.9D.A2.E5.AF.B9.E5.BA.94.E7.9A.84.E7.A8.8B.E5.BA.8F"><span class="tocnumber">13.5</span> <span class="toctext">根据您所购买的屏幕运行下面对应的程序</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1"><a href="#.E8.B5.84.E6.96.99"><span class="tocnumber">14</span> <span class="toctext">资料</span></a>
+<ul>
+<li class="toclevel-2 tocsection-7"><a href="#.E6.96.87.E6.A1.A3"><span class="tocnumber">14.1</span> <span class="toctext">文档</span></a></li>
+<li class="toclevel-2 tocsection-8"><a href="#.E7.A8.8B.E5.BA.8F"><span class="tocnumber">14.2</span> <span class="toctext">程序</span></a></li>
+<li class="toclevel-2 tocsection-9"><a href="#.E8.BD.AF.E4.BB.B6"><span class="tocnumber">14.3</span> <span class="toctext">软件</span></a></li>
+<li class="toclevel-2 tocsection-10"><a href="#.E6.95.B0.E6.8D.AE.E6.89.8B.E5.86.8C"><span class="tocnumber">14.4</span> <span class="toctext">数据手册</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-11"><a href="#FAQ"><span class="tocnumber">15</span> <span class="toctext">FAQ</span></a></li>
+<li class="toclevel-1 tocsection-12"><a href="#.E5.94.AE.E5.90.8E"><span class="tocnumber">16</span> <span class="toctext">售后</span></a></li>
+</ul>
+</div>
+
+<h1><span id="说明"></span><span class="mw-headline" id=".E8.AF.B4.E6.98.8E">说明</span></h1>
+<h1><span id="产品简介"></span><span class="mw-headline" id=".E4.BA.A7.E5.93.81.E7.AE.80.E4.BB.8B">产品简介</span></h1>
+<p><b>本产品提供树莓派、STM32、arduino例程</b>
+</p>
+<h2><span id="产品参数"></span><span class="mw-headline" id=".E4.BA.A7.E5.93.81.E5.8F.82.E6.95.B0">产品参数</span></h2>
+<ul><li>工作电压：	3.3V/5V<span style="color:#FF0000;"><b> <big>（请保证供电电压和逻辑电压一致，否则会导致无法正常工作）</big></b></span></li>
+<li>通信接口：	SPI</li>
+<li>屏幕类型：	IPS</li>
+<li>控制芯片：	ST7789</li>
+<li>分辨率：	240(H)RGB x 240(V)</li>
+<li>显示尺寸：	27.72（H）x 27.72（V）mm</li>
+<li>像素大小：	0.1155（H）x 0.1155（V）mm</li>
+<li>产品尺寸:	50 x 35(mm)</li></ul>
+<h2><span id="接口说明"></span><span class="mw-headline" id=".E6.8E.A5.E5.8F.A3.E8.AF.B4.E6.98.8E">接口说明</span></h2>
+<h1><span id="树莓派硬件连接"></span><span class="mw-headline" id=".E6.A0.91.E8.8E.93.E6.B4.BE.E7.A1.AC.E4.BB.B6.E8.BF.9E.E6.8E.A5"><b>树莓派硬件连接</b></span></h1>
+<p>连接树莓派的时候，选择用8PIN排线连接，请参考下方的引脚对应表格<br />
+使用的是排针或者PH2.0 8PIN接口，需要对照以下表格连线<br />
+</p>
+<table border="1;" style="width:600px;" align="center">
+<caption>树莓派连接引脚对应关系
+</caption>
+<tbody><tr style="background:#2D6FDF; color:white;" align="center">
+<td rowspan="2">LCD
+</td>
+<td colspan="2">Raspberry Pi
+</td></tr>
+<tr style="background:#2D6FDF; color:white;" align="center">
+<td>BCM2835编码
+</td>
+<td>Board物理引脚序号
+</td></tr>
+<tr align="center">
+<td>VCC</td>
+<td>5V</td>
+<td>5V
+</td></tr>
+<tr align="center">
+<td>GND</td>
+<td>GND</td>
+<td>GND
+</td></tr>
+<tr align="center">
+<td>DIN</td>
+<td>MOSI</td>
+<td>19
+</td></tr>
+<tr align="center">
+<td>CLK</td>
+<td>SCLK</td>
+<td>23
+</td></tr>
+<tr align="center">
+<td>CS</td>
+<td>CE0</td>
+<td>24
+</td></tr>
+<tr align="center">
+<td>DC</td>
+<td>25</td>
+<td>22
+</td></tr>
+<tr align="center">
+<td>RST</td>
+<td>27</td>
+<td>13
+</td></tr>
+<tr align="center">
+<td>BL</td>
+<td>18</td>
+<td>12
+</td></tr></tbody></table>
+<p>1.54inch LCD 使用的是PH2.0 8PIN接口，对照上述表格连接在树莓派上即可： <span style="color:#FF0000;"> （请按照引脚定义表格连接，图中排线颜色仅供参考，以实际颜色为准。）</span>  <br />
+</p>
+<div align="center">
+<p><a href="/wiki/%E6%96%87%E4%BB%B6:1.54-%E6%A0%91%E8%8E%93%E6%B4%BE.jpg" class="image"><img alt="1.54-树莓派.jpg" src="/w/upload/thumb/6/63/1.54-%E6%A0%91%E8%8E%93%E6%B4%BE.jpg/800px-1.54-%E6%A0%91%E8%8E%93%E6%B4%BE.jpg" decoding="async" loading="lazy" width="800" height="500" srcset="/w/upload/6/63/1.54-%E6%A0%91%E8%8E%93%E6%B4%BE.jpg 1.5x" /></a><br />
+</p>
+</div>
+<h1><span id="STM32硬件连接"></span><span class="mw-headline" id="STM32.E7.A1.AC.E4.BB.B6.E8.BF.9E.E6.8E.A5"><b>STM32硬件连接</b></span></h1>
+<p>我们提供的例程是基于STM32F103RBT6的，提供的连接方式也是对应的STM32F103RBT6的引脚，如果有需要移植程序，请按实际引脚连接
+</p>
+<table border="1;" style="width:600px;" align="center">
+<caption>STM32F103ZET连接引脚对应关系
+</caption>
+<tbody><tr style="background:#2D6FDF; color:white;" align="center">
+<td>LCD</td>
+<td>STM32
+</td></tr>
+<tr align="center">
+<td>VCC</td>
+<td>3.3V
+</td></tr>
+<tr align="center">
+<td>GND</td>
+<td>GND
+</td></tr>
+<tr align="center">
+<td>DIN</td>
+<td>PA7
+</td></tr>
+<tr align="center">
+<td>CLK</td>
+<td>PA5
+</td></tr>
+<tr align="center">
+<td>CS</td>
+<td>PB6
+</td></tr>
+<tr align="center">
+<td>DC</td>
+<td>PA8
+</td></tr>
+<tr align="center">
+<td>RST</td>
+<td>PA9
+</td></tr>
+<tr align="center">
+<td>BL</td>
+<td>PC7
+</td></tr></tbody></table>
+<p>以本公司研发的<a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/shop/XNUCLEO-F103RB.htm">XNUCLEO-F103RB开发板</a>为例，连接如下图：<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:XNUCLEO-F103RB-LCD-Connet.jpg" class="image"><img alt="XNUCLEO-F103RB-LCD-Connet.jpg" src="/w/upload/thumb/7/71/XNUCLEO-F103RB-LCD-Connet.jpg/800px-XNUCLEO-F103RB-LCD-Connet.jpg" decoding="async" loading="lazy" width="800" height="448" srcset="/w/upload/thumb/7/71/XNUCLEO-F103RB-LCD-Connet.jpg/1200px-XNUCLEO-F103RB-LCD-Connet.jpg 1.5x, /w/upload/7/71/XNUCLEO-F103RB-LCD-Connet.jpg 2x" /></a><br />
+</p>
+<h1><span id="Arduino硬件连接"></span><span class="mw-headline" id="Arduino.E7.A1.AC.E4.BB.B6.E8.BF.9E.E6.8E.A5"><b>Arduino硬件连接</b></span></h1>
+<table border="1;" style="width:600px;" align="center">
+<caption>Arduino UNO连接引脚对应关系
+</caption>
+<tbody><tr style="background:#2D6FDF; color:white;" align="center">
+<td>LCD</td>
+<td>UNO
+</td></tr>
+<tr align="center">
+<td>VCC</td>
+<td>5V
+</td></tr>
+<tr align="center">
+<td>GND</td>
+<td>GND
+</td></tr>
+<tr align="center">
+<td>DIN</td>
+<td>D11
+</td></tr>
+<tr align="center">
+<td>CLK</td>
+<td>D13
+</td></tr>
+<tr align="center">
+<td>CS</td>
+<td>D10
+</td></tr>
+<tr align="center">
+<td>DC</td>
+<td>D7
+</td></tr>
+<tr align="center">
+<td>RST</td>
+<td>D8
+</td></tr>
+<tr align="center">
+<td>BL</td>
+<td>D9
+</td></tr></tbody></table>
+<p>连接图如下(点击可放大)：<br />
+</p>
+<div align="center">
+<p><a href="/wiki/%E6%96%87%E4%BB%B6:1.54-Aduino.jpg" class="image"><img alt="1.54-Aduino.jpg" src="/w/upload/thumb/5/5a/1.54-Aduino.jpg/800px-1.54-Aduino.jpg" decoding="async" loading="lazy" width="800" height="500" srcset="/w/upload/5/5a/1.54-Aduino.jpg 1.5x" /></a><br />
+</p>
+</div>
+<h2><span id="LCD_及其控制器"></span><span class="mw-headline" id="LCD_.E5.8F.8A.E5.85.B6.E6.8E.A7.E5.88.B6.E5.99.A8">LCD 及其控制器</span></h2>
+<p>本款LCD使用的内置控制器为ST7789VW，是一款240 x RGB x 320像素的LCD控制器,而本LCD本身的像素为240(H)RGB x 240(V),同时由于初始化控制可以初始化为横屏和竖屏两种，因此LCD的内部RAM并未完全使用。<br />
+该LCD支持12位，16位以及18位每像素的输入颜色格式，即RGB444，RGB565，RGB666三种颜色格式，本例程使用RGB565的颜色格式，这也是常用的RGB格式<br />
+LCD使用四线SPI通信接口，这样可以大大的节省GPIO口，同时通信是速度也会比较快<br />
+</p>
+<h2><span id="通信协议"></span><span class="mw-headline" id=".E9.80.9A.E4.BF.A1.E5.8D.8F.E8.AE.AE">通信协议</span></h2>
+<p><a href="/wiki/%E6%96%87%E4%BB%B6:0.96inch_lcd_module_spi.png" class="image"><img alt="0.96inch lcd module spi.png" src="/w/upload/1/10/0.96inch_lcd_module_spi.png" decoding="async" loading="lazy" width="900" height="568" /></a><br />
+注：与传统的SPI协议不同的地方是：由于是只需要显示，故而将从机发往主机的数据线进行了隐藏，该表格详见Datasheet Page 105。<br />
+RESX为复位，模块上电时拉低，通常情况下置1；<br />
+CSX为从机片选， 仅当CS为低电平时，芯片才会被使能。<br />
+D/CX为芯片的数据/命令控制引脚，当DC = 0时写命令，当DC = 1时写数据<br />
+SDA为传输的数据，即RGB数据；<br />
+SCL为SPI通信时钟。<br />
+对于SPI通信而言，数据是有传输时序的，即时钟相位（CPHA）与时钟极性(CPOL)的组合：<br />
+CPHA的高低决定串行同步时钟是在第一时钟跳变沿还是第二个时钟跳变沿数据被采集，当CPHA = 0，在第一个跳变沿进行数据采集；<br />
+CPOL的高低决定串行同步时钟的空闲状态电平，CPOL = 0，为低电平。<br />
+从图中可以看出，当SCLK第一个下降沿时开始传输数据，一个时钟周期传输8bit数据，使用SPI0，按位传输,高位在前,低位在后。<br />
+</p>
+</div>
+<div class="tabbertab" title="RPI使用教程">
+<h1><span id="树莓派使用教程"></span><span class="mw-headline" id=".E6.A0.91.E8.8E.93.E6.B4.BE.E4.BD.BF.E7.94.A8.E6.95.99.E7.A8.8B">树莓派使用教程</span></h1>
+<div class="mw-collapsible-content">
+<h2><span id="开启SPI接口"></span><span class="mw-headline" id=".E5.BC.80.E5.90.AFSPI.E6.8E.A5.E5.8F.A3">开启SPI接口</span></h2>
+<div class="cautionSec">PS：如果使用的是Bullseye分支的系统,需要将”apt-get“改成“apt"，Bullseye分支的系统只支持Python3。</div>
+<ul><li>打开树莓派终端，输入以下指令进入配置界面<br /></li></ul>
+<pre>sudo raspi-config
+选择Interfacing Options -&gt; SPI -&gt; Yes 开启SPI接口
+</pre>
+<p><a href="/wiki/%E6%96%87%E4%BB%B6:RPI_open_spi.png" class="image"><img alt="RPI open spi.png" src="/w/upload/1/1e/RPI_open_spi.png" decoding="async" loading="lazy" width="900" height="838" /></a><br />
+然后重启树莓派：<br />
+</p>
+<pre>sudo reboot
+</pre>
+<p>请确保SPI没有被其他的设备占用，你可以在/boot/config.txt中间检查<br />
+</p>
+<h2><span id="安装库"></span><span class="mw-headline" id=".E5.AE.89.E8.A3.85.E5.BA.93">安装库</span></h2>
+<p><span style="color:#FF0000;"><b> <big>如果使用bookworm系统，只能使用lgpio库，bcm2835跟wiringPi无法安装与使用,python库可以不安装，直接运行程序即可</big></b></span>
+</p>
+<h3><span class="mw-headline" id="BCM2835">BCM2835</span></h3>
+<pre>#打开树莓派终端，并运行以下指令
+sudo wget http://www.airspayce.com/mikem/bcm2835/bcm2835-1.71.tar.gz
+sudo tar zxvf bcm2835-1.71.tar.gz 
+cd bcm2835-1.71/
+sudo ./configure &amp;&amp; sudo make &amp;&amp; sudo make check &amp;&amp; sudo make install
+# 更多的可以参考官网：http://www.airspayce.com/mikem/bcm2835/
+</pre>
+<h3><span class="mw-headline" id="wiringPi">wiringPi</span></h3>
+<pre>#打开树莓派终端，并运行以下指令
+cd
+sudo apt-get install wiringpi
+#对于树莓派2019年5月之后的系统（早于之前的可不用执行），可能需要进行升级：
+wget https://project-downloads.drogon.net/wiringpi-latest.deb
+sudo dpkg -i wiringpi-latest.deb
+gpio -v
+# 运行gpio -v会出现2.52版本，如果没有出现说明安装出错
+
+#Bullseye分支系统使用如下命令：
+sudo git clone https://github.com/WiringPi/WiringPi
+cd WiringPi
+sudo ./build
+gpio -v
+# 运行gpio -v会出现2.70版本，如果没有出现说明安装出错
+</pre>
+<h3><span class="mw-headline" id="lgpio">lgpio</span></h3>
+<pre>sudo su
+wget https://github.com/joan2937/lg/archive/master.zip
+unzip master.zip
+cd lg-master
+sudo make install 
+# 更多的可以参考官网：https://github.com/gpiozero/lg
+</pre>
+<h3><span class="mw-headline" id="Python">Python</span></h3>
+<pre>sudo apt-get update
+sudo apt-get install python3-pip
+sudo apt-get install python3-pil
+sudo apt-get install python3-numpy
+sudo pip3 install spidev
+</pre>
+<h1><span id="下载测试程序"></span><span class="mw-headline" id=".E4.B8.8B.E8.BD.BD.E6.B5.8B.E8.AF.95.E7.A8.8B.E5.BA.8F">下载测试程序</span></h1>
+<p>打开树莓派终端，执行：<br />
+</p>
+<pre>sudo apt-get install unzip -y
+sudo wget https://www.waveshare.net/w/upload/8/8d/LCD_Module_RPI_code.zip
+sudo unzip ./LCD_Module_RPI_code.zip
+cd LCD_Module_RPI_code/RaspberryPi/
+</pre>
+<h1><span id="运行测试程序"></span><span class="mw-headline" id=".E8.BF.90.E8.A1.8C.E6.B5.8B.E8.AF.95.E7.A8.8B.E5.BA.8F">运行测试程序</span></h1>
+<p>以下命令请在RaspberryPi下执行，否则不在索引不到目录；<br />
+</p>
+<h3><span id="C语言"></span><span class="mw-headline" id="C.E8.AF.AD.E8.A8.80">C语言</span></h3>
+<ul><li>重新编译，编译过程可能需要几秒<br /></li></ul>
+<pre>cd c
+sudo make clean
+sudo make -j 8
+</pre>
+<p>所有屏幕的测试程序，可以直接通过输入对应的尺寸进行调用：<br />
+</p>
+<pre>sudo ./main 屏幕尺寸
+</pre>
+<p>根据不同LCD，应当输入以下某一条指令：<br />
+</p>
+<pre>#0.96inch LCD Module
+sudo ./main 0.96
+#1.14inch LCD Module
+sudo ./main 1.14
+#1.28inch LCD Module
+sudo ./main 1.28
+#1.3inch LCD Module
+sudo ./main 1.3
+#1.47inch LCD Module
+sudo ./main 1.47
+#1.54inch LCD Module
+sudo ./main 1.54
+#1.8inch LCD Module
+sudo ./main 1.8
+#2inch LCD Module
+sudo ./main 2
+#2.4inch LCD Module
+sudo ./main 2.4
+</pre>
+<h2><span class="mw-headline" id="python_2">python</span></h2>
+<ul><li>进入python程序目录,并运行指令ls -l<br /></li></ul>
+<pre>cd python/example
+ls -l
+</pre>
+<p><a href="/wiki/%E6%96%87%E4%BB%B6:LCD_rpi_python_examples.png" class="image"><img alt="LCD rpi python examples.png" src="/w/upload/f/f6/LCD_rpi_python_examples.png" decoding="async" loading="lazy" width="1000" height="217" /></a><br />
+可以查看到所有屏幕的测试程序，按照尺寸分类：<br />
+</p>
+<table>
+<tbody><tr>
+<td>0inch96_LCD_test.py&#160;&#160;&#160;&#160;</td>
+<td>0.96inch LCD测试程序</td>
+</tr>
+<tr>
+<td>1inch14_LCD_test.py</td>
+<td>1.14inch LCD测试程序</td>
+</tr>
+<tr>
+<td>1inch28_LCD_test.py</td>
+<td>1.28inch LCD测试程序</td>
+</tr>
+<tr>
+<td>1inch3_LCD_test.py</td>
+<td>1.3inch LCD测试程序</td>
+</tr>
+<tr>
+<td>1inch47_LCD_test.py</td>
+<td>1.47inch LCD测试程序</td>
+</tr>
+<tr>
+<td>1inch54_LCD_test.py</td>
+<td>1.54inchLCD测试程序</td>
+</tr>
+<tr>
+<td>1inch8_LCD_test.py</td>
+<td>1.8inch LCD测试程序</td>
+</tr>
+<tr>
+<td>2inch_LCD_test.py</td>
+<td>2inch LCD测试程序</td>
+</tr>
+<tr><td>2inch4_LCD_test.py</td>
+<td>2.4inch LCD测试程序</td>
+</tr>
+</tbody></table>
+<ul><li>运行对应屏幕的程序即可，程序支持python2/3<br /></li></ul>
+<pre># python2
+sudo python 0inch96_LCD_test.py
+sudo python 1inch14_LCD_test.py
+sudo python 1inch28_LCD_test.py
+sudo python 1inch3_LCD_test.py
+sudo python 1inch47_LCD_test.py
+sudo python 1inch54_LCD_test.py
+sudo python 1inch8_LCD_test.py
+sudo python 2inch_LCD_test.py
+sudo python 2inch4_LCD_test.py
+# python3
+sudo python3 0inch96_LCD_test.py
+sudo python3 1inch14_LCD_test.py
+sudo python3 1inch28_LCD_test.py
+sudo python3 1inch3_LCD_test.py
+sudo python3 1inch47_LCD_test.py
+sudo python3 1inch54_LCD_test.py
+sudo python3 1inch8_LCD_test.py
+sudo python3 2inch_LCD_test.py
+sudo python3 2inch4_LCD_test.py
+</pre>
+<h1><span id="FBCP移植"></span><span class="mw-headline" id="FBCP.E7.A7.BB.E6.A4.8D">FBCP移植</span></h1>
+<div class="cautionSec">PS：FBCP目前不兼容bookworm树莓派系统，建议使用bullseye系统。</div>
+<p>Framebuffer 是用一个视频输出设备从包含完整的帧数据的一个内存缓冲区中来驱动一个视频显示设备。简单的来说，就是使用一个内存区来存储显示内容，改变内存的数据就可以改变显示的内容。<br />
+在 github 上有一个开源工程：fbcp-ili9341，该工程相比其他类fbcp工程，利用了局部刷新和DMA实现高达60fps的速度<br />
+</p>
+<h3><span id="下载驱动"></span><span class="mw-headline" id=".E4.B8.8B.E8.BD.BD.E9.A9.B1.E5.8A.A8">下载驱动</span></h3>
+<pre>sudo apt-get install cmake -y
+cd ~
+wget https://www.waveshare.net/w/upload/1/18/Waveshare_fbcp.zip
+unzip Waveshare_fbcp.zip
+cd Waveshare_fbcp/
+sudo chmod +x ./shell/*
+</pre>
+<h3><span id="方法一：使用脚本（推荐）"></span><span class="mw-headline" id=".E6.96.B9.E6.B3.95.E4.B8.80.EF.BC.9A.E4.BD.BF.E7.94.A8.E8.84.9A.E6.9C.AC.EF.BC.88.E6.8E.A8.E8.8D.90.EF.BC.89">方法一：使用脚本（推荐）</span></h3>
+<p>这里我们编写了几个脚本，可以让用户快速使用fbcp，可以根据自己的屏幕运行对应指令<br />
+如果使用脚本，并且不需要修改则可以忽略下文的方法二。<br />
+<font color="#FF0000">注：脚本会替换对应/boot/config.txt和/etc/rc.local并重启，如果用户如有需，请提前备份有关文件</font> <br />
+</p>
+<pre>#0.96inch LCD Module
+sudo ./shell/waveshare-0inch96
+#1.14inch LCD Module
+sudo ./shell/waveshare-1inch14
+#1.3inch LCD Module
+sudo ./shell/waveshare-1inch3
+#1.44inch LCD Module
+sudo ./shell/waveshare-1inch44
+#1.54inch LCD Module
+sudo ./shell/waveshare-1inch54
+#1.8inch LCD Module
+sudo ./shell/waveshare-1inch8
+#2inch LCD Module
+sudo ./shell/waveshare-2inch
+#2.4inch LCD Module
+sudo ./shell/waveshare-2inch4
+</pre>
+<h3><span id="方法二：手动配置"></span><span class="mw-headline" id=".E6.96.B9.E6.B3.95.E4.BA.8C.EF.BC.9A.E6.89.8B.E5.8A.A8.E9.85.8D.E7.BD.AE">方法二：手动配置</span></h3>
+<h4><span id="环境配置"></span><span class="mw-headline" id=".E7.8E.AF.E5.A2.83.E9.85.8D.E7.BD.AE">环境配置</span></h4>
+<p>树莓派的vc4-kms-v3d会导致fbcp失效，所以我们需要在安装在fbcp之前关闭vc4-kms-v3d
+</p>
+<pre>sudo nano /boot/config.txt
+</pre>
+<p>屏蔽下图对应的语句即可<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:FBCP_CLOSE.jpg" class="image"><img alt="FBCP CLOSE.jpg" src="/w/upload/3/38/FBCP_CLOSE.jpg" decoding="async" loading="lazy" width="900" height="252" /></a><br />
+随后需要进行重启<br />
+</p>
+<pre>sudo reboot
+</pre>
+<h4><span id="编译与运行"></span><span class="mw-headline" id=".E7.BC.96.E8.AF.91.E4.B8.8E.E8.BF.90.E8.A1.8C">编译与运行</span></h4>
+<pre>mkdir build
+cd build
+cmake [options] ..
+sudo make -j
+sudo ./fbcp
+</pre>
+<p>根据你使用的LCD Module自行替换，上文中cmake [options] ..
+</p>
+<pre>#0.96inch LCD Module
+sudo cmake -DSPI_BUS_CLOCK_DIVISOR=20 -DWAVESHARE_0INCH96_LCD=ON -DBACKLIGHT_CONTROL=ON -DSTATISTICS=0 ..
+#1.14inch LCD Module
+sudo cmake -DSPI_BUS_CLOCK_DIVISOR=20 -DWAVESHARE_1INCH14_LCD=ON -DBACKLIGHT_CONTROL=ON -DSTATISTICS=0 ..
+#1.3inch LCD Module
+sudo cmake -DSPI_BUS_CLOCK_DIVISOR=20 -DWAVESHARE_1INCH3_LCD=ON -DBACKLIGHT_CONTROL=ON -DSTATISTICS=0 ..
+#1.54inch LCD Module
+sudo cmake -DSPI_BUS_CLOCK_DIVISOR=20 -DWAVESHARE_1INCH54_LCD=ON -DBACKLIGHT_CONTROL=ON -DSTATISTICS=0 ..
+#1.8inch LCD Module
+sudo cmake -DSPI_BUS_CLOCK_DIVISOR=20 -DWAVESHARE_1INCH8_LCD=ON -DBACKLIGHT_CONTROL=ON -DSTATISTICS=0 ..
+#2inch LCD Module
+sudo cmake -DSPI_BUS_CLOCK_DIVISOR=20 -DWAVESHARE_2INCH_LCD=ON -DBACKLIGHT_CONTROL=ON -DSTATISTICS=0 ..
+#2.4inch LCD Module
+sudo cmake -DSPI_BUS_CLOCK_DIVISOR=20 -DWAVESHARE_2INCH4_LCD=ON -DBACKLIGHT_CONTROL=ON -DSTATISTICS=0 ..
+</pre>
+<h4><span id="设置开机自启动"></span><span class="mw-headline" id=".E8.AE.BE.E7.BD.AE.E5.BC.80.E6.9C.BA.E8.87.AA.E5.90.AF.E5.8A.A8">设置开机自启动</span></h4>
+<pre>sudo cp ~/Waveshare_fbcp/build/fbcp /usr/local/bin/fbcp
+sudo nano /etc/rc.local
+</pre>
+<p>在 exit 0 前面添加 fbcp&amp;。注意一定要添加"&amp;"  后台运行，否则可能会出现系统不能启动的情况。<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:1in3_lcd_fb5.png" class="image"><img alt="1in3 lcd fb5.png" src="/w/upload/d/dd/1in3_lcd_fb5.png" decoding="async" loading="lazy" width="900" height="437" /></a><br />
+</p>
+<h4><span id="设置用户界面显示尺寸"></span><span class="mw-headline" id=".E8.AE.BE.E7.BD.AE.E7.94.A8.E6.88.B7.E7.95.8C.E9.9D.A2.E6.98.BE.E7.A4.BA.E5.B0.BA.E5.AF.B8">设置用户界面显示尺寸</span></h4>
+<p>在/boot/config.txt 文件中设置用户界面显示尺寸。<br />
+</p>
+<pre>sudo nano /boot/config.txt
+</pre>
+<p>在config.txt文件中添加分辨率的配置语句。
+</p>
+<pre>hdmi_force_hotplug=1
+hdmi_cvt=[options] 
+hdmi_group=2
+hdmi_mode=1
+hdmi_mode=87
+display_rotate=0
+</pre>
+<p>根据你使用的LCD，自行替换上文中的hdmi_cvt=[options] 
+</p>
+<pre>#2.4inchinch LCD Module &amp; 2inchinch LCD Module
+hdmi_cvt=640 480 60 1 0 0 0
+#1.8inch LCD Module
+hdmi_cvt=400 300 60 1 0 0 0
+#1.3inch LCD Module &amp; 1.54inch LCD Module
+hdmi_cvt=300 300 60 1 0 0 0
+#1.14inch LCD Module
+hdmi_cvt=300 170 60 1 0 0 0
+#0.96inch LCD Module
+hdmi_cvt=300 150 60 1 0 0 0
+</pre>
+<p>重启设备即可
+</p>
+<pre>sudo reboot
+</pre>
+<p><br />
+启动树莓派后可以发现屏幕已经出现用户界面了。<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:2inch_OLED01_fbcp.png" class="image"><img alt="2inch OLED01 fbcp.png" src="/w/upload/thumb/c/c9/2inch_OLED01_fbcp.png/800px-2inch_OLED01_fbcp.png" decoding="async" loading="lazy" width="800" height="502" srcset="/w/upload/c/c9/2inch_OLED01_fbcp.png 1.5x" /></a>
+</p>
+<h1><span id="API详解(请选读c或python部分)"></span><span class="mw-headline" id="API.E8.AF.A6.E8.A7.A3.28.E8.AF.B7.E9.80.89.E8.AF.BBc.E6.88.96python.E9.83.A8.E5.88.86.29">API详解(请选读c或python部分)</span></h1>
+<p>RaspberryPi系列均可以共用一套程序，因为他们都是嵌入式系统，兼容性比较强。<br />
+程序分为底层硬件接口、中间层液晶屏驱动、上层应用；<br />
+</p>
+<h2><span id="C语言_2"></span><span class="mw-headline" id="C.E8.AF.AD.E8.A8.80_2">C语言</span></h2>
+<h3><span id="底层硬件接口"></span><span class="mw-headline" id=".E5.BA.95.E5.B1.82.E7.A1.AC.E4.BB.B6.E6.8E.A5.E5.8F.A3">底层硬件接口</span></h3>
+<p>我们进行了底层的封装，由于硬件平台不一样，内部的实现是不一样的，如果需要了解内部实现可以去对应的目录中查看<br />
+在DEV_Config.c(.h)可以看到很多定义，在目录：RaspberryPi\c\lib\Config<br />
+</p>
+<pre>C语言使用了3种方式进行驱动：分别是BCM2835库、WiringPi库和Dev库
+默认使用Dev库进行操作，如果你需要使用BCM2835或者WiringPi来驱动的话，可以打开RaspberryPi\c\Makefile，修改13-15行，如下：
+</pre>
+<p><a href="/wiki/%E6%96%87%E4%BB%B6:LCD_rpi_c_Makefile.png" class="image"><img alt="LCD rpi c Makefile.png" src="/w/upload/0/0d/LCD_rpi_c_Makefile.png" decoding="async" loading="lazy" width="800" height="341" /></a>
+</p>
+<ul><li>数据类型：</li></ul>
+<pre>#define UBYTE   uint8_t
+#define UWORD   uint16_t
+#define UDOUBLE uint32_t
+</pre>
+<ul><li>模块初始化与退出的处理：</li></ul>
+<pre>void DEV_Module_Init(void);
+void DEV_Module_Exit(void);
+注意：
+1.这里是处理使用液晶屏前与使用完之后一些GPIO的处理。
+</pre>
+<ul><li>GPIO读写：</li></ul>
+<pre>void 	DEV_Digital_Write(UWORD Pin, UBYTE Value);
+UBYTE 	DEV_Digital_Read(UWORD Pin);
+</pre>
+<ul><li>SPI写数据：</li></ul>
+<pre>void DEV_SPI_WriteByte(UBYTE Value);
+</pre>
+<h3><span id="上层应用"></span><span class="mw-headline" id=".E4.B8.8A.E5.B1.82.E5.BA.94.E7.94.A8">上层应用</span></h3>
+<p>对于屏幕而言，如果需要进行画图、显示中英文字符、显示图片等怎么办，这些都是上层应用做的。这有很多小伙伴有问到一些图形的处理，我们这里提供了一些基本的功能
+在如下的目录中可以找到GUI，在目录：RaspberryPi\c\lib\GUI\GUI_Paint.c(.h)<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:LCD_rpi_GUI.png" class="image"><img alt="LCD rpi GUI.png" src="/w/upload/2/25/LCD_rpi_GUI.png" decoding="async" loading="lazy" width="800" height="141" /></a><br />
+在如下目录下是GUI依赖的字符字体，在目录：RaspberryPi\c\lib\Fonts<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:LCD_rpi_Font.png" class="image"><img alt="LCD rpi Font.png" src="/w/upload/a/a6/LCD_rpi_Font.png" decoding="async" loading="lazy" width="800" height="273" /></a><br />
+</p>
+<ul><li>新建图像属性:新建一个图像属性，这个属性包括图像缓存的名称、宽度、高度、翻转角度、颜色</li></ul>
+<pre>void Paint_NewImage(UBYTE *image, UWORD Width, UWORD Height, UWORD Rotate, UWORD Color)
+参数：
+ 	image&#160;: 图像缓存的名称，实际上是一个指向图像缓存首地址的指针；
+ 	Width&#160;: 图像缓存的宽度；
+ 	Height: 图像缓存的高度；
+ 	Rotate：图像的翻转的角度
+ 	Color ：图像的初始颜色；
+</pre>
+<ul><li>选择图像缓存:选择图像缓存，选择的目的是你可以创建多个图像属性，图像缓存可以存在多个，你可以选择你所创建的每一张图像</li></ul>
+<pre>void Paint_SelectImage(UBYTE *image)
+参数：
+ 	image: 图像缓存的名称，实际上是一个指向图像缓存首地址的指针；
+</pre>
+<ul><li>图像旋转:设置选择好的图像的旋转角度，最好使用在Paint_SelectImage()后，可以选择旋转0、90、180、270</li></ul>
+<pre>void Paint_SetRotate(UWORD Rotate)
+参数：
+ 	Rotate: 图像选择角度，可以选择ROTATE_0、ROTATE_90、ROTATE_180、ROTATE_270分别对应0、90、180、270度
+</pre>
+<dl><dd>【说明】不同选择角度下，坐标对应起始像素点不同，这里以1.14为例，四张图，按顺序为0°， 90°， 180°， 270°。仅做为参考</dd>
+<dd><a href="/wiki/%E6%96%87%E4%BB%B6:LCD_Rotate.jpg" class="image"><img alt="LCD Rotate.jpg" src="/w/upload/thumb/a/a6/LCD_Rotate.jpg/1000px-LCD_Rotate.jpg" decoding="async" loading="lazy" width="1000" height="270" srcset="/w/upload/thumb/a/a6/LCD_Rotate.jpg/1500px-LCD_Rotate.jpg 1.5x, /w/upload/thumb/a/a6/LCD_Rotate.jpg/2000px-LCD_Rotate.jpg 2x" /></a></dd></dl>
+<ul><li>图像镜像翻转:设置选择好的图像的镜像翻转，可以选择不镜像、关于水平镜像、关于垂直镜像、关于图像中心镜像</li></ul>
+<pre>void Paint_SetMirroring(UBYTE mirror)
+参数：
+ 	mirror: 图像的镜像方式，可以选择MIRROR_NONE、MIRROR_HORIZONTAL、MIRROR_VERTICAL、MIRROR_ORIGIN分别对应不镜像、关于水平镜像、关于垂直镜像、关于图像中心镜像
+</pre>
+<ul><li>设置点在缓存中显示位置和颜色：这里是GUI最核心的一个函数、处理点在缓存中显示位置和颜色</li></ul>
+<pre>void Paint_SetPixel(UWORD Xpoint, UWORD Ypoint, UWORD Color)
+参数：
+ 	Xpoint: 点在图像缓存中X位置
+ 	Ypoint: 点在图像缓存中Y位置
+ 	Color&#160;: 点显示的颜色
+</pre>
+<ul><li>图像缓存填充颜色:把图像缓存填充为某颜色，一般作为屏幕刷白的作用</li></ul>
+<pre>void Paint_Clear(UWORD Color)
+参数：
+ 	Color: 填充的颜色
+</pre>
+<ul><li>图像缓存部分窗口填充颜色：把图像缓存的某部分窗口填充为某颜色，一般作为窗口刷白的作用，常用于时间的显示，刷白上一秒</li></ul>
+<pre>void Paint_ClearWindows(UWORD Xstart, UWORD Ystart, UWORD Xend, UWORD Yend, UWORD Color)
+参数：
+ 	Xstart: 窗口的X起点坐标
+ 	Ystart: 窗口的Y起点坐标
+ 	Xend: 窗口的X终点坐标
+ 	Yend: 窗口的Y终点坐标
+ 	Color: 填充的颜色
+</pre>
+<ul><li>画点:在图像缓存中，在（Xpoint, Ypoint）上画点，可以选择颜色，点的大小，点的风格</li></ul>
+<pre>void Paint_DrawPoint(UWORD Xpoint, UWORD Ypoint, UWORD Color, DOT_PIXEL Dot_Pixel, DOT_STYLE Dot_Style)
+参数：
+ 	Xpoint: 点的X坐标
+ 	Ypoint: 点的Y坐标
+ 	Color: 填充的颜色
+ 	Dot_Pixel: 点的大小，提供默认的8种大小点
+ 	 	 typedef enum {
+ 	 	 	 DOT_PIXEL_1X1  = 1,	// 1 x 1
+ 	 	 	 DOT_PIXEL_2X2  , 		// 2 X 2
+ 	 	 	 DOT_PIXEL_3X3  , 	 	// 3 X 3
+ 	 	 	 DOT_PIXEL_4X4  , 	 	// 4 X 4
+ 	 	 	 DOT_PIXEL_5X5  , 		// 5 X 5
+ 	 	 	 DOT_PIXEL_6X6  , 		// 6 X 6
+ 	 	 	 DOT_PIXEL_7X7  , 		// 7 X 7
+ 	 	 	 DOT_PIXEL_8X8  , 		// 8 X 8
+ 	 	} DOT_PIXEL;
+ 	Dot_Style: 点的风格,大小扩充方式是以点为中心扩大还是以点为左下角往右上扩大
+ 	 	typedef enum {
+ 	 	   DOT_FILL_AROUND  = 1,		
+ 	 	   DOT_FILL_RIGHTUP,
+ 	 	} DOT_STYLE;
+</pre>
+<ul><li>画线：在图像缓存中，从 (Xstart, Ystart) 到 (Xend, Yend) 画线，可以选择颜色，线的宽度，线的风格</li></ul>
+<pre>void Paint_DrawLine(UWORD Xstart, UWORD Ystart, UWORD Xend, UWORD Yend, UWORD Color, LINE_STYLE Line_Style , LINE_STYLE Line_Style)
+参数：
+ 	Xstart: 线的X起点坐标
+ 	Ystart: 线的Y起点坐标
+ 	Xend: 线的X终点坐标
+ 	Yend: 线的Y终点坐标
+ 	Color: 填充的颜色
+ 	Line_width: 线的宽度，提供默认的8种宽度
+ 	 	typedef enum {
+ 	 	 	 DOT_PIXEL_1X1  = 1,	// 1 x 1
+ 	 	 	 DOT_PIXEL_2X2  , 		// 2 X 2
+ 	 	 	 DOT_PIXEL_3X3  ,		// 3 X 3
+ 	 	 	 DOT_PIXEL_4X4  ,		// 4 X 4
+ 	 	 	 DOT_PIXEL_5X5  , 		// 5 X 5
+ 	 	 	 DOT_PIXEL_6X6  , 		// 6 X 6
+ 	 	 	 DOT_PIXEL_7X7  , 		// 7 X 7
+ 	 	 	 DOT_PIXEL_8X8  , 		// 8 X 8
+ 	 	} DOT_PIXEL;
+ 	 Line_Style: 线的风格,选择线是以直线连接还是以虚线的方式连接
+ 	 	typedef enum {
+ 	 	 	 LINE_STYLE_SOLID = 0,
+ 	 	 	 LINE_STYLE_DOTTED,
+ 	 	} LINE_STYLE;
+</pre>
+<ul><li>画矩形:在图像缓存中，从 (Xstart, Ystart) 到 (Xend, Yend) 画一个矩形，可以选择颜色，线的宽度，是否填充矩形内部</li></ul>
+<pre>void Paint_DrawRectangle(UWORD Xstart, UWORD Ystart, UWORD Xend, UWORD Yend, UWORD Color, DOT_PIXEL Line_width, DRAW_FILL Draw_Fill)
+参数：
+ 	Xstart: 矩形的X起点坐标
+ 	Ystart: 矩形的Y起点坐标
+ 	Xend: 矩形的X终点坐标
+ 	Yend: 矩形的Y终点坐标
+ 	Color: 填充的颜色
+ 	Line_width: 矩形四边的宽度，提供默认的8种宽度
+ 	 	typedef enum {
+ 	 	 	 DOT_PIXEL_1X1  = 1,	// 1 x 1
+ 	 	 	 DOT_PIXEL_2X2  , 		// 2 X 2
+ 	 	 	 DOT_PIXEL_3X3  ,		// 3 X 3
+ 	 	 	 DOT_PIXEL_4X4  ,		// 4 X 4
+ 	 	 	 DOT_PIXEL_5X5  , 		// 5 X 5
+ 	 	 	 DOT_PIXEL_6X6  , 		// 6 X 6
+ 	 	 	 DOT_PIXEL_7X7  , 		// 7 X 7
+ 	 	 	 DOT_PIXEL_8X8  , 		// 8 X 8
+ 	 	} DOT_PIXEL;
+ 	Draw_Fill: 填充,是否填充矩形的内部
+ 	 	typedef enum {
+ 	 	 	 DRAW_FILL_EMPTY = 0,
+ 	 	 	 DRAW_FILL_FULL,
+ 	 	} DRAW_FILL;
+</pre>
+<ul><li>画圆:在图像缓存中，以 (X_Center Y_Center) 为圆心，画一个半径为Radius的圆，可以选择颜色，线的宽度，是否填充圆内部</li></ul>
+<pre>void Paint_DrawCircle(UWORD X_Center, UWORD Y_Center, UWORD Radius, UWORD Color, DOT_PIXEL Line_width, DRAW_FILL Draw_Fill)
+参数：
+ 	X_Center: 圆心的X坐标
+ 	Y_Center: 圆心的Y坐标
+ 	Radius：圆的半径
+ 	Color: 填充的颜色
+ 	Line_width: 圆弧的宽度，提供默认的8种宽度
+ 	 	typedef enum {
+ 	 	 	 DOT_PIXEL_1X1  = 1,	// 1 x 1
+ 	 	 	 DOT_PIXEL_2X2  , 		// 2 X 2
+ 	 	 	 DOT_PIXEL_3X3  ,		// 3 X 3
+ 	 	 	 DOT_PIXEL_4X4  ,		// 4 X 4
+ 	 	 	 DOT_PIXEL_5X5  , 		// 5 X 5
+ 	 	 	 DOT_PIXEL_6X6  , 		// 6 X 6
+ 	 	 	 DOT_PIXEL_7X7  , 		// 7 X 7
+ 	 	 	 DOT_PIXEL_8X8  , 		// 8 X 8
+ 	 	} DOT_PIXEL;
+ 	Draw_Fill: 填充,是否填充圆的内部
+ 	 	typedef enum {
+ 	 	 	 DRAW_FILL_EMPTY = 0,
+ 	 	 	 DRAW_FILL_FULL,
+ 	 	} DRAW_FILL;
+</pre>
+<ul><li>写Ascii字符:在图像缓存中，在 (Xstart Ystart) 为左顶点，写一个Ascii字符，可以选择Ascii码可视字符字库、字体前景色、字体背景色</li></ul>
+<pre>void Paint_DrawChar(UWORD Xstart, UWORD Ystart, const char Ascii_Char, sFONT* Font, UWORD Color_Foreground, UWORD Color_Background)
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	Ascii_Char：Ascii字符
+ 	Font: Ascii码可视字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font8：5*8的字体
+ 	 	font12：7*12的字体
+ 	 	font16：11*16的字体
+ 	 	font20：14*20的字体
+ 	 	font24：17*24的字体
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>写英文字符串:在图像缓存中，在 (Xstart Ystart) 为左顶点，写一串英文字符，可以选择Ascii码可视字符字库、字体前景色、字体背景色</li></ul>
+<pre>void Paint_DrawString_EN(UWORD Xstart, UWORD Ystart, const char * pString, sFONT* Font, UWORD Color_Foreground, UWORD Color_Background)
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	pString：字符串，字符串是一个指针
+ 	Font: Ascii码可视字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font8：5*8的字体
+ 	 	font12：7*12的字体
+ 	 	font16：11*16的字体
+ 	 	font20：14*20的字体
+ 	 	font24：17*24的字体
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>写中文字符串：在图像缓存中，在 (Xstart Ystart) 为左顶点，写一串中文字符，可以选择GB2312编码字符字库、字体前景色、字体背景色</li></ul>
+<pre>void Paint_DrawString_CN(UWORD Xstart, UWORD Ystart, const char * pString, cFONT* font, UWORD Color_Foreground, UWORD Color_Background)
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	pString：字符串，字符串是一个指针
+ 	Font: GB2312编码字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font12CN：ascii字符字体11*21，中文字体16*21
+ 	 	font24CN：ascii字符字体24*41，中文字体32*41
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>写数字:在图像缓存中，在 (Xstart Ystart) 为左顶点，写一串数字，可以选择Ascii码可视字符字库、字体前景色、字体背景色</li></ul>
+<pre>void Paint_DrawNum(UWORD Xpoint, UWORD Ypoint, int32_t Nummber, sFONT* Font, UWORD Color_Foreground, UWORD Color_Background)
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	Nummber：显示的数字，这里使用的是32位长的int型保存，可以最大显示到2147483647
+ 	Font: Ascii码可视字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font8：5*8的字体
+ 	 	font12：7*12的字体
+ 	 	font16：11*16的字体
+ 	 	font20：14*20的字体
+ 	 	font24：17*24的字体
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>写带小数的数字:在图像缓存中，在 (Xstart Ystart) 为左顶点，写一串数字可以带小数的数字，可以选择Ascii码可视字符字库、字体前景色、字体背景色</li></ul>
+<pre>void Paint_DrawFloatNum(UWORD Xpoint, UWORD Ypoint, double Nummber,  UBYTE Decimal_Point,	sFONT* Font,    UWORD Color_Foreground, UWORD  Color_Background);
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	Nummber：显示的数字，这里使用的是double型保存，足够普通需求
+        Decimal_Point：显示小数点后几位数字
+ 	Font: Ascii码可视字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font8：5*8的字体
+ 	 	font12：7*12的字体
+ 	 	font16：11*16的字体
+ 	 	font20：14*20的字体
+ 	 	font24：17*24的字体
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>显示时间:在图像缓存中，在 (Xstart Ystart) 为左顶点，显示一段时间，可以选择Ascii码可视字符字库、字体前景色、字体背景色</li></ul>
+<pre>void Paint_DrawTime(UWORD Xstart, UWORD Ystart, PAINT_TIME *pTime, sFONT* Font, UWORD Color_Background, UWORD Color_Foreground)
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	pTime：显示的时间，这里定义好了一个时间的结构体，只要把时分秒各位数传给参数；
+ 	Font: Ascii码可视字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font8：5*8的字体
+ 	 	font12：7*12的字体
+ 	 	font16：11*16的字体
+ 	 	font20：14*20的字体
+ 	 	font24：17*24的字体
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>读取本地的bmp图片并写到缓存中</li></ul>
+<p>对于Raspberry Pi这些Linux操作系统的，可以读写图片<br />
+对于Raspberry Pi，在目录：RaspberryPi\c\lib\GUI\GUI_BMPfile.c(.h)<br />
+</p>
+<pre>UBYTE GUI_ReadBmp(const char *path, UWORD Xstart, UWORD Ystart)
+参数：
+	path：BMP图片的相对路径
+ 	Xstart: 图片的左顶点X坐标，一般默认传0
+ 	Ystart: 图片的左顶点Y坐标，一般默认传0
+</pre>
+<h3><span id="用户测试代码"></span><span class="mw-headline" id=".E7.94.A8.E6.88.B7.E6.B5.8B.E8.AF.95.E4.BB.A3.E7.A0.81">用户测试代码</span></h3>
+<p>前三个章节介绍了经典的linux三层代码结构，这里稍微讲解一下用户测试代码<br />
+对于Raspberry Pi，在目录：RaspberryPi\c\examples，为全部的测试代码；<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:LCD_rpi_c_examples%26128.png" class="image"><img alt="LCD rpi c examples&amp;128.png" src="/w/upload/e/e0/LCD_rpi_c_examples%26128.png" decoding="async" loading="lazy" width="554" height="241" /></a><br />
+如果需要运行0.96inch LCD测试程序，你需要运行mian程序时加入 0.96作为参数<br />
+在linux命令模式下重新执行如下：<br />
+</p>
+<pre>make clean
+make
+sudo ./main 0.96
+</pre>
+<h2><span id="Python(适用于Raspberry_Pi)"></span><span class="mw-headline" id="Python.28.E9.80.82.E7.94.A8.E4.BA.8ERaspberry_Pi.29">Python(适用于Raspberry Pi)</span></h2>
+<p>适用于python和python3<br />
+对于python而言他的调用没有C复杂<br />
+Raspberry Pi：RaspberryPi\python\lib\<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:LCD_rpi_python_lib.png" class="image"><img alt="LCD rpi python lib.png" src="/w/upload/7/7d/LCD_rpi_python_lib.png" decoding="async" loading="lazy" width="800" height="288" /></a><br />
+</p>
+<h3><span class="mw-headline" id="lcdconfig.py">lcdconfig.py</span></h3>
+<ul><li>模块初始化与退出的处理：</li></ul>
+<pre>def module_init()
+def module_exit()
+ 注意：
+ 1.这里是处理使用液晶屏前与使用完之后一些GPIO的处理。
+2.module_init()函数会在液晶屏的init()初始化程序自动调用，但module_exit()需要自行调用
+</pre>
+<ul><li>GPIO读写：</li></ul>
+<pre>def  digital_write(pin, value)
+def  digital_read(pin)
+</pre>
+<ul><li>SPI写数据：</li></ul>
+<pre>def spi_writebyte(data)
+</pre>
+<ul><li>xxx_LCD_test.py(xxx表示尺寸，若是0.96inch LCD，则为0inch96_LCD_test.py,依此类推)</li></ul>
+<p>python在如下目录：<br />
+Raspberry Pi：RaspberryPi\python\examples\<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:LCD_rpi_python_examples2.png" class="image"><img alt="LCD rpi python examples2.png" src="/w/upload/6/66/LCD_rpi_python_examples2.png" decoding="async" loading="lazy" width="800" height="211" /></a><br />
+如果你的python版本是python2，且需要运行0.96inch LCD测试程序，在linux命令模式下重新执行如下：<br />
+</p>
+<pre>sudo python 0inch96_LCD_test.py
+</pre>
+<p>如果你的python版本是python3，且需要运行0.96inch LCD测试程序，在linux命令模式下重新执行如下：<br />
+</p>
+<pre>sudo python3 0inch96_LCD_test.py
+</pre>
+<h3><span id="关于旋转设置"></span><span class="mw-headline" id=".E5.85.B3.E4.BA.8E.E6.97.8B.E8.BD.AC.E8.AE.BE.E7.BD.AE">关于旋转设置</span></h3>
+<p>如果在python程序中你需要设置屏幕旋转，可以通过语句im_r= image1.rotate(270)设置。
+</p>
+<pre>im_r= image1.rotate(270)
+</pre>
+<dl><dd>旋转效果，以1.14为例， 按顺序分别为0°， 90°，180°， 270°</dd>
+<dd><a href="/wiki/%E6%96%87%E4%BB%B6:LCD_Rotate.jpg" class="image"><img alt="LCD Rotate.jpg" src="/w/upload/thumb/a/a6/LCD_Rotate.jpg/1000px-LCD_Rotate.jpg" decoding="async" loading="lazy" width="1000" height="270" srcset="/w/upload/thumb/a/a6/LCD_Rotate.jpg/1500px-LCD_Rotate.jpg 1.5x, /w/upload/thumb/a/a6/LCD_Rotate.jpg/2000px-LCD_Rotate.jpg 2x" /></a><br /></dd></dl>
+<h3><span id="画图GUI"></span><span class="mw-headline" id=".E7.94.BB.E5.9B.BEGUI">画图GUI</span></h3>
+<p>由于python有一个image库<a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="http://effbot.org/imagingbook">pil官方库链接</a>，他十分的强大，不需要像C从逻辑层出发编写代码，可以直接引用image库进行图像处理，以下将以1.54inch LCD为例，对程序中使用了的进行简要说明<br />
+</p>
+<ul><li>需要使用image库，需要安装库</li></ul>
+<pre>sudo apt-get install python3-pil  安装库
+</pre>
+<p>然后导入库<br />
+</p>
+<pre>from PIL import Image,ImageDraw,ImageFont
+</pre>
+<p>其中Image为基本库、ImageDraw为画图功能、ImageFont为文字<br />
+</p>
+<ul><li>定义一个图像缓存，以方便在图片上进行画图、写字等功能</li></ul>
+<pre>image1 = Image.new("RGB", (disp.width, disp.height), "WHITE")
+</pre>
+<p>第一个参数定义图片的颜色深度，定义为"RGB"说明是RGB888彩色图，第二个参数是一个元组，定义好图片的宽度和高度，第三个参数是定义缓存的默认颜色，定义为“WHITE”。<br />
+</p>
+<ul><li>创建一个基于image1的画图对象，所有的画图操作都在这个对象上</li></ul>
+<pre>draw = ImageDraw.Draw(image1)
+</pre>
+<p><br />
+</p>
+<ul><li>画线</li></ul>
+<pre>draw.line([(20, 10),(70, 60)], fill = "RED",width = 1)
+</pre>
+<p>第一个参数为一个4个元素的元组，以（20，10）为起始点，（70，60）为终止点，画一条直线，fill="RED"表示线为红色，width=1表示线宽为1个像素。<br />
+</p><p><br />
+</p>
+<ul><li>画框</li></ul>
+<pre>draw.rectangle([(20,10),(70,60)],fill = "WHITE",outline="BLUE")
+</pre>
+<p>第一个参数为一个4个元素的元组，（20，10）矩形左上角坐标值，（70，60）为矩形右下角坐标值，fill= "WHITE"表示内部填充黑色，outline="BLUE"表示外边框为蓝色。<br />
+</p><p><br />
+</p>
+<ul><li>画圆</li></ul>
+<pre>draw.arc((150,15,190,55),0, 360, fill =(0,255,0))
+</pre>
+<p>在正方形内画一个内切圆，第一个参数为一个4个元素的元组，以（150，15）为正方形的左上角顶点，（190，55）为正方形右下角顶点，规定矩形框的水平中位线为0度角，角度顺时针变大，第二个参数表示开始角度，第三个参数标识结束角度，fill =(0,255,0)表示线为绿色<br />
+如果不是正方形，画出来的就是椭圆，这个实际上是圆弧的绘制。<br />
+</p><p>除了arc可以画圆之外，还有ellipse可以画实心圆<br />
+</p>
+<pre>draw.ellipse((150,65,190,105), fill = (0,255,0))
+</pre>
+<p>实质是椭圆的绘制，第一个参数指定弦的圆外切矩形，fill =(0,255,0)表示内部填充颜色为绿色，如果椭圆的外切矩阵为正方形，椭圆就是圆了。<br />
+</p>
+<ul><li>写字符</li></ul>
+<p>写字符往往需要写不同大小的字符，需要导入ImageFont模块，并实例化：<br />
+</p>
+<pre>    Font1 = ImageFont.truetype("../Font/Font01.ttf",25)
+    Font2 = ImageFont.truetype("../Font/Font01.ttf",35)
+    Font3 = ImageFont.truetype("../Font/Font02.ttf",32)
+</pre>
+<p>为了有比较好的视觉体验，这里使用的是来自网络的免费字体，如果是其他的ttf结尾的字库文件也是支持的。<br />
+注：每字库包含的字符均有不同；如果某些字符不能显示，建议根据字库使用的编码集来使用<br />
+写英文字符直接使用即可，写中文，由于编码是GB2312所以需要在前面加个u：<br />
+</p>
+<pre>draw.text((40, 50), 'WaveShare', fill = (128,255,128),font=Font2)
+text= u"微雪电子"
+draw.text((74, 150),text, fill = "WHITE",font=Font3)
+</pre>
+<p>第一个参数为一个2个元素的元组，以（40，50）为左顶点，字体为Font2，fill为字体颜色，你可以直接让 fill = "WHITE"，因为常规的颜色的值已经定义好了，当然你也可以使用fill = (128,255,128)，括号里对应的是RGB三种颜色的值，这样你就能精确的控制你想要的颜色。第二句显示微雪电子，使用Font3，字体颜色为白色。<br />
+</p>
+<ul><li>读取本地图片</li></ul>
+<pre>image = Image.open('../pic/LCD_1inch28.jpg')
+</pre>
+<p>参数为图片路径。
+</p>
+<ul><li>其他功能</li></ul>
+<p>python的image库十分强大，如果需要实现其他的更多功能，可以上官网学习http://effbot.org/imagingbook pil，官方的是英文的，如果感觉对你不友好，当然我们国内也有很多的优秀的博客都有讲解。
+</p>
+</div>
+<div class="tabbertab" title="STM32使用教程">
+<div class="toccolours mw-collapsible">
+<h1><span id="STM32软件说明"></span><span class="mw-headline" id="STM32.E8.BD.AF.E4.BB.B6.E8.AF.B4.E6.98.8E">STM32软件说明</span></h1>
+<div class="mw-collapsible-content">
+<p>例程是基于HAL库进行开发的。
+下载程序，找到STM32程序文件目录，打开STM32\STM32F103RBT6\MDK-ARM目录下的LCD_demo.uvprojx，即可看到程序。<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:LCD_STM32_CODE1.png" class="image"><img alt="LCD STM32 CODE1.png" src="/w/upload/thumb/4/40/LCD_STM32_CODE1.png/700px-LCD_STM32_CODE1.png" decoding="async" loading="lazy" width="700" height="219" srcset="/w/upload/4/40/LCD_STM32_CODE1.png 1.5x" /></a><br />
+打开main.c，可以看到所有的测试程序，把对应的屏幕的测试程序前面的注释去掉，重新编译下载即可。<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:LCD_STM32_CODE128.png" class="image"><img alt="LCD STM32 CODE128.png" src="/w/upload/thumb/9/92/LCD_STM32_CODE128.png/700px-LCD_STM32_CODE128.png" decoding="async" loading="lazy" width="700" height="696" srcset="/w/upload/thumb/9/92/LCD_STM32_CODE128.png/1050px-LCD_STM32_CODE128.png 1.5x, /w/upload/9/92/LCD_STM32_CODE128.png 2x" /></a><br />
+</p>
+<table>
+<tbody><tr>
+<td>LCD_0in85_test()&#160;&#160;&#160;</td>
+<td>0.85inch LCD测试程序</td>
+</tr>
+<tr>
+<td>LCD_0in96_test()&#160;&#160;&#160;</td>
+<td>0.96inch LCD测试程序</td>
+</tr>
+<tr>
+<td>LCD_1in14_test()</td>
+<td>1.14inch LCD测试程序</td>
+</tr>
+<tr>
+<td>LCD_1in28_test()</td>
+<td>1.28inch LCD测试程序</td>
+</tr>
+<tr>
+<td>LCD_1in3_test()</td>
+<td>1.3&#160;&#160;inch LCD测试程序</td>
+</tr>
+<tr>
+<td>LCD_1in47_test()</td>
+<td>1.47&#160;&#160;inch LCD测试程序</td>
+</tr>
+<tr>
+<td>LCD_1in5_test()</td>
+<td>1.5&#160;&#160;inch LCD测试程序</td>
+</tr>
+<tr>
+<td>LCD_1in54_test()</td>
+<td>1.54inch LCD测试程序</td>
+</tr>
+<tr>
+<td>LCD_1in8_test()</td>
+<td>1.8inch &#160;&#160;LCD测试程序</td>
+</tr>
+<tr>
+<td>LCD_2in_test()</td>
+<td>2inch&#160;&#160; &#160;&#160;&#160;LCD测试程序</td>
+</tr>
+</tbody></table>
+<p><br />
+</p>
+<h2><span id="程序说明"></span><span class="mw-headline" id=".E7.A8.8B.E5.BA.8F.E8.AF.B4.E6.98.8E">程序说明</span></h2>
+<h3><span id="底层硬件接口_2"></span><span class="mw-headline" id=".E5.BA.95.E5.B1.82.E7.A1.AC.E4.BB.B6.E6.8E.A5.E5.8F.A3_2">底层硬件接口</span></h3>
+<ul><li>数据类型：</li></ul>
+<pre>#define UBYTE   uint8_t
+#define UWORD   uint16_t
+#define UDOUBLE uint32_t
+</pre>
+<ul><li>模块初始化与退出的处理：</li></ul>
+<pre>void DEV_Module_Init(void);
+void DEV_Module_Exit(void);
+注意：
+1.这里是处理使用液晶屏前与使用完之后一些GPIO的处理；
+2.DEV_Module_Exit函数使用后，会关闭LCD显示屏；
+</pre>
+<ul><li>GPIO读写：</li></ul>
+<pre>void 	DEV_Digital_Write(UWORD Pin, UBYTE Value);
+UBYTE 	DEV_Digital_Read(UWORD Pin);
+</pre>
+<ul><li>SPI写数据</li></ul>
+<pre>void    DEV_SPI_WRITE(UBYTE _dat);
+</pre>
+<h3><span id="上层应用_2"></span><span class="mw-headline" id=".E4.B8.8A.E5.B1.82.E5.BA.94.E7.94.A8_2">上层应用</span></h3>
+<p>对于屏幕而言，如果需要进行画图、显示中英文字符、显示图片等怎么办，这些都是上层应用做的。这有很多小伙伴有问到一些图形的处理，我们这里提供了一些基本的功能
+在如下的目录中可以找到GUI，在目录：STM32\STM32F103RB\User\GUI_DEV\GUI_Paint.c(.h)<br />
+注：因为STM32和arduino内部RAM大小的原因，GUI都采用直接写入LCD的RAM中。
+<a href="/wiki/%E6%96%87%E4%BB%B6:LCD_rpi_GUI.png" class="image"><img alt="LCD rpi GUI.png" src="/w/upload/2/25/LCD_rpi_GUI.png" decoding="async" loading="lazy" width="800" height="141" /></a><br />
+在如下目录下是GUI依赖的字符字体，在目录：STM32\STM32F103RB\User\Fonts<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:LCD_rpi_Font.png" class="image"><img alt="LCD rpi Font.png" src="/w/upload/a/a6/LCD_rpi_Font.png" decoding="async" loading="lazy" width="800" height="273" /></a><br />
+</p>
+<ul><li>新建图像属性:新建一个图像属性，这个属性包括图像缓存的名称、宽度、高度、翻转角度、颜色</li></ul>
+<pre>void Paint_NewImage(UWORD Width, UWORD Height, UWORD Rotate, UWORD Color);
+参数：
+ 	Width&#160;: 图像缓存的宽度；
+ 	Height: 图像缓存的高度；
+ 	Rotate：图像的翻转的角度
+ 	Color ：图像的初始颜色；
+</pre>
+<ul><li>设置清屏函数，通常直接调用LCD的clear函数；</li></ul>
+<pre>void Paint_SetClearFuntion(void (*Clear)(UWORD));
+参数：
+ 	Clear&#160;: 指向清屏函数的指针，用于快速将屏幕清空变成某颜色；
+</pre>
+<ul><li>设置画像素点函数，通常直接调用LCD的DrawPaint函数；</li></ul>
+<pre>void Paint_SetDisplayFuntion(void (*Display)(UWORD,UWORD,UWORD));
+参数：
+ 	Display: 指向画像素点函数的指针，用于向LCD内部RAM指定位置写入数据；
+</pre>
+<ul><li>选择图像缓存:选择图像缓存，选择的目的是你可以创建多个图像属性，图像缓存可以存在多个，你可以选择你所创建的每一张图像</li></ul>
+<pre>void Paint_SelectImage(UBYTE *image)
+参数：
+ 	image: 图像缓存的名称，实际上是一个指向图像缓存首地址的指针；
+</pre>
+<ul><li>图像旋转:设置选择好的图像的旋转角度，最好使用在Paint_SelectImage()后，可以选择旋转0、90、180、270</li></ul>
+<pre>void Paint_SetRotate(UWORD Rotate)
+参数：
+ 	Rotate: 图像选择角度，可以选择ROTATE_0、ROTATE_90、ROTATE_180、ROTATE_270分别对应0、90、180、270度
+</pre>
+<dl><dd>【说明】不同选择角度下，坐标对应起始像素点不同，这里以1.14为例，四张图，按顺序为0°， 90°， 180°， 270°。仅做为参考</dd>
+<dd><a href="/wiki/%E6%96%87%E4%BB%B6:LCD_Rotate.jpg" class="image"><img alt="LCD Rotate.jpg" src="/w/upload/thumb/a/a6/LCD_Rotate.jpg/1000px-LCD_Rotate.jpg" decoding="async" loading="lazy" width="1000" height="270" srcset="/w/upload/thumb/a/a6/LCD_Rotate.jpg/1500px-LCD_Rotate.jpg 1.5x, /w/upload/thumb/a/a6/LCD_Rotate.jpg/2000px-LCD_Rotate.jpg 2x" /></a></dd></dl>
+<ul><li>图像镜像翻转:设置选择好的图像的镜像翻转，可以选择不镜像、关于水平镜像、关于垂直镜像、关于图像中心镜像。</li></ul>
+<pre>void Paint_SetMirroring(UBYTE mirror)
+参数：
+ 	mirror: 图像的镜像方式，可以选择MIRROR_NONE、MIRROR_HORIZONTAL、MIRROR_VERTICAL、MIRROR_ORIGIN分别对应不镜像、关于水平镜像、关于垂直镜像、关于图像中心镜像
+</pre>
+<ul><li>设置点在缓存中显示位置和颜色：这里是GUI最核心的一个函数、处理点在缓存中显示位置和颜色；</li></ul>
+<pre>void Paint_SetPixel(UWORD Xpoint, UWORD Ypoint, UWORD Color)
+参数：
+ 	Xpoint: 点在图像缓存中X位置
+ 	Ypoint: 点在图像缓存中Y位置
+ 	Color&#160;: 点显示的颜色
+</pre>
+<ul><li>图像缓存填充颜色:把图像缓存填充为某颜色，一般作为屏幕刷白的作用</li></ul>
+<pre>void Paint_Clear(UWORD Color)
+参数：
+ 	Color: 填充的颜色
+</pre>
+<ul><li>图像缓存部分窗口填充颜色：把图像缓存的某部分窗口填充为某颜色，一般作为窗口刷白的作用，常用于时间的显示，刷白上一秒</li></ul>
+<pre>void Paint_ClearWindows(UWORD Xstart, UWORD Ystart, UWORD Xend, UWORD Yend, UWORD Color)
+参数：
+ 	Xstart: 窗口的X起点坐标
+ 	Ystart: 窗口的Y起点坐标
+ 	Xend: 窗口的X终点坐标
+ 	Yend: 窗口的Y终点坐标
+ 	Color: 填充的颜色
+</pre>
+<ul><li>画点:在图像缓存中，在（Xpoint, Ypoint）上画点，可以选择颜色，点的大小，点的风格</li></ul>
+<pre>void Paint_DrawPoint(UWORD Xpoint, UWORD Ypoint, UWORD Color, DOT_PIXEL Dot_Pixel, DOT_STYLE Dot_Style)
+参数：
+ 	Xpoint: 点的X坐标
+ 	Ypoint: 点的Y坐标
+ 	Color: 填充的颜色
+ 	Dot_Pixel: 点的大小，提供默认的8种大小点
+ 	 	 typedef enum {
+ 	 	 	 DOT_PIXEL_1X1  = 1,	// 1 x 1
+ 	 	 	 DOT_PIXEL_2X2  , 		// 2 X 2
+ 	 	 	 DOT_PIXEL_3X3  , 	 	// 3 X 3
+ 	 	 	 DOT_PIXEL_4X4  , 	 	// 4 X 4
+ 	 	 	 DOT_PIXEL_5X5  , 		// 5 X 5
+ 	 	 	 DOT_PIXEL_6X6  , 		// 6 X 6
+ 	 	 	 DOT_PIXEL_7X7  , 		// 7 X 7
+ 	 	 	 DOT_PIXEL_8X8  , 		// 8 X 8
+ 	 	} DOT_PIXEL;
+ 	Dot_Style: 点的风格,大小扩充方式是以点为中心扩大还是以点为左下角往右上扩大
+ 	 	typedef enum {
+ 	 	   DOT_FILL_AROUND  = 1,		
+ 	 	   DOT_FILL_RIGHTUP,
+ 	 	} DOT_STYLE;
+</pre>
+<ul><li>画线：在图像缓存中，从 (Xstart, Ystart) 到 (Xend, Yend) 画线，可以选择颜色，线的宽度，线的风格</li></ul>
+<pre>void Paint_DrawLine(UWORD Xstart, UWORD Ystart, UWORD Xend, UWORD Yend, UWORD Color, LINE_STYLE Line_Style , LINE_STYLE Line_Style)
+参数：
+ 	Xstart: 线的X起点坐标
+ 	Ystart: 线的Y起点坐标
+ 	Xend: 线的X终点坐标
+ 	Yend: 线的Y终点坐标
+ 	Color: 填充的颜色
+ 	Line_width: 线的宽度，提供默认的8种宽度
+ 	 	typedef enum {
+ 	 	 	 DOT_PIXEL_1X1  = 1,	// 1 x 1
+ 	 	 	 DOT_PIXEL_2X2  , 		// 2 X 2
+ 	 	 	 DOT_PIXEL_3X3  ,		// 3 X 3
+ 	 	 	 DOT_PIXEL_4X4  ,		// 4 X 4
+ 	 	 	 DOT_PIXEL_5X5  , 		// 5 X 5
+ 	 	 	 DOT_PIXEL_6X6  , 		// 6 X 6
+ 	 	 	 DOT_PIXEL_7X7  , 		// 7 X 7
+ 	 	 	 DOT_PIXEL_8X8  , 		// 8 X 8
+ 	 	} DOT_PIXEL;
+ 	 Line_Style: 线的风格,选择线是以直线连接还是以虚线的方式连接
+ 	 	typedef enum {
+ 	 	 	 LINE_STYLE_SOLID = 0,
+ 	 	 	 LINE_STYLE_DOTTED,
+ 	 	} LINE_STYLE;
+</pre>
+<ul><li>画矩形:在图像缓存中，从 (Xstart, Ystart) 到 (Xend, Yend) 画一个矩形，可以选择颜色，线的宽度，是否填充矩形内部</li></ul>
+<pre>void Paint_DrawRectangle(UWORD Xstart, UWORD Ystart, UWORD Xend, UWORD Yend, UWORD Color, DOT_PIXEL Line_width, DRAW_FILL Draw_Fill)
+参数：
+ 	Xstart: 矩形的X起点坐标
+ 	Ystart: 矩形的Y起点坐标
+ 	Xend: 矩形的X终点坐标
+ 	Yend: 矩形的Y终点坐标
+ 	Color: 填充的颜色
+ 	Line_width: 矩形四边的宽度，提供默认的8种宽度
+ 	 	typedef enum {
+ 	 	 	 DOT_PIXEL_1X1  = 1,	// 1 x 1
+ 	 	 	 DOT_PIXEL_2X2  , 		// 2 X 2
+ 	 	 	 DOT_PIXEL_3X3  ,		// 3 X 3
+ 	 	 	 DOT_PIXEL_4X4  ,		// 4 X 4
+ 	 	 	 DOT_PIXEL_5X5  , 		// 5 X 5
+ 	 	 	 DOT_PIXEL_6X6  , 		// 6 X 6
+ 	 	 	 DOT_PIXEL_7X7  , 		// 7 X 7
+ 	 	 	 DOT_PIXEL_8X8  , 		// 8 X 8
+ 	 	} DOT_PIXEL;
+ 	Draw_Fill: 填充,是否填充矩形的内部
+ 	 	typedef enum {
+ 	 	 	 DRAW_FILL_EMPTY = 0,
+ 	 	 	 DRAW_FILL_FULL,
+ 	 	} DRAW_FILL;
+</pre>
+<ul><li>画圆:在图像缓存中，以 (X_Center Y_Center) 为圆心，画一个半径为Radius的圆，可以选择颜色，线的宽度，是否填充圆内部</li></ul>
+<pre>void Paint_DrawCircle(UWORD X_Center, UWORD Y_Center, UWORD Radius, UWORD Color, DOT_PIXEL Line_width, DRAW_FILL Draw_Fill)
+参数：
+ 	X_Center: 圆心的X坐标
+ 	Y_Center: 圆心的Y坐标
+ 	Radius：圆的半径
+ 	Color: 填充的颜色
+ 	Line_width: 圆弧的宽度，提供默认的8种宽度
+ 	 	typedef enum {
+ 	 	 	 DOT_PIXEL_1X1  = 1,	// 1 x 1
+ 	 	 	 DOT_PIXEL_2X2  , 		// 2 X 2
+ 	 	 	 DOT_PIXEL_3X3  ,		// 3 X 3
+ 	 	 	 DOT_PIXEL_4X4  ,		// 4 X 4
+ 	 	 	 DOT_PIXEL_5X5  , 		// 5 X 5
+ 	 	 	 DOT_PIXEL_6X6  , 		// 6 X 6
+ 	 	 	 DOT_PIXEL_7X7  , 		// 7 X 7
+ 	 	 	 DOT_PIXEL_8X8  , 		// 8 X 8
+ 	 	} DOT_PIXEL;
+ 	Draw_Fill: 填充,是否填充圆的内部
+ 	 	typedef enum {
+ 	 	 	 DRAW_FILL_EMPTY = 0,
+ 	 	 	 DRAW_FILL_FULL,
+ 	 	} DRAW_FILL;
+</pre>
+<ul><li>写Ascii字符:在图像缓存中，在 (Xstart Ystart) 为左顶点，写一个Ascii字符，可以选择Ascii码可视字符字库、字体前景色、字体背景色</li></ul>
+<pre>void Paint_DrawChar(UWORD Xstart, UWORD Ystart, const char Ascii_Char, sFONT* Font, UWORD Color_Foreground, UWORD Color_Background)
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	Ascii_Char：Ascii字符
+ 	Font: Ascii码可视字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font8：5*8的字体
+ 	 	font12：7*12的字体
+ 	 	font16：11*16的字体
+ 	 	font20：14*20的字体
+ 	 	font24：17*24的字体
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>写英文字符串:在图像缓存中，在 (Xstart Ystart) 为左顶点，写一串英文字符，可以选择Ascii码可视字符字库、字体前景色、字体背景色</li></ul>
+<pre>void Paint_DrawString_EN(UWORD Xstart, UWORD Ystart, const char * pString, sFONT* Font, UWORD Color_Foreground, UWORD Color_Background)
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	pString：字符串，字符串是一个指针
+ 	Font: Ascii码可视字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font8：5*8的字体
+ 	 	font12：7*12的字体
+ 	 	font16：11*16的字体
+ 	 	font20：14*20的字体
+ 	 	font24：17*24的字体
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>写中文字符串：在图像缓存中，在 (Xstart Ystart) 为左顶点，写一串中文字符，可以选择GB2312编码字符字库、字体前景色、字体背景色；</li></ul>
+<pre>void Paint_DrawString_CN(UWORD Xstart, UWORD Ystart, const char * pString, cFONT* font, UWORD Color_Foreground, UWORD Color_Background)
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	pString：字符串，字符串是一个指针
+ 	Font: GB2312编码字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font12CN：ascii字符字体11*21，中文字体16*21
+ 	 	font24CN：ascii字符字体24*41，中文字体32*41
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>写数字:在图像缓存中，在 (Xstart Ystart) 为左顶点，写一串数字，可以选择Ascii码可视字符字库、字体前景色、字体背景色</li></ul>
+<pre>void Paint_DrawNum(UWORD Xpoint, UWORD Ypoint, int32_t Nummber, sFONT* Font, UWORD Color_Foreground, UWORD Color_Background)
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	Nummber：显示的数字，这里使用的是32位长的int型保存，可以最大显示到2147483647
+ 	Font: Ascii码可视字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font8：5*8的字体
+ 	 	font12：7*12的字体
+ 	 	font16：11*16的字体
+ 	 	font20：14*20的字体
+ 	 	font24：17*24的字体
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>写带小数的数字:在图像缓存中，在 (Xstart Ystart) 为左顶点，写一串数字可以带小数的数字，可以选择Ascii码可视字符字库、字体前景色、字体背景色</li></ul>
+<pre>void Paint_DrawFloatNum(UWORD Xpoint, UWORD Ypoint, double Nummber,  UBYTE Decimal_Point,	sFONT* Font,    UWORD Color_Foreground, UWORD  Color_Background);
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	Nummber：显示的数字，这里使用的是double型保存，足够普通需求
+        Decimal_Point：显示小数点后几位数字
+ 	Font: Ascii码可视字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font8：5*8的字体
+ 	 	font12：7*12的字体
+ 	 	font16：11*16的字体
+ 	 	font20：14*20的字体
+ 	 	font24：17*24的字体
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>显示时间:在图像缓存中，在 (Xstart Ystart) 为左顶点，显示一段时间，可以选择Ascii码可视字符字库、字体前景色、字体背景色；</li></ul>
+<pre>void Paint_DrawTime(UWORD Xstart, UWORD Ystart, PAINT_TIME *pTime, sFONT* Font, UWORD Color_Background, UWORD Color_Foreground)
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	pTime：显示的时间，这里定义好了一个时间的结构体，只要把时分秒各位数传给参数；
+ 	Font: Ascii码可视字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font8：5*8的字体
+ 	 	font12：7*12的字体
+ 	 	font16：11*16的字体
+ 	 	font20：14*20的字体
+ 	 	font24：17*24的字体
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre></div>
+</div>
+<div class="tabbertab" title="Arduino使用教程">
+<div class="toccolours mw-collapsible">
+<h1><span id="Arduino软件说明"></span><span class="mw-headline" id="Arduino.E8.BD.AF.E4.BB.B6.E8.AF.B4.E6.98.8E">Arduino软件说明</span></h1>
+<div class="mw-collapsible-content">
+<p>注：例程均在Arduino uno上进行了测试，如果需要是其他型号的Arduino需要自己确定连接的管脚是否正确。<br />
+</p>
+<h2><span id="arduino_IDE_安装教程"></span><span class="mw-headline" id="arduino_IDE_.E5.AE.89.E8.A3.85.E6.95.99.E7.A8.8B">arduino IDE 安装教程</span></h2>
+<p><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Arduino_ide_download">arduino IDE 安装教程</a>
+</p>
+<h2><span id="运行程序"></span><span class="mw-headline" id=".E8.BF.90.E8.A1.8C.E7.A8.8B.E5.BA.8F">运行程序</span></h2>
+<p>在产品百科界面<a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/w/upload/f/fc/LCD_Module_code.zip">下载程序</a>，然后解压。Arduino程序位于	~/Arduino/… <br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:LCD_arduino_cede1.png" class="image"><img alt="LCD arduino cede1.png" src="/w/upload/7/7a/LCD_arduino_cede1.png" decoding="async" loading="lazy" width="700" height="151" /></a><br />
+</p><p>请根据液晶屏型号选择对应的程序打开<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:1.28inch_LCD_Arduino.png" class="image"><img alt="1.28inch LCD Arduino.png" src="/w/upload/1/16/1.28inch_LCD_Arduino.png" decoding="async" loading="lazy" width="700" height="281" /></a><br />
+可以查看到所有的屏幕尺寸的测试程序，按照尺寸分类<br />
+</p><p>比如1.54inch LCD Module. 打开LCD_1inch54文件夹，并运行LCD_1inch54.ino文件。<br />
+打开程序，选择开发板型号Arduino  UNO<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:LCD_arduino_cede3.png" class="image"><img alt="LCD arduino cede3.png" src="/w/upload/thumb/e/e7/LCD_arduino_cede3.png/700px-LCD_arduino_cede3.png" decoding="async" loading="lazy" width="700" height="777" srcset="/w/upload/e/e7/LCD_arduino_cede3.png 1.5x" /></a><br />
+选择对应COM口<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:LCD_arduino_cede4.png" class="image"><img alt="LCD arduino cede4.png" src="/w/upload/thumb/a/a3/LCD_arduino_cede4.png/700px-LCD_arduino_cede4.png" decoding="async" loading="lazy" width="700" height="750" srcset="/w/upload/a/a3/LCD_arduino_cede4.png 1.5x" /></a><br />
+然后点击编译并下载即可<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:LCD_arduino_cede5.png" class="image"><img alt="LCD arduino cede5.png" src="/w/upload/thumb/2/25/LCD_arduino_cede5.png/700px-LCD_arduino_cede5.png" decoding="async" loading="lazy" width="700" height="713" srcset="/w/upload/2/25/LCD_arduino_cede5.png 1.5x" /></a><br />
+</p>
+<h2><span id="程序说明_2"></span><span class="mw-headline" id=".E7.A8.8B.E5.BA.8F.E8.AF.B4.E6.98.8E_2">程序说明</span></h2>
+<h3><span id="文件介绍"></span><span class="mw-headline" id=".E6.96.87.E4.BB.B6.E4.BB.8B.E7.BB.8D">文件介绍</span></h3>
+<p>以Arduino UNO控制1.54寸 LCD 为例，打开Arduino\LCD_1inch54目录：<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:LCD_arduino_ide_codeDescription1.png" class="image"><img alt="LCD arduino ide codeDescription1.png" src="/w/upload/4/4f/LCD_arduino_ide_codeDescription1.png" decoding="async" loading="lazy" width="800" height="446" /></a><br />
+其中：<br />
+LCD_1inch5.ino：使用Arduino IDE打开即可；<br />
+LCD_Driver.cpp(.h):是液晶屏的驱动程序；<br />
+DEV_Config.cpp(.h):是硬件接口定义，里面封装了读写管脚电平，SPI传输数据，以及管脚初始化；<br />
+font8.cpp、font12.cpp、font16.cpp、font20.cpp、font24.cpp、font24CN.cpp、fonts.h：为不同大小字符的字模；<br />
+image.cpp(.h)：是图片数据，这个可以通过Img2Lcd(在开发资料中可下载)把任意的BMP图片转换成16位真彩色图片数组。<br />
+程序分为底层硬件接口、中间层液晶屏驱动、上层应用；<br />
+</p>
+<h2><span id="底层硬件接口_3"></span><span class="mw-headline" id=".E5.BA.95.E5.B1.82.E7.A1.AC.E4.BB.B6.E6.8E.A5.E5.8F.A3_3">底层硬件接口</span></h2>
+<p>在DEV_Config.cpp(.h)两个文件中定义了硬件接口，并封装好读写管脚电平、延时、SPI传输等函数。<br />
+</p>
+<h3><span id="写管脚电平"></span><span class="mw-headline" id=".E5.86.99.E7.AE.A1.E8.84.9A.E7.94.B5.E5.B9.B3">写管脚电平</span></h3>
+<pre>void DEV_Digital_Write(int pin, int value)
+</pre>
+<p>第一个参数为管脚、第二个为高低电平。<br />
+</p>
+<h3><span id="读管脚电平"></span><span class="mw-headline" id=".E8.AF.BB.E7.AE.A1.E8.84.9A.E7.94.B5.E5.B9.B3">读管脚电平</span></h3>
+<pre>int DEV_Digital_Read(int pin)
+</pre>
+<p>参数为管脚，返回值为读取管脚的电平。<br />
+</p>
+<h3><span id="延时"></span><span class="mw-headline" id=".E5.BB.B6.E6.97.B6">延时</span></h3>
+<pre>DEV_Delay_ms(unsigned int delaytime)
+</pre>
+<p>毫秒级别延时。<br />
+</p>
+<h3><span id="SPI输出数据"></span><span class="mw-headline" id="SPI.E8.BE.93.E5.87.BA.E6.95.B0.E6.8D.AE">SPI输出数据</span></h3>
+<pre>DEV_SPI_WRITE(unsigned char data)
+</pre>
+<p>参数为char型，占8位。<br />
+</p>
+<h3><span id="上层应用_3"></span><span class="mw-headline" id=".E4.B8.8A.E5.B1.82.E5.BA.94.E7.94.A8_3">上层应用</span></h3>
+<p>对于屏幕而言，如果需要进行画图、显示中英文字符、显示图片等怎么办，这些都是上层应用做的。这有很多小伙伴有问到一些图形的处理，我们这里提供了一些基本的功能
+GUI_Paint.c(.h)<br />
+注：因为STM32和arduino内部RAM大小的原因，GUI都采用直接写入LCD的RAM中。<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:LCD_arduino_ide_codeDescription_GUI.png" class="image"><img alt="LCD arduino ide codeDescription GUI.png" src="/w/upload/thumb/4/49/LCD_arduino_ide_codeDescription_GUI.png/700px-LCD_arduino_ide_codeDescription_GUI.png" decoding="async" loading="lazy" width="700" height="390" srcset="/w/upload/4/49/LCD_arduino_ide_codeDescription_GUI.png 1.5x" /></a><br />
+GUI使用的字体均依赖于相同文件下的font*.cpp（h）文件<br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:LCD_arduino_ide_codeDescription_font.png" class="image"><img alt="LCD arduino ide codeDescription font.png" src="/w/upload/thumb/2/2a/LCD_arduino_ide_codeDescription_font.png/700px-LCD_arduino_ide_codeDescription_font.png" decoding="async" loading="lazy" width="700" height="390" srcset="/w/upload/2/2a/LCD_arduino_ide_codeDescription_font.png 1.5x" /></a><br />
+</p>
+<ul><li>新建图像属性:新建一个图像属性，这个属性包括图像缓存的名称、宽度、高度、翻转角度、颜色</li></ul>
+<pre>void Paint_NewImage(UWORD Width, UWORD Height, UWORD Rotate, UWORD Color);
+参数：
+ 	Width&#160;: 图像缓存的宽度；
+ 	Height: 图像缓存的高度；
+ 	Rotate：图像的翻转的角度
+ 	Color ：图像的初始颜色；
+</pre>
+<ul><li>设置清屏函数，通常直接调用LCD的clear函数；</li></ul>
+<pre>void Paint_SetClearFuntion(void (*Clear)(UWORD));
+参数：
+ 	Clear&#160;: 指向清屏函数的指针，用于快速将屏幕清空变成某颜色；
+</pre>
+<ul><li>设置画像素点函数，通常直接调用LCD的DrawPaint函数；</li></ul>
+<pre>void Paint_SetDisplayFuntion(void (*Display)(UWORD,UWORD,UWORD));
+参数：
+ 	Display: 指向画像素点函数的指针，用于向LCD内部RAM指定位置写入数据；
+</pre>
+<ul><li>选择图像缓存:选择图像缓存，选择的目的是你可以创建多个图像属性，图像缓存可以存在多个，你可以选择你所创建的每一张图像</li></ul>
+<pre>void Paint_SelectImage(UBYTE *image)
+参数：
+ 	image: 图像缓存的名称，实际上是一个指向图像缓存首地址的指针；
+</pre>
+<ul><li>图像旋转:设置选择好的图像的旋转角度，最好使用在Paint_SelectImage()后，可以选择旋转0、90、180、270</li></ul>
+<pre>void Paint_SetRotate(UWORD Rotate)
+参数：
+ 	Rotate: 图像选择角度，可以选择ROTATE_0、ROTATE_90、ROTATE_180、ROTATE_270分别对应0、90、180、270度
+</pre>
+<dl><dd>【说明】不同选择角度下，坐标对应起始像素点不同，这里以1.14为例，四张图，按顺序为0°， 90°， 180°， 270°。仅做为参考</dd>
+<dd><a href="/wiki/%E6%96%87%E4%BB%B6:LCD_Rotate.jpg" class="image"><img alt="LCD Rotate.jpg" src="/w/upload/thumb/a/a6/LCD_Rotate.jpg/1000px-LCD_Rotate.jpg" decoding="async" loading="lazy" width="1000" height="270" srcset="/w/upload/thumb/a/a6/LCD_Rotate.jpg/1500px-LCD_Rotate.jpg 1.5x, /w/upload/thumb/a/a6/LCD_Rotate.jpg/2000px-LCD_Rotate.jpg 2x" /></a></dd></dl>
+<ul><li>图像镜像翻转:设置选择好的图像的镜像翻转，可以选择不镜像、关于水平镜像、关于垂直镜像、关于图像中心镜像。</li></ul>
+<pre>void Paint_SetMirroring(UBYTE mirror)
+参数：
+ 	mirror: 图像的镜像方式，可以选择MIRROR_NONE、MIRROR_HORIZONTAL、MIRROR_VERTICAL、MIRROR_ORIGIN分别对应不镜像、关于水平镜像、关于垂直镜像、关于图像中心镜像
+</pre>
+<ul><li>设置点在缓存中显示位置和颜色：这里是GUI最核心的一个函数、处理点在缓存中显示位置和颜色；</li></ul>
+<pre>void Paint_SetPixel(UWORD Xpoint, UWORD Ypoint, UWORD Color)
+参数：
+ 	Xpoint: 点在图像缓存中X位置
+ 	Ypoint: 点在图像缓存中Y位置
+ 	Color&#160;: 点显示的颜色
+</pre>
+<ul><li>图像缓存填充颜色:把图像缓存填充为某颜色，一般作为屏幕刷白的作用</li></ul>
+<pre>void Paint_Clear(UWORD Color)
+参数：
+ 	Color: 填充的颜色
+</pre>
+<ul><li>图像缓存部分窗口填充颜色：把图像缓存的某部分窗口填充为某颜色，一般作为窗口刷白的作用，常用于时间的显示，刷白上一秒</li></ul>
+<pre>void Paint_ClearWindows(UWORD Xstart, UWORD Ystart, UWORD Xend, UWORD Yend, UWORD Color)
+参数：
+ 	Xstart: 窗口的X起点坐标
+ 	Ystart: 窗口的Y起点坐标
+ 	Xend: 窗口的X终点坐标
+ 	Yend: 窗口的Y终点坐标
+ 	Color: 填充的颜色
+</pre>
+<ul><li>画点:在（Xpoint, Ypoint）上画点，可以选择颜色，点的大小，点的风格</li></ul>
+<pre>void Paint_DrawPoint(UWORD Xpoint, UWORD Ypoint, UWORD Color, DOT_PIXEL Dot_Pixel, DOT_STYLE Dot_Style)
+参数：
+ 	Xpoint: 点的X坐标
+ 	Ypoint: 点的Y坐标
+ 	Color: 填充的颜色
+ 	Dot_Pixel: 点的大小，提供默认的8种大小点
+ 	 	 typedef enum {
+ 	 	 	 DOT_PIXEL_1X1  = 1,	// 1 x 1
+ 	 	 	 DOT_PIXEL_2X2  , 		// 2 X 2
+ 	 	 	 DOT_PIXEL_3X3  , 	 	// 3 X 3
+ 	 	 	 DOT_PIXEL_4X4  , 	 	// 4 X 4
+ 	 	 	 DOT_PIXEL_5X5  , 		// 5 X 5
+ 	 	 	 DOT_PIXEL_6X6  , 		// 6 X 6
+ 	 	 	 DOT_PIXEL_7X7  , 		// 7 X 7
+ 	 	 	 DOT_PIXEL_8X8  , 		// 8 X 8
+ 	 	} DOT_PIXEL;
+ 	Dot_Style: 点的风格,大小扩充方式是以点为中心扩大还是以点为左下角往右上扩大
+ 	 	typedef enum {
+ 	 	   DOT_FILL_AROUND  = 1,		
+ 	 	   DOT_FILL_RIGHTUP,
+ 	 	} DOT_STYLE;
+</pre>
+<ul><li>画线：从 (Xstart, Ystart) 到 (Xend, Yend) 画线，可以选择颜色，线的宽度，线的风格</li></ul>
+<pre>void Paint_DrawLine(UWORD Xstart, UWORD Ystart, UWORD Xend, UWORD Yend, UWORD Color, LINE_STYLE Line_Style , LINE_STYLE Line_Style)
+参数：
+ 	Xstart: 线的X起点坐标
+ 	Ystart: 线的Y起点坐标
+ 	Xend: 线的X终点坐标
+ 	Yend: 线的Y终点坐标
+ 	Color: 填充的颜色
+ 	Line_width: 线的宽度，提供默认的8种宽度
+ 	 	typedef enum {
+ 	 	 	 DOT_PIXEL_1X1  = 1,	// 1 x 1
+ 	 	 	 DOT_PIXEL_2X2  , 		// 2 X 2
+ 	 	 	 DOT_PIXEL_3X3  ,		// 3 X 3
+ 	 	 	 DOT_PIXEL_4X4  ,		// 4 X 4
+ 	 	 	 DOT_PIXEL_5X5  , 		// 5 X 5
+ 	 	 	 DOT_PIXEL_6X6  , 		// 6 X 6
+ 	 	 	 DOT_PIXEL_7X7  , 		// 7 X 7
+ 	 	 	 DOT_PIXEL_8X8  , 		// 8 X 8
+ 	 	} DOT_PIXEL;
+ 	 Line_Style: 线的风格,选择线是以直线连接还是以虚线的方式连接
+ 	 	typedef enum {
+ 	 	 	 LINE_STYLE_SOLID = 0,
+ 	 	 	 LINE_STYLE_DOTTED,
+ 	 	} LINE_STYLE;
+</pre>
+<ul><li>画矩形:从 (Xstart, Ystart) 到 (Xend, Yend) 画一个矩形，可以选择颜色，线的宽度，是否填充矩形内部</li></ul>
+<pre>void Paint_DrawRectangle(UWORD Xstart, UWORD Ystart, UWORD Xend, UWORD Yend, UWORD Color, DOT_PIXEL Line_width, DRAW_FILL Draw_Fill)
+参数：
+ 	Xstart: 矩形的X起点坐标
+ 	Ystart: 矩形的Y起点坐标
+ 	Xend: 矩形的X终点坐标
+ 	Yend: 矩形的Y终点坐标
+ 	Color: 填充的颜色
+ 	Line_width: 矩形四边的宽度，提供默认的8种宽度
+ 	 	typedef enum {
+ 	 	 	 DOT_PIXEL_1X1  = 1,	// 1 x 1
+ 	 	 	 DOT_PIXEL_2X2  , 		// 2 X 2
+ 	 	 	 DOT_PIXEL_3X3  ,		// 3 X 3
+ 	 	 	 DOT_PIXEL_4X4  ,		// 4 X 4
+ 	 	 	 DOT_PIXEL_5X5  , 		// 5 X 5
+ 	 	 	 DOT_PIXEL_6X6  , 		// 6 X 6
+ 	 	 	 DOT_PIXEL_7X7  , 		// 7 X 7
+ 	 	 	 DOT_PIXEL_8X8  , 		// 8 X 8
+ 	 	} DOT_PIXEL;
+ 	Draw_Fill: 填充,是否填充矩形的内部
+ 	 	typedef enum {
+ 	 	 	 DRAW_FILL_EMPTY = 0,
+ 	 	 	 DRAW_FILL_FULL,
+ 	 	} DRAW_FILL;
+</pre>
+<ul><li>画圆:以 (X_Center Y_Center) 为圆心，画一个半径为Radius的圆，可以选择颜色，线的宽度，是否填充圆内部</li></ul>
+<pre>void Paint_DrawCircle(UWORD X_Center, UWORD Y_Center, UWORD Radius, UWORD Color, DOT_PIXEL Line_width, DRAW_FILL Draw_Fill)
+参数：
+ 	X_Center: 圆心的X坐标
+ 	Y_Center: 圆心的Y坐标
+ 	Radius：圆的半径
+ 	Color: 填充的颜色
+ 	Line_width: 圆弧的宽度，提供默认的8种宽度
+ 	 	typedef enum {
+ 	 	 	 DOT_PIXEL_1X1  = 1,	// 1 x 1
+ 	 	 	 DOT_PIXEL_2X2  , 		// 2 X 2
+ 	 	 	 DOT_PIXEL_3X3  ,		// 3 X 3
+ 	 	 	 DOT_PIXEL_4X4  ,		// 4 X 4
+ 	 	 	 DOT_PIXEL_5X5  , 		// 5 X 5
+ 	 	 	 DOT_PIXEL_6X6  , 		// 6 X 6
+ 	 	 	 DOT_PIXEL_7X7  , 		// 7 X 7
+ 	 	 	 DOT_PIXEL_8X8  , 		// 8 X 8
+ 	 	} DOT_PIXEL;
+ 	Draw_Fill: 填充,是否填充圆的内部
+ 	 	typedef enum {
+ 	 	 	 DRAW_FILL_EMPTY = 0,
+ 	 	 	 DRAW_FILL_FULL,
+ 	 	} DRAW_FILL;
+</pre>
+<ul><li>写Ascii字符:在 (Xstart Ystart) 为左顶点，写一个Ascii字符，可以选择Ascii码可视字符字库、字体前景色、字体背景色</li></ul>
+<pre>void Paint_DrawChar(UWORD Xstart, UWORD Ystart, const char Ascii_Char, sFONT* Font, UWORD Color_Foreground, UWORD Color_Background)
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	Ascii_Char：Ascii字符
+ 	Font: Ascii码可视字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font8：5*8的字体
+ 	 	font12：7*12的字体
+ 	 	font16：11*16的字体
+ 	 	font20：14*20的字体
+ 	 	font24：17*24的字体
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>写英文字符串:在 (Xstart Ystart) 为左顶点，写一串英文字符，可以选择Ascii码可视字符字库、字体前景色、字体背景色</li></ul>
+<pre>void Paint_DrawString_EN(UWORD Xstart, UWORD Ystart, const char * pString, sFONT* Font, UWORD Color_Foreground, UWORD Color_Background)
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	pString：字符串，字符串是一个指针
+ 	Font: Ascii码可视字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font8：5*8的字体
+ 	 	font12：7*12的字体
+ 	 	font16：11*16的字体
+ 	 	font20：14*20的字体
+ 	 	font24：17*24的字体
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>写中文字符串：在 (Xstart Ystart) 为左顶点，写一串中文字符，可以选择GB2312编码字符字库、字体前景色、字体背景色；</li></ul>
+<pre>void Paint_DrawString_CN(UWORD Xstart, UWORD Ystart, const char * pString, cFONT* font, UWORD Color_Foreground, UWORD Color_Background)
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	pString：字符串，字符串是一个指针
+ 	Font: GB2312编码字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font12CN：ascii字符字体11*21，中文字体16*21
+ 	 	font24CN：ascii字符字体24*41，中文字体32*41
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>写数字:在 (Xstart Ystart) 为左顶点，写一串数字，可以选择Ascii码可视字符字库、字体前景色、字体背景色</li></ul>
+<pre>void Paint_DrawNum(UWORD Xpoint, UWORD Ypoint, int32_t Nummber, sFONT* Font, UWORD Color_Foreground, UWORD Color_Background)
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	Nummber：显示的数字，这里使用的是32位长的int型保存，可以最大显示到2147483647
+ 	Font: Ascii码可视字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font8：5*8的字体
+ 	 	font12：7*12的字体
+ 	 	font16：11*16的字体
+ 	 	font20：14*20的字体
+ 	 	font24：17*24的字体
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>写带小数的数字:在 (Xstart Ystart) 为左顶点，写一串数字可以带小数的数字，可以选择Ascii码可视字符字库、字体前景色、字体背景色</li></ul>
+<pre>void Paint_DrawFloatNum(UWORD Xpoint, UWORD Ypoint, double Nummber,  UBYTE Decimal_Point,	sFONT* Font,    UWORD Color_Foreground, UWORD  Color_Background);
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	Nummber：显示的数字，这里使用的是double型保存
+        Decimal_Point：显示小数点后几位数字
+ 	Font: Ascii码可视字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font8：5*8的字体
+ 	 	font12：7*12的字体
+ 	 	font16：11*16的字体
+ 	 	font20：14*20的字体
+ 	 	font24：17*24的字体
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>显示时间:在 (Xstart Ystart) 为左顶点，显示一段时间，可以选择Ascii码可视字符字库、字体前景色、字体背景色；</li></ul>
+<pre>void Paint_DrawTime(UWORD Xstart, UWORD Ystart, PAINT_TIME *pTime, sFONT* Font, UWORD Color_Background, UWORD Color_Foreground)
+参数：
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	pTime：显示的时间，这里定义好了一个时间的结构体，只要把时分秒各位数传给参数；
+ 	Font: Ascii码可视字符字库，在Fonts文件夹中提供了以下字体：
+ 	 	font8：5*8的字体
+ 	 	font12：7*12的字体
+ 	 	font16：11*16的字体
+ 	 	font20：14*20的字体
+ 	 	font24：17*24的字体
+ 	Color_Foreground: 字体颜色
+ 	Color_Background: 背景颜色
+</pre>
+<ul><li>显示图像:在 (Xstart Ystart) 为左顶点，显示一个宽为W_Image，高为H_Image的图像；</li></ul>
+<pre>void Paint_DrawImage(const unsigned char *image, UWORD xStart, UWORD yStart, UWORD W_Image, UWORD H_Image)
+参数：
+ 	image:图像地址，指向想要显示的图像信息
+ 	Xstart: 字符的左顶点X坐标
+ 	Ystart: 字体的左顶点Y坐标
+ 	W_Image:图像宽度
+ 	H_Image:图像高度
+</pre>
+</div>
+</div>
+<div class="tabbertab" title="VisionFive2使用教程">
+<div class="wiki-pages blue-color"> 
+<div class="toccolours mw-collapsible">
+<h1><span class="mw-headline" id="VisionFive2"><font color="#36A5E8"><b>VisionFive2</b></font></span></h1>
+<div class="mw-collapsible-content">
+<div class="toccolours mw-collapsible mw-collapsed">
+<h2><span id="适配型号"></span><span class="mw-headline" id=".E9.80.82.E9.85.8D.E5.9E.8B.E5.8F.B7">适配型号</span></h2>
+<div class="mw-collapsible-content">
+<p><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/shop/0.96inch-LCD-Module.htm">0.96inch LCD Module</a><br />
+<a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/shop/1.14inch-LCD-Module.htm">1.14inch LCD Module</a><br />
+<a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/shop/1.28inch-LCD-Module.htm">1.28inch LCD Module</a><br />
+<a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/shop/1.3inch-LCD-Module.htm">1.3inch LCD Module</a><br />
+<a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/shop/1.54inch-LCD-Module.htm">1.54inch LCD Module</a><br />
+<a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/shop/1.8inch-LCD-Module.htm">1.8inch LCD Module</a><br />
+<a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/shop/2inch-LCD-Module.htm">2inch LCD Module</a><br />
+<a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/shop/2.4inch-LCD-Module.htm">2.4inch LCD Module</a><br />
+</p>
+</div>
+<h2><span id="硬件连接"></span><span class="mw-headline" id=".E7.A1.AC.E4.BB.B6.E8.BF.9E.E6.8E.A5">硬件连接</span></h2>
+<p><a href="/wiki/%E6%96%87%E4%BB%B6:0.96-VisionFive2.jpg" class="image"><img alt="0.96-VisionFive2.jpg" src="/w/upload/b/be/0.96-VisionFive2.jpg" decoding="async" loading="lazy" width="960" height="600" /></a>
+</p>
+<table border="1;" style="width:700px;" align="center">
+<caption>VisionFive2连接引脚对应关系
+</caption>
+<tbody><tr style="background:#36A5E8; color:white;" align="center">
+<td>LCD</td>
+<td>VisionFive2 Board物理引脚序号
+</td></tr>
+<tr align="center">
+<td>VCC</td>
+<td>3.3V
+</td></tr>
+<tr align="center">
+<td>GND</td>
+<td>GND
+</td></tr>
+<tr align="center">
+<td>DIN</td>
+<td>19
+</td></tr>
+<tr align="center">
+<td>CLK</td>
+<td>23
+</td></tr>
+<tr align="center">
+<td>CS</td>
+<td>24
+</td></tr>
+<tr align="center">
+<td>DC</td>
+<td>22
+</td></tr>
+<tr align="center">
+<td>RST</td>
+<td>13
+</td></tr>
+<tr align="center">
+<td>BL</td>
+<td>12
+</td></tr></tbody></table>
+<h2><span id="安装对应的库文件"></span><span class="mw-headline" id=".E5.AE.89.E8.A3.85.E5.AF.B9.E5.BA.94.E7.9A.84.E5.BA.93.E6.96.87.E4.BB.B6">安装对应的库文件</span></h2>
+<pre>apt-get install pip
+pip install VisionFive.gpio
+apt-get install python3-numpy
+apt-get install python3-pil
+</pre>
+<h2><span id="下载程序"></span><span class="mw-headline" id=".E4.B8.8B.E8.BD.BD.E7.A8.8B.E5.BA.8F">下载程序</span></h2>
+<pre>sudo apt-get install unzip -y
+sudo wget <a target="_blank" rel="nofollow noreferrer noopener" class="external free" href="https://www.waveshare.net/w/upload/f/fc/LCD_Module_code.zip">https://www.waveshare.net/w/upload/f/fc/LCD_Module_code.zip</a>
+sudo unzip ./LCD_Module_code.zip
+cd LCD_Module_code/VisionFive/python/example/
+</pre>
+<h2><span id="根据您所购买的屏幕运行下面对应的程序"></span><span class="mw-headline" id=".E6.A0.B9.E6.8D.AE.E6.82.A8.E6.89.80.E8.B4.AD.E4.B9.B0.E7.9A.84.E5.B1.8F.E5.B9.95.E8.BF.90.E8.A1.8C.E4.B8.8B.E9.9D.A2.E5.AF.B9.E5.BA.94.E7.9A.84.E7.A8.8B.E5.BA.8F">根据您所购买的屏幕运行下面对应的程序</span></h2>
+<pre>python3 0inch96_LCD_test.py
+python3 1inch14_LCD_test.py
+python3 1inch28_LCD_test.py
+python3 1inch3_LCD_test.py
+python3 1inch54_LCD_test.py
+python3 1inch8_LCD_test.py
+python3 2inch_LCD_test.py
+python3 2inch4_LCD_test.py
+</pre>
+</div></div>
+</div></div>
+</div>
+<div class="tabbertab" title="资料" id="myresources">
+<h1><span id="资料"></span><span class="mw-headline" id=".E8.B5.84.E6.96.99">资料</span></h1>
+<h3><span id="文档"></span><span class="mw-headline" id=".E6.96.87.E6.A1.A3">文档</span></h3>
+<ul><li><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/w/upload/e/e8/1.54inch_LCD_Module_SchDoc.pdf">原理图</a><br /></li>
+<li><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/w/upload/6/64/1_54inch_lcd_module_2d.zip">2D图纸</a></li>
+<li><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/w/upload/9/9b/1_54inch_lcd_module_3d.zip">3D图纸</a></li></ul>
+<h3><span id="程序"></span><span class="mw-headline" id=".E7.A8.8B.E5.BA.8F">程序</span></h3>
+<ul><li><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/w/upload/f/fc/LCD_Module_code.zip">示例程序</a><br /></li></ul>
+<h3><span id="软件"></span><span class="mw-headline" id=".E8.BD.AF.E4.BB.B6">软件</span></h3>
+<ul><li><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/w/upload/c/c6/Zimo221.7z">汉字取模软件</a></li>
+<li><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/w/upload/b/bd/Image2Lcd2.9.zip">Image2Lcd 图片取模软件</a></li>
+<li><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/Image_extraction">图片取模教程</a></li>
+<li><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/wiki/E-Paper_Font_Tutorial">字库取模教程</a></li>
+<li><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://dl.espressif.com/public/flash_download_tool.zip">Flash_download_tool</a></li></ul>
+<h3><span id="数据手册"></span><span class="mw-headline" id=".E6.95.B0.E6.8D.AE.E6.89.8B.E5.86.8C">数据手册</span></h3>
+<ul><li><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net/w/upload/a/ad/ST7789VW.pdf">ST7789VW 手册</a></li></ul>
+</div>
+<div class="tabbertab" title="FAQ" id="myfaq">
+<h1><span class="mw-headline" id="FAQ">FAQ</span></h1>
+</div>
+<div class="tabbertab" title="售后" id="mysupport">
+<h1><span id="售后"></span><span class="mw-headline" id=".E5.94.AE.E5.90.8E">售后</span></h1>
+<p>联系人：黄工<br />
+QQ：2850151199 <br />
+EMAIL：2850151199@qq.com <br />
+电话：0755-83040712 <br />
+微信：扫下方二维码添加 <br />
+<a href="/wiki/%E6%96%87%E4%BB%B6:Service20-Weichat.png" class="image"><img alt="Service20-Weichat.png" src="/w/upload/thumb/a/a3/Service20-Weichat.png/200px-Service20-Weichat.png" decoding="async" loading="lazy" width="200" height="200" srcset="/w/upload/thumb/a/a3/Service20-Weichat.png/300px-Service20-Weichat.png 1.5x, /w/upload/a/a3/Service20-Weichat.png 2x" /></a> <br />
+</p>
+<style data-mw-deduplicate="TemplateStyles:r75601">.mw-parser-output .note{background-position:left 7px top 50%;padding:0.5em 0.5em 0.5em 40px;margin:0.5em 0;overflow:hidden;background-color:#f8f9fa;background-repeat:no-repeat;border:1px solid #ddd}.mw-parser-output .note-inline{display:inline-block;vertical-align:middle}.mw-parser-output .note-info{background-color:#f6efe5;background-size:25px;border-color:#ac6600;padding-left:40px;min-height:28px}.mw-parser-output .note-reminder{background-color:#fff9ea;background-size:25px;border-color:#fc3;min-height:28px}.mw-parser-output .note-warn{background-color:#fff9ea;background-size:25px;border-color:#fc3;min-height:28px}.mw-parser-output .note-error{background-color:#fee7e6;background-size:25px;border-color:#c33;min-height:28px}</style><div role="note" class="note note-error">说明：进行售后服务前，请准备好客户信息（定货单位、定货人等），以供验证</div></div>
+</div></div></div></div></div>
+<!-- 
+NewPP limit report
+Cached time: 20260804070046
+Cache expiry: 86400
+Dynamic content: false
+Complications: []
+CPU time usage: 0.119 seconds
+Real time usage: 0.151 seconds
+Preprocessor visited node count: 921/1000000
+Post‐expand include size: 54385/2097152 bytes
+Template argument size: 1282/2097152 bytes
+Highest expansion depth: 6/40
+Expensive parser function count: 1/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 32856/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%   48.403      1 -total
+ 28.90%   13.989      1 模板:Service20
+ 24.97%   12.088      1 模板:Note
+ 21.72%   10.515      1 模板:LCD_for_rpiuse
+ 14.50%    7.016      1 模板:外围模块
+ 13.42%    6.495      1 模板:1.54inch_Module_connection
+  8.89%    4.304      1 模板:LCD_for_stm32_use
+  8.03%    3.888      1 模板:RPI_C_lib
+  5.30%    2.567      1 模板:LCD_for_rpi_code_description
+  4.58%    2.218      1 模板:LCD_for_arduino_use
+-->
+
+<!-- Saved in parser cache with key ws_wiki_135_cn:pcache:idhash:8469-0!canonical!groups=* and timestamp 20260804070046 and revision id 138801
+ -->
+</div></div>								<div class="printfooter">
+				取自“<a dir="ltr" href="https://www.waveshare.net/w/index.php?title=1.54inch_LCD_Module&amp;oldid=138801">https://www.waveshare.net/w/index.php?title=1.54inch_LCD_Module&amp;oldid=138801</a>”				</div>
+												<div id="catlinks" class="catlinks" data-mw="interface"><div id="mw-normal-catlinks" class="mw-normal-catlinks"><a href="/wiki/%E7%89%B9%E6%AE%8A:%E9%A1%B5%E9%9D%A2%E5%88%86%E7%B1%BB" title="特殊:页面分类">分类</a>：<ul><li><a href="/wiki/%E5%88%86%E7%B1%BB:%E6%A8%A1%E5%9D%97" title="分类:模块">模块</a></li><li><a href="/wiki/%E5%88%86%E7%B1%BB:LCD" title="分类:LCD">LCD</a></li><li><a href="/wiki/%E5%88%86%E7%B1%BB:%E6%98%BE%E7%A4%BA%E5%B1%8F" title="分类:显示屏">显示屏</a></li></ul></div><div id="mw-hidden-catlinks" class="mw-hidden-catlinks mw-hidden-cats-hidden">隐藏分类：<ul><li><a href="/wiki/%E5%88%86%E7%B1%BB:SPI%E6%8E%A5%E5%8F%A3" title="分类:SPI接口">SPI接口</a></li></ul></div></div>												<div class="visualClear"></div>
+							</div>
+			<!-- /bodyContent -->
+		</div>
+						</div>
+				</div>
+			</div>
+			<!-- /content -->
+
+			<!-- sidebar-left -->
+			<div class="sidebar-wrapper sidebar-left-wrapper">
+				<div class="sidebar-container container">
+					<div class="row">
+						<div id="sidebar-left" class="col-md-2 col-md-offset-0">
+							<div id="tweekiTOC"></div>						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /sidebar-left -->
+					<!-- footer -->
+			<div id="footer" role="contentinfo" class="footer container footer-sticky bg-light">
+			<ul id="footer-custom"><li class="dropup"><a href="/w/index.php?title=%E7%89%B9%E6%AE%8A:%E7%94%A8%E6%88%B7%E7%99%BB%E5%BD%95&amp;returnto=1.54inch+LCD+Module" title="我们鼓励您登录；然而，这不是强制性的[o]" accesskey="o">Login / Create Account</a></li><li class="dropup"><a href="INVALID-TITLE:[https://www.waveshare.net Copyright © 2022 深圳市微雪电子有限公司 版权所有]" id="n-.255Bhttps.253A.252F.252Fwww.waveshare.net-copyright-.25C2.25A9-2022-.25E6.25B7.25B1.25E5.259C.25B3.25E5.25B8.2582.25E5.25BE.25AE.25E9.259B.25AA.25E7.2594.25B5.25E5.25AD.2590.25E6.259C.2589.25E9.2599.2590.25E5.2585.25AC.25E5.258F.25B8-.25E7.2589.2588.25E6.259D.2583.25E6.2589.2580.25E6.259C.2589.255D"><a target="_blank" rel="nofollow noreferrer noopener" class="external text" href="https://www.waveshare.net">Copyright © 2022 深圳市微雪电子有限公司 版权所有</a></a></li></ul><div style="clear:both"></div>			</div>
+			<!-- /footer -->
+		
+<script>
+var fbtFancyBoxOptions = {"openEffect":"elastic","closeEffect":"elastic","helpers":{"title":{"type":"inside"}}};
+</script>
+
+<script>(RLQ=window.RLQ||[]).push(function(){mw.config.set({"wgPageParseReport":{"limitreport":{"cputime":"0.119","walltime":"0.151","ppvisitednodes":{"value":921,"limit":1000000},"postexpandincludesize":{"value":54385,"limit":2097152},"templateargumentsize":{"value":1282,"limit":2097152},"expansiondepth":{"value":6,"limit":40},"expensivefunctioncount":{"value":1,"limit":100},"unstrip-depth":{"value":0,"limit":20},"unstrip-size":{"value":32856,"limit":5000000},"timingprofile":["100.00%   48.403      1 -total"," 28.90%   13.989      1 模板:Service20"," 24.97%   12.088      1 模板:Note"," 21.72%   10.515      1 模板:LCD_for_rpiuse"," 14.50%    7.016      1 模板:外围模块"," 13.42%    6.495      1 模板:1.54inch_Module_connection","  8.89%    4.304      1 模板:LCD_for_stm32_use","  8.03%    3.888      1 模板:RPI_C_lib","  5.30%    2.567      1 模板:LCD_for_rpi_code_description","  4.58%    2.218      1 模板:LCD_for_arduino_use"]},"cachereport":{"timestamp":"20260804070046","ttl":86400,"transientcontent":false}}});mw.config.set({"wgBackendResponseTime":274});});</script>	</body>
+</html>

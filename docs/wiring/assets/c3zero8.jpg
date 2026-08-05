@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1.0">
+	<title>404</title>
+	<script type="text/javascript" src="/static/js/require.min.js?v=20260609"></script>
+</head>
+<body>
+	<div id="app" v-cloak>
+		<header-nav></header-nav>
+
+		<div class="nav_con clearfix">
+			<div class="nav_box">
+				<h1 class="logo fl"><a href="/">微雪电子</a></h1>
+				<nav-list></nav-list>
+				<search></search>
+			</div>
+		</div>
+
+        <div class="not-found">
+			<img src="/static/images/slices/404.svg">
+			<p class="not-found-tips">糟糕，出错了！您访问的页面不存在……</p>
+			<a href="/" class="not-found-btn">访问首页</a>
+		</div>
+
+		<footer-link></footer-link>
+	</div>
+	<script>new Vue({el: '#app'})</script>
+</body>
+</html>
