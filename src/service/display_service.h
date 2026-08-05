@@ -84,9 +84,6 @@ public:
     void exitInteractive();
     bool isInteractive() const { return _currentMode == DisplayMode::INTERACTIVE; }
 
-    // 配网引导屏正在显示(状态机据此让出屏幕仲裁权)
-    bool isProvisioningActive() const { return _currentMode == DisplayMode::PROVISIONING; }
-
     void setInteractiveView(uint8_t view);
     uint8_t getInteractiveView() const { return static_cast<uint8_t>(_interactiveView); }
 

@@ -31,14 +31,14 @@ void LANIdleState::onUpdate() {
     _ctx->serial()->update();
     _ctx->display()->update();
 
-    // 配网流程活跃时,屏幕交给配网引导屏,并抑制一切视图切换
+    // 游戏/媒体占用屏幕时继续接收 Codex 状态，但不抢走画面。
+    if (_ctx->display()->isExclusiveDisplayActive()) return;
+
+    // 配网流程活跃时,屏幕交给配网引导屏,并抑制一切视图切换(独占视图除外)
     if (_ctx->wifi()->getProvisioningMode() != WifiConfigService::ProvisioningMode::NONE) {
         _ctx->display()->updateProvisioning();
         return;
     }
-
-    // 游戏/媒体占用屏幕时继续接收 Codex 状态，但不抢走画面。
-    if (_ctx->display()->isExclusiveDisplayActive()) return;
 
     auto status = _ctx->cc()->getStatus();
     if (_ctx->display()->isClaudeStatusEnabled() && shouldShowInfo(status)) {
