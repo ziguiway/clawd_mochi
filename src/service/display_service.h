@@ -292,7 +292,7 @@ private:
     unsigned long _carouselPageStartedMs;
     bool _carouselSuspended;
 
-    // 配网成功确认屏(CONNECTED)展示期间,拒绝被 idle/INFO 视图覆盖
+    // 配网成功确认屏(CONNECTED)展示期间,拒绝被 idle 视图覆盖(INFO 面板有意不被拦截)
     bool provisioningScreenProtected() const;
 
     // Clock / Pomodoro state
