@@ -49,16 +49,21 @@ async function connectWifi() {
             return;
         }
         if (status.connected && status.ssid !== ssid) {
-            if (msg) { msg.textContent = `Could not join ${ssid}. The saved network ${status.ssid} was kept.`; msg.className = 'status-msg error'; }
+            if (msg) { msg.textContent = `Could not join ${ssid}. Reverted to ${status.ssid}.`; msg.className = 'status-msg info'; }
             return;
         }
         if (msg) {
-            const failed = Boolean(status.lastError) || status.retryCount > 0 || status.retryExhausted;
-            msg.textContent = failed
+            // 设备可能正在回退重连旧网络:只有彻底放弃(retryExhausted 或不再验证新凭据且未连接)
+            // 才视为最终失败;否则继续轮询,给旧网络恢复留出时间。
+            const finalFailure = status.retryExhausted
+                || (status.lastError && !status.changingNetwork && !status.connected);
+            msg.textContent = finalFailure
                 ? `${status.lastError || 'Connection failed'}. The previous saved network was not overwritten.`
-                : `${status.phase || 'Connecting'}...`;
-            msg.className = failed ? 'status-msg error' : 'status-msg info';
-            if (failed && !status.changingNetwork) return;
+                : (status.lastError
+                    ? `${status.lastError}. Restoring the previous network...`
+                    : `${status.phase || 'Connecting'}...`);
+            msg.className = finalFailure ? 'status-msg error' : 'status-msg info';
+            if (finalFailure) return;
         }
     }
     if (msg) {
