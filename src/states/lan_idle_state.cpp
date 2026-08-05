@@ -12,6 +12,10 @@ bool shouldShowInfo(ClaudeCodeService::Status status) {
 }
 
 void LANIdleState::onEnter() {
+    // 配网引导(AP/连接中/重试/成功确认)优先占用屏幕
+    if (_ctx->wifi()->getProvisioningMode() != WifiConfigService::ProvisioningMode::NONE) {
+        return;
+    }
     if (_ctx->wifi()->isConnected()) {
         _ctx->display()->switchToIdleDisplay();
     } else {
@@ -26,6 +30,12 @@ void LANIdleState::onUpdate() {
     _ctx->cc()->update();
     _ctx->serial()->update();
     _ctx->display()->update();
+
+    // 配网流程活跃时,屏幕交给配网引导屏,并抑制一切视图切换
+    if (_ctx->wifi()->getProvisioningMode() != WifiConfigService::ProvisioningMode::NONE) {
+        _ctx->display()->updateProvisioning();
+        return;
+    }
 
     // 游戏/媒体占用屏幕时继续接收 Codex 状态，但不抢走画面。
     if (_ctx->display()->isExclusiveDisplayActive()) return;

@@ -27,6 +27,12 @@ void LANWorkingState::onUpdate() {
     _ctx->serial()->update();
     _ctx->display()->update();
 
+    // 配网引导屏优先(例如 WiFi 重试打满回 AP,或换网验证中)
+    if (_ctx->wifi()->getProvisioningMode() != WifiConfigService::ProvisioningMode::NONE) {
+        _ctx->display()->updateProvisioning();
+        return;
+    }
+
     // Web 独占视图优先，退出后再按最新 Codex 状态恢复面板。
     if (_ctx->display()->isExclusiveDisplayActive()) return;
 
