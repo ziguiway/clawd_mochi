@@ -24,7 +24,7 @@ export default function StreamPage({ devices, state, frameB64, onRefreshDevices,
   const [manualIp, setManualIp] = React.useState("");
   const [mode, setMode] = React.useState<Mode>("cursor");
   const [fps, setFps] = React.useState(8);
-  const [quality, setQuality] = React.useState(50);
+  const [quality, setQuality] = React.useState(70);
   const [displays, setDisplays] = React.useState<DisplayInfo[]>([]);
   const [sourceId, setSourceId] = React.useState<string | null>(null);
   const [permission, setPermission] = React.useState<string>("granted");
@@ -116,7 +116,7 @@ export default function StreamPage({ devices, state, frameB64, onRefreshDevices,
           </div>
           <div className="param-row">
             <label>{t("stream.jpegQuality")}</label>
-            <input type="range" min={30} max={80} value={quality} disabled={running}
+            <input type="range" min={30} max={90} value={quality} disabled={running}
                    onChange={e => setQuality(+e.target.value)} />
             <span className="param-val">{quality}</span>
           </div>

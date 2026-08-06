@@ -60,7 +60,7 @@ def grab_frame(sct, monitor, mode: str, quality: int) -> bytes:
         img = img.crop((left, top, left + side, top + side)).resize(
             (FRAME_W, FRAME_H), Image.LANCZOS)
     buf = io.BytesIO()
-    img.save(buf, "JPEG", quality=quality)
+    img.save(buf, "JPEG", quality=quality, subsampling=0, optimize=True)
     return buf.getvalue()
 
 
@@ -68,7 +68,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--ip", required=True, help="Mochi 设备 IP")
     ap.add_argument("--fps", type=float, default=8.0)
-    ap.add_argument("--quality", type=int, default=50)
+    ap.add_argument("--quality", type=int, default=70)
     ap.add_argument("--mode", choices=["cursor", "full", "region"], default="cursor")
     ap.add_argument("--duration", type=float, default=0, help="秒, 0=直到 Ctrl+C")
     args = ap.parse_args()

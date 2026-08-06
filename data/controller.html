@@ -1106,16 +1106,14 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
 <script src="/gif_reader.js"></script>
 <script src="/gif_encoder.js"></script>
 
-let streamOpen=false,streamTimer=null;
+<script src="/media.js"></script>
+<script>let streamOpen=false,streamTimer=null;
 async function toggleStreamPanel(){if(isBusy||termOpen||canvasOpen)return;if(activeView===19)await leaveMediaForView();streamOpen=!streamOpen;document.getElementById('streamWrap').classList.toggle('open',streamOpen);document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',streamOpen&&parseInt(b.dataset.v)===21));if(streamOpen){await pollStreamStatus();streamTimer=setInterval(pollStreamStatus,2000);}else if(streamTimer){clearInterval(streamTimer);streamTimer=null;}}
 async function closeStreamPanel(){streamOpen=false;if(streamTimer){clearInterval(streamTimer);streamTimer=null;}document.getElementById('streamWrap').classList.remove('open');document.querySelectorAll('.vbtn').forEach(b=>b.classList.remove('active'));}
 async function enterStream(){try{const r=await fetch('/stream/enter',{method:'POST'});const j=await r.json();if(!r.ok){toast('stream enter failed: low memory',false);}else{activeView=21;toast('stream mode on');}renderStreamState(j);}catch(e){toast('stream enter failed',false);}}
 async function exitStream(){try{const r=await fetch('/stream/exit',{method:'POST'});const j=await r.json();activeView=null;renderStreamState(j);toast('stream off');}catch(e){toast('stream exit failed',false);}}
 async function pollStreamStatus(){try{const r=await fetch('/stream/status',{cache:'no-store'});renderStreamState(await r.json());}catch(e){}}
 function renderStreamState(j){const el=document.getElementById('streamState');if(!el)return;if(!j.active){el.textContent='OFF';}else if(j.connected){el.textContent='STREAMING '+j.fps.toFixed(1)+' FPS';}else{el.textContent='WAITING PC';}const enterBtn=document.getElementById('streamEnter'),exitBtn=document.getElementById('streamExit');if(enterBtn)enterBtn.disabled=!!j.active;if(exitBtn)exitBtn.disabled=!j.active;}
-
-<script src="/media.js"></script>
-<script>
 let activeView=0,termOpen=false,canvasOpen=false,arcadeOpen=false,dinoOpen=false,dinoPollTimer=null,dinoJumpPending=false,sokobanOpen=false,sokobanMovePending=false,sokobanStateData=null,arcadeGameOpen='',arcadeGameState=null,arcadeGamePending=false,arcadeGamePollTimer=null,breakoutPositionTimer=null,wifiSetupOpen=false,wifiConnecting=false,lastWifiStatus=null,blOn=true,claudeStatusOn=true,displayTheme=1,fontStyle='pixel',isBusy=false,drawing=false,initialLoadComplete=false;
 let timetable={schemaVersion:1,school:'GDUFS',termStart:'',courses:[]},editingCourse=-1,timetableStatus=null;
 let importSource='',importDraft=null;

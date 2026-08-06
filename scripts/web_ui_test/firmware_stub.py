@@ -29,6 +29,11 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
     media_stop_count = 0
     media_upload_bytes = 0
     media_animation_bytes = 0
+    stream_status: dict[str, Any] = {
+        "active": False, "connected": False, "fps": 0.0, "frames": 0,
+    }
+    stream_enter_count = 0
+    stream_exit_count = 0
     assets: list[dict[str, Any]] = [dict(item) for item in INITIAL_ASSETS]
     market_assets: list[dict[str, Any]] = [
         dict(item) for item in INITIAL_MARKET_ASSETS
@@ -205,6 +210,8 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
+        elif path == "/stream/status":
+            self.send_json(self.stream_status)
         elif path == "/crypto/config":
             self.send_json(
                 {
@@ -400,6 +407,20 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         args = urllib.parse.parse_qs(parsed.query)
+        if path == "/stream/enter":
+            self.__class__.stream_enter_count += 1
+            self.__class__.stream_status = {
+                "active": True, "connected": False, "fps": 0.0, "frames": 0,
+            }
+            self.send_json(self.stream_status)
+            return
+        if path == "/stream/exit":
+            self.__class__.stream_exit_count += 1
+            self.__class__.stream_status = {
+                "active": False, "connected": False, "fps": 0.0, "frames": 0,
+            }
+            self.send_json(self.stream_status)
+            return
         if path == "/cc/stats/reset":
             length = int(self.headers.get("Content-Length", "0"))
             if length:

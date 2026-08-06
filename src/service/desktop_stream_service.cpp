@@ -7,6 +7,7 @@
 #include "../config/cfg_display.h"
 #include "../utils/logger.h"
 #include "../utils/memory_monitor.h"
+#include "wifi_config_service.h"
 
 namespace {
 // TJpg_Decoder 回调需要静态上下文;同时只允许一个投屏服务实例(固件单例持有)。
@@ -88,7 +89,9 @@ bool DesktopStreamService::begin() {
 
     s_tft = _tft;
     TJpgDec.setJpgScale(1);
-    TJpgDec.setSwapBytes(true);
+    // ESP32 上 Adafruit_SPITFT::writePixels() 已将原生 RGB565 字序转换为
+    // 屏幕所需的大端 SPI 字节序。此处再次交换会破坏颜色位并产生彩色斑点。
+    TJpgDec.setSwapBytes(false);
     TJpgDec.setCallback(streamJpegOutput);
 
     if (!_server) {
@@ -97,6 +100,9 @@ bool DesktopStreamService::begin() {
     if (_server) {
         _server->begin();
         _server->setNoDelay(true);
+    }
+    if (WifiConfigService::current()) {
+        WifiConfigService::current()->setHighThroughputMode(true);
     }
     LOG_INFO("Stream", "桌面投屏服务启动 端口: %d", CFG_STREAM_TCP_PORT);
     return true;
@@ -112,6 +118,9 @@ void DesktopStreamService::end() {
         _server = nullptr;
     }
     releaseBuffer();
+    if (WifiConfigService::current()) {
+        WifiConfigService::current()->setHighThroughputMode(false);
+    }
     if (s_tft == _tft) s_tft = nullptr;
     _active = false;
     _bufferReady = false;
@@ -204,7 +213,11 @@ bool DesktopStreamService::receiveOneFrame() {
     if (!readExact(_jpegBuffer, jpegLength, CFG_STREAM_FRAME_READ_TIMEOUT_MS)) {
         return false;
     }
+    // 与原版无线屏固件一致:一帧内的所有 JPEG MCU 共用一次 SPI 事务。
+    // 避免每个 16x16 块重复切换 CS/事务，显著降低刷屏开销和块间闪烁。
+    _tft->beginRgb565Batch();
     const JRESULT result = TJpgDec.drawJpg(0, 0, _jpegBuffer, jpegLength);
+    _tft->endRgb565Batch();
     if (result != JDR_OK) {
         LOG_WARN("Stream", "JPEG 解码失败: %d", static_cast<int>(result));
         return false;
@@ -220,10 +233,10 @@ void DesktopStreamService::dropClient(const char* reason) {
 }
 
 void DesktopStreamService::drawWaitingPage() {
-    _tft->fillScreen(COLOR_BLACK);
-    _tft->drawTextCentered(84, "Desktop Stream", COLOR_ORANGE, COLOR_BLACK, 2);
-    _tft->drawTextCentered(118, "Waiting for PC...", COLOR_WHITE, COLOR_BLACK, 1);
-    _tft->drawTextCentered(140, "Port 3333", COLOR_GRAY, COLOR_BLACK, 1);
+    _tft->fillScreen(COLOR_ORANGE);
+    _tft->drawTextCentered(84, "Desktop Stream", COLOR_WHITE, COLOR_ORANGE, 2);
+    _tft->drawTextCentered(118, "Waiting for PC...", COLOR_WHITE, COLOR_ORANGE, 1);
+    _tft->drawTextCentered(140, "Port 3333", COLOR_WHITE, COLOR_ORANGE, 1);
 }
 
 void DesktopStreamService::drawOutOfMemoryPage() {

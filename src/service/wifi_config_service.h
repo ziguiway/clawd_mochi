@@ -31,6 +31,9 @@ public:
     String getSSID();
     String getSavedSSID() const { return _ssid; }
 
+    // 投屏等持续低延迟传输期间关闭 WiFi 省电并提高发射功率。
+    void setHighThroughputMode(bool enabled);
+
     ProvisioningMode getProvisioningMode() const { return _provMode; }
     const char* getProvisioningMessage() const;
     unsigned long getRetryRemainingMs() const;  // RETRY_WAIT 时距下次自动重连的毫秒数
@@ -75,6 +78,7 @@ private:
     wifi_power_t _currentTxPower;
     bool _wifiSleepEnabled;
     bool _radioProfileInitialized;
+    bool _highThroughputMode;
     Preferences _credentialPrefs;
     bool _credentialPrefsReady;
     String _pendingSsid;

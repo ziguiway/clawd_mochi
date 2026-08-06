@@ -14,6 +14,8 @@ const FRAME_H = 240;
 const STREAM_PORT = 3333;
 const DISCOVERY_PORT = 4211;
 const MAGIC = Buffer.from("ESPF");
+const MAX_JPEG_BYTES = 32 * 1024;
+const CURSOR_CROP_DIP = 240;
 
 let win = null;
 let tray = null;
@@ -29,7 +31,7 @@ const streamer = {
   sourceId: null,
   mode: "cursor",          // cursor | full | region
   fps: 8,
-  quality: 50,
+  quality: 70,
   frames: 0,
   startedAt: 0,
   reconnectDelay: 1000,
@@ -75,7 +77,9 @@ async function captureJpeg() {
     const pt = screen.getCursorScreenPoint(); // DIP
     const relX = Math.round((pt.x - target.bounds.x) * scale);
     const relY = Math.round((pt.y - target.bounds.y) * scale);
-    const side = Math.min(480 * scale, thumbW, thumbH);
+    // 截取 240x240 逻辑点区域；Retina 屏可保留源细节，避免把过大的
+    // 480 DIP 画面压到 240 像素后导致文字无法辨认。
+    const side = Math.min(CURSOR_CROP_DIP * scale, thumbW, thumbH);
     const left = Math.max(0, Math.min(relX - side / 2, thumbW - side));
     const top = Math.max(0, Math.min(relY - side / 2, thumbH - side));
     image = image.extract({ left, top, width: side, height: side })
@@ -96,11 +100,31 @@ async function captureJpeg() {
     image = image.extract({ left, top, width: side, height: side })
                  .resize(FRAME_W, FRAME_H, { kernel: "lanczos3" });
   }
-  return image.jpeg({ quality: streamer.quality }).toBuffer();
+  image = image.sharpen(0.6);
+
+  // 默认 4:2:0 优先保证 C3 解码帧率；质量 80 以上切换到 4:4:4，
+  // 供需要彩色文字边缘清晰度的场景使用。Sharp 不支持 4:2:2。
+  const requestedQuality = Math.max(30, Math.min(90, streamer.quality));
+  const requestedSubsampling = requestedQuality >= 80 ? "4:4:4" : "4:2:0";
+  const attempts = [
+    { quality: requestedQuality, chromaSubsampling: requestedSubsampling },
+    { quality: Math.max(30, requestedQuality - 10), chromaSubsampling: "4:2:0" },
+    { quality: Math.max(30, requestedQuality - 20), chromaSubsampling: "4:2:0" }
+  ];
+  for (const options of attempts) {
+    const jpeg = await image.clone().jpeg({
+      ...options,
+      progressive: false,
+      optimiseCoding: true
+    }).toBuffer();
+    if (jpeg.length <= MAX_JPEG_BYTES) return jpeg;
+  }
+  throw new Error(`JPEG frame exceeds ${MAX_JPEG_BYTES} bytes`);
 }
 
 async function streamTick() {
   if (!streamer.running || !streamer.socket) return;
+  const startedAt = Date.now();
   try {
     const jpeg = await captureJpeg();
     const header = Buffer.alloc(8);
@@ -113,12 +137,18 @@ async function streamTick() {
     if (win) win.webContents.send("stream:frame", jpeg.toString("base64"));
   } catch (e) {
     console.error("capture failed", e);
+  } finally {
+    if (streamer.running && streamer.socket) {
+      const interval = Math.round(1000 / streamer.fps);
+      const delay = Math.max(0, interval - (Date.now() - startedAt));
+      streamer.timer = setTimeout(streamTick, delay);
+    }
   }
 }
 
 function scheduleTick() {
-  clearInterval(streamer.timer);
-  streamer.timer = setInterval(streamTick, Math.round(1000 / streamer.fps));
+  clearTimeout(streamer.timer);
+  streamer.timer = setTimeout(streamTick, 0);
 }
 
 async function startStreaming(opts) {
@@ -126,7 +156,7 @@ async function startStreaming(opts) {
   streamer.ip = opts.ip;
   streamer.mode = opts.mode || "cursor";
   streamer.fps = opts.fps || 8;
-  streamer.quality = opts.quality || 50;
+  streamer.quality = opts.quality || 70;
   streamer.sourceId = opts.sourceId || null;
   streamer.region = opts.region || null;
   await httpPost(streamer.ip, "/stream/enter");
@@ -149,7 +179,7 @@ function connectSocket() {
   });
   s.on("error", () => {});
   s.on("close", () => {
-    clearInterval(streamer.timer);
+    clearTimeout(streamer.timer);
     if (streamer.running) {
       // 指数退避重连
       streamer.reconnectTimer = setTimeout(() => {
@@ -162,7 +192,7 @@ function connectSocket() {
 
 async function stopStreaming(silent) {
   streamer.running = false;
-  clearInterval(streamer.timer);
+  clearTimeout(streamer.timer);
   clearTimeout(streamer.reconnectTimer);
   if (streamer.socket) { streamer.socket.destroy(); streamer.socket = null; }
   if (streamer.ip && !silent) {

@@ -11,6 +11,7 @@ WifiConfigService::WifiConfigService()
     , _lastAttemptEndMs(0), _connectedSinceMs(0), _lastPowerAdjustMs(0)
     , _filteredRssi(0), _currentTxPower(WIFI_POWER_19_5dBm)
     , _wifiSleepEnabled(true), _radioProfileInitialized(false)
+    , _highThroughputMode(false)
     , _credentialPrefsReady(false), _credentialChangePending(false)
     , _connectPhase(ConnectPhase::ASSOCIATING), _lastDisconnectReason(0)
     , _lastError(""), _retryCount(0), _retryExhausted(false)
@@ -447,6 +448,10 @@ void WifiConfigService::applyConnectingRadioProfile() {
 }
 
 void WifiConfigService::updateConnectedRadioProfile() {
+    if (_highThroughputMode) {
+        setRadioProfile(WIFI_POWER_19_5dBm, false, "stream", WiFi.RSSI());
+        return;
+    }
     unsigned long now = millis();
     if (now - _connectedSinceMs < CFG_WIFI_POWER_SETTLE_MS) return;
     if (_lastPowerAdjustMs != 0
@@ -472,6 +477,19 @@ void WifiConfigService::updateConnectedRadioProfile() {
     } else {
         // 弱信号时保持最高功率和常醒,避免为了省电牺牲稳定性
         setRadioProfile(WIFI_POWER_19_5dBm, false, "weak", _filteredRssi);
+    }
+}
+
+void WifiConfigService::setHighThroughputMode(bool enabled) {
+    if (_highThroughputMode == enabled) return;
+    _highThroughputMode = enabled;
+    _lastPowerAdjustMs = 0;
+    if (!_connected) return;
+
+    if (enabled) {
+        setRadioProfile(WIFI_POWER_19_5dBm, false, "stream", WiFi.RSSI());
+    } else {
+        updateConnectedRadioProfile();
     }
 }
 bool WifiConfigService::isSerialMode() const {

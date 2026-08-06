@@ -16,6 +16,7 @@ from .cases.games import run_game_arcade_flow
 from .cases.market import run_market_flow
 from .cases.media import run_media_flow
 from .cases.cc_stats import run_cc_stats_flow
+from .cases.desktop_stream import run_desktop_stream_flow
 from .cases.productivity import run_salary_flow, run_timetable_import_flow
 from .cases.settings import (
     run_carousel_flow,
@@ -152,6 +153,11 @@ def main() -> int:
             "nightBrightness": 25,
         }
         FirmwareStubHandler.prefs_update_count = 0
+        FirmwareStubHandler.stream_status = {
+            "active": False, "connected": False, "fps": 0.0, "frames": 0,
+        }
+        FirmwareStubHandler.stream_enter_count = 0
+        FirmwareStubHandler.stream_exit_count = 0
         FirmwareStubHandler.dino_state = {
             "active": False,
             "state": "ready",
@@ -306,6 +312,11 @@ def main() -> int:
                     page, stub_mode=not bool(args.device_url)
                 )
                 run_media_flow(page, stub_mode=not bool(args.device_url))
+                run_desktop_stream_flow(
+                    page,
+                    stub_mode=not bool(args.device_url),
+                    device_url=args.device_url,
+                )
                 run_game_arcade_flow(page, stub_mode=not bool(args.device_url))
                 run_market_flow(page, stub_mode=not bool(args.device_url))
                 if device_logs_before is not None:
