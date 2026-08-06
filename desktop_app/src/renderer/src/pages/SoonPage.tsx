@@ -1,23 +1,25 @@
 import React from "react";
+import { useI18n, type MsgKey } from "../i18n/I18nContext";
+import { NAV } from "../lib/nav";
 
-const COPY: Record<string, { art: string; title: string; desc: string }> = {
-  expressions: { art: "◉ ‿ ◉", title: "Expressions", desc: "8 pixel faces, manual / auto mode and blink speed — coming in the web-console migration." },
-  clock: { art: "◷", title: "Clock & Pomodoro", desc: "Coming soon." },
-  weather: { art: "☁", title: "Weather", desc: "Coming soon." },
-  market: { art: "↗", title: "Stocks & Crypto", desc: "Coming soon." },
-  stats: { art: "∑", title: "Focus Stats", desc: "Coming soon." },
-  timetable: { art: "☷", title: "Timetable", desc: "Coming soon." },
-  arcade: { art: "▶", title: "Arcade", desc: "6 games — coming soon." },
-  media: { art: "▤", title: "Media Cast", desc: "Images & GIF — coming soon." }
+const ARTS: Record<string, string> = {
+  expressions: "◉ ‿ ◉", clock: "◷", weather: "☁", market: "↗",
+  stats: "∑", timetable: "☷", arcade: "▶", media: "▤",
+};
+const DESC_KEYS: Record<string, MsgKey> = {
+  expressions: "soon.expressionsDesc",
+  arcade: "soon.arcadeDesc",
+  media: "soon.mediaDesc",
 };
 
 export default function SoonPage({ id }: { id: string }) {
-  const c = COPY[id] ?? { art: "◉_◉", title: id, desc: "Coming soon." };
+  const { t } = useI18n();
+  const page = NAV.flatMap(g => g.pages).find(p => p.id === id);
   return (
     <section className="page active soon-page">
-      <div className="soon-art">{c.art}</div>
-      <h2>{c.title}</h2>
-      <p>{c.desc}</p>
+      <div className="soon-art">{ARTS[id] ?? "◉_◉"}</div>
+      <h2>{page ? t(page.labelKey as MsgKey) : id}</h2>
+      <p>{t(DESC_KEYS[id] ?? "soon.comingSoon")}</p>
     </section>
   );
 }

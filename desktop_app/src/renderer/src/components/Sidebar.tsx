@@ -1,5 +1,6 @@
 import React from "react";
 import { NAV } from "../lib/nav";
+import { useI18n, type MsgKey } from "../i18n/I18nContext";
 
 interface Props {
   page: string;
@@ -9,27 +10,28 @@ interface Props {
 }
 
 export default function Sidebar({ page, onNavigate, deviceLabel, streaming }: Props) {
+  const { t } = useI18n();
   return (
     <aside className="sidebar">
       <div className="brand">
         <PixelEyes />
         <div className="brand-txt">
           <span className="brand-name">MOCHI</span>
-          <span className="brand-sub">DESKTOP CONSOLE</span>
+          <span className="brand-sub">{t("app.subtitle")}</span>
         </div>
       </div>
       <nav className="nav">
         {NAV.map(group => (
-          <div className="nav-group" key={group.label}>
-            <div className="nav-label">{group.label}</div>
+          <div className="nav-group" key={group.labelKey}>
+            <div className="nav-label">{t(group.labelKey as MsgKey)}</div>
             {group.pages.map(p => (
               <button
                 key={p.id}
                 className={"nav-item" + (page === p.id ? " active" : "")}
                 onClick={() => onNavigate(p.id)}
               >
-                <span className="nav-ico">{p.icon}</span> {p.label}
-                {p.soon && <span className="nav-soon">soon</span>}
+                <span className="nav-ico">{p.icon}</span> {t(p.labelKey as MsgKey)}
+                {p.soon && <span className="nav-soon">{t("app.soon")}</span>}
                 {p.id === "stream" && streaming && <span className="nav-dot on" />}
               </button>
             ))}
@@ -39,7 +41,7 @@ export default function Sidebar({ page, onNavigate, deviceLabel, streaming }: Pr
       <div className="sidebar-foot">
         <span className="dev-pill">
           <span className={"dev-dot" + (deviceLabel ? "" : " off")} />
-          {deviceLabel ?? "no device"}
+          {deviceLabel ?? t("app.noDevice")}
         </span>
       </div>
     </aside>

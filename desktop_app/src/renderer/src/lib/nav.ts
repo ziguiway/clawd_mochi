@@ -1,28 +1,29 @@
 // 导航分组镜像固件 InteractiveView 枚举,后续迁入网页功能=加页面模块。
-export interface NavPage { id: string; label: string; icon: string; soon?: boolean; }
-export interface NavGroup { label: string; pages: NavPage[]; }
+// label 为 i18n key(nav.*),由 Sidebar 通过 useI18n 翻译。
+export interface NavPage { id: string; labelKey: string; icon: string; soon?: boolean; }
+export interface NavGroup { labelKey: string; pages: NavPage[]; }
 
 export const NAV: NavGroup[] = [
-  { label: "STREAM", pages: [
-    { id: "stream", label: "Desktop Stream", icon: "▣" },
+  { labelKey: "nav.stream", pages: [
+    { id: "stream", labelKey: "nav.desktopStream", icon: "▣" },
   ]},
-  { label: "FACE", pages: [
-    { id: "expressions", label: "Expressions", icon: "◉", soon: true },
+  { labelKey: "nav.face", pages: [
+    { id: "expressions", labelKey: "nav.expressions", icon: "◉", soon: true },
   ]},
-  { label: "TIME", pages: [
-    { id: "clock", label: "Clock & Pomodoro", icon: "◷", soon: true },
+  { labelKey: "nav.time", pages: [
+    { id: "clock", labelKey: "nav.clock", icon: "◷", soon: true },
   ]},
-  { label: "INFO PANELS", pages: [
-    { id: "weather", label: "Weather", icon: "☁", soon: true },
-    { id: "market", label: "Stocks & Crypto", icon: "↗", soon: true },
-    { id: "stats", label: "Focus Stats", icon: "∑", soon: true },
-    { id: "timetable", label: "Timetable", icon: "☷", soon: true },
+  { labelKey: "nav.info", pages: [
+    { id: "weather", labelKey: "nav.weather", icon: "☁", soon: true },
+    { id: "market", labelKey: "nav.market", icon: "↗", soon: true },
+    { id: "stats", labelKey: "nav.stats", icon: "∑", soon: true },
+    { id: "timetable", labelKey: "nav.timetable", icon: "☷", soon: true },
   ]},
-  { label: "PLAY", pages: [
-    { id: "arcade", label: "Arcade", icon: "▶", soon: true },
-    { id: "media", label: "Media Cast", icon: "▤", soon: true },
+  { labelKey: "nav.play", pages: [
+    { id: "arcade", labelKey: "nav.arcade", icon: "▶", soon: true },
+    { id: "media", labelKey: "nav.media", icon: "▤", soon: true },
   ]},
-  { label: "DEVICE", pages: [
-    { id: "system", label: "System", icon: "⚙" },
+  { labelKey: "nav.device", pages: [
+    { id: "system", labelKey: "nav.system", icon: "⚙" },
   ]},
 ];

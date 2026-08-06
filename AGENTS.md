@@ -22,7 +22,7 @@ A snapshot of what the firmware already does, so a new session does not have to 
 
 **Games**: 6 under `src/view/`, all `IArcadeGame`, full-color via 16-row `ArcadeCanvas` strip buffer; Dino/Sokoban 1-bit via shared `GameRenderBuffer`. Dino + Sokoban have dedicated endpoints; the other four use the generic arcade API.
 
-**Desktop app** (`desktop_app/`): Electron + React 18 + Vite + TypeScript cross-platform (macOS/Windows) PC companion console — UDP 4211 discovery, screen capture (mouse-follow crop / full-screen / fixed region), sharp JPEG encoding, TCP 3333 `ESPF` framing, tray, reconnect. `desktop_app/design/` holds the approved static HTML design prototype. Packaged with electron-builder (`npm run pack:mac` / `pack:win`); not signed.
+**Desktop app** (`desktop_app/`): Electron + React 18 + Vite + TypeScript cross-platform (macOS/Windows) PC companion console — UDP 4211 discovery, screen capture (mouse-follow crop / full-screen / fixed region), sharp JPEG encoding, TCP 3333 `ESPF` framing, tray, reconnect. i18n via JSON locale bundles + React context (`i18n/`, zh/en; add a bundle and register it in `I18nContext.tsx` to add a language). Theming via CSS custom properties driven by `<html data-theme>` (`theme/ThemeContext.tsx`): `system` (follows `prefers-color-scheme`) plus 5 device-matching palettes — orange-black(dark), orange-white(light), dark-orange, mint, pink. Both persisted in localStorage. `desktop_app/design/` holds the approved static HTML design prototype. Packaged with electron-builder (`npm run pack:mac` / `pack:win`); not signed. Subject to the **Feature Parity Rule** below.
 
 **OTA**: full pipeline — remote manifest check (daily 03:30), version compare, firmware + LittleFS download with SHA256 verify, manual upload. `cfg_ota.h` notes `CFG_OTA_ROOT_CA` is empty (not pinned) and `CFG_OTA_MANIFEST_URL` is still the `example.com` placeholder.
 
@@ -157,6 +157,20 @@ Six arcade games (`dino`, `sokoban`, `tetris`, `snake`, `game_2048`, `breakout`)
 ### Claude Code Hook
 
 `scripts/cc_hook.py` is a Python script installed into Claude Code's settings as a hook. It broadcasts session events to all discovered Clawd Mochi devices over UDP port 4210 (LAN-only — the serial path was removed to avoid the ESP32-C3 USB-CDC reset on Windows). `scripts/cc_serial_daemon.py` is an optional Windows daemon that forwards local UDP to serial for users who still want the serial path. Install the hook with `scripts/install_claude_hook.sh` (or `.bat`/`.py`).
+
+## Feature Parity Rule (web controller ⇄ desktop app)
+
+The Electron desktop console (`desktop_app/`) is the PC-side counterpart of the embedded web controller (`data/controller.html`). **Any new device-control feature added to the web controller must also be added to the desktop app, and vice versa** — the two are user-facing surfaces of the same device API.
+
+When adding such a feature, do all of the following in the same change:
+
+- expose/extend the firmware REST endpoint and use it from both clients;
+- desktop app: add the page module under `desktop_app/src/renderer/src/pages/`, register it in `lib/nav.ts` (navigation groups mirror the firmware `InteractiveView` enum), and extend `lib/DeviceClient.ts` instead of ad-hoc `fetch` calls;
+- add the new UI strings to **all** locale bundles (`i18n/zh.ts`, `i18n/en.ts`) — never hardcode UI text in components; the key set must stay identical across bundles (type-checked via `Messages`);
+- keep the desktop UI theme-safe: reference only the CSS custom properties defined in `styles.css` (no hardcoded hex colors), so the feature renders correctly in every `data-theme`;
+- run the web UI regression (`uv run scripts/test_web_ui.py`) plus the desktop `npm run typecheck && npm run build`.
+
+The only intentional exceptions are platform-exclusive capabilities (e.g. screen capture / tray in the desktop app, LittleFS-served pages in the web controller).
 
 ## Key Conventions
 

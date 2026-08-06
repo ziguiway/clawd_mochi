@@ -3,7 +3,9 @@
    Brand orange is the design-target #fb6b10 (never the device-
    compensated #aa4818). Pixel accents are decoration only —
    controls stay efficient. */
-:root {
+/* 主题令牌: data-theme 驱动。新增主题=复制一个变量块改色即可。
+   system 由下方 media query 映射到 dark/light。 */
+:root, [data-theme="dark"] {
   --bg: #14100c;
   --bg-panel: #1c1712;
   --bg-raised: #241d15;
@@ -19,10 +21,83 @@
   --font: "SF Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
   --radius: 10px;
 }
+[data-theme="light"] {
+  --bg: #f5ede0;
+  --bg-panel: #fffaf1;
+  --bg-raised: #ffffff;
+  --line: #e3cfa8;
+  --line-soft: #ecdcc0;
+  --orange: #e85f0a;
+  --orange-dim: #b34c0d;
+  --orange-glow: rgba(232, 95, 10, 0.14);
+  --text: #33231a;
+  --text-dim: #77614d;
+  --text-faint: #a08a72;
+  --green: #3f8f2f;
+}
+[data-theme="dark-orange"] {
+  --bg: #2a1608;
+  --bg-panel: #371e0c;
+  --bg-raised: #462611;
+  --line: #6b4020;
+  --line-soft: #553218;
+  --orange: #ff8a2a;
+  --orange-dim: #d96b1d;
+  --orange-glow: rgba(255, 138, 42, 0.18);
+  --text: #ffe8d1;
+  --text-dim: #c99f74;
+  --text-faint: #96704c;
+  --green: #9fe070;
+}
+[data-theme="mint"] {
+  --bg: #0f1f1a;
+  --bg-panel: #152923;
+  --bg-raised: #1d352d;
+  --line: #2c4f42;
+  --line-soft: #224034;
+  --orange: #4fd6a4;
+  --orange-dim: #33a87c;
+  --orange-glow: rgba(79, 214, 164, 0.16);
+  --text: #e4f5ec;
+  --text-dim: #8fb3a4;
+  --text-faint: #5f8073;
+  --green: #8fd460;
+}
+[data-theme="pink"] {
+  --bg: #241118;
+  --bg-panel: #2f1820;
+  --bg-raised: #3d202b;
+  --line: #5c3242;
+  --line-soft: #492634;
+  --orange: #ff7ba9;
+  --orange-dim: #d85c8a;
+  --orange-glow: rgba(255, 123, 169, 0.16);
+  --text: #ffe9f1;
+  --text-dim: #c39aab;
+  --text-faint: #8f6b7a;
+  --green: #9fe070;
+}
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] {
+    --bg: #f5ede0; --bg-panel: #fffaf1; --bg-raised: #ffffff;
+    --line: #e3cfa8; --line-soft: #ecdcc0;
+    --orange: #e85f0a; --orange-dim: #b34c0d; --orange-glow: rgba(232, 95, 10, 0.14);
+    --text: #33231a; --text-dim: #77614d; --text-faint: #a08a72; --green: #3f8f2f;
+  }
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] {
+    --bg: #14100c; --bg-panel: #1c1712; --bg-raised: #241d15;
+    --line: #3a2c1e; --line-soft: #2c2117;
+    --orange: #fb6b10; --orange-dim: #b34c0d; --orange-glow: rgba(251, 107, 16, 0.16);
+    --text: #f3ead9; --text-dim: #a3937d; --text-faint: #6f6252; --green: #8fd460;
+  }
+}
 
 * { box-sizing: border-box; margin: 0; }
 html, body { height: 100%; }
 body {
+  transition: background-color .25s ease, color .25s ease;
   font-family: var(--font);
   background: var(--bg);
   color: var(--text);
@@ -281,3 +356,23 @@ input[type="range"] { accent-color: var(--orange); height: 4px; }
 }
 .dev-row { cursor: pointer; }
 .dev-dot.off { background: var(--text-faint); box-shadow: none; }
+
+/* ── Theme picker ──────────────────────────────────────────── */
+.theme-grid { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; }
+.theme-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px 6px 7px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  color: var(--text-dim);
+  font-size: 11px; letter-spacing: 0.5px;
+  transition: border-color .15s ease, color .15s ease;
+}
+.theme-chip:hover { border-color: var(--orange-dim); color: var(--text); }
+.theme-chip.selected { border-color: var(--orange); color: var(--orange); }
+.theme-swatch {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 1px solid var(--line);
+  flex: none;
+}

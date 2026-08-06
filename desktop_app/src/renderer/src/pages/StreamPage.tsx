@@ -1,12 +1,13 @@
 import React from "react";
 import type { DeviceInfo, DisplayInfo, StreamState } from "../types";
+import { useI18n } from "../i18n/I18nContext";
 
 type Mode = "cursor" | "full" | "region";
 
-const MODES: { id: Mode; name: string; desc: string; def?: boolean }[] = [
-  { id: "cursor", name: "Mouse Follow", desc: "240×240 crop centered on the cursor — text stays readable", def: true },
-  { id: "full", name: "Full Screen", desc: "Whole display scaled down — see overall layout" },
-  { id: "region", name: "Fixed Region", desc: "Pick a screen area once, keep streaming it" }
+const MODES: { id: Mode; nameKey: string; descKey: string; def?: boolean }[] = [
+  { id: "cursor", nameKey: "stream.modeCursor", descKey: "stream.modeCursorDesc", def: true },
+  { id: "full", nameKey: "stream.modeFull", descKey: "stream.modeFullDesc" },
+  { id: "region", nameKey: "stream.modeRegion", descKey: "stream.modeRegionDesc" }
 ];
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export default function StreamPage({ devices, state, frameB64, onRefreshDevices, onStateChange }: Props) {
+  const { t } = useI18n();
   const [selectedIp, setSelectedIp] = React.useState<string | null>(null);
   const [manualIp, setManualIp] = React.useState("");
   const [mode, setMode] = React.useState<Mode>("cursor");
@@ -51,21 +53,21 @@ export default function StreamPage({ devices, state, frameB64, onRefreshDevices,
     if (!ip) return;
     const ok = await window.mochi.checkDevice(ip);
     if (ok) { setSelectedIp(ip); setManualIp(""); }
-    else alert(`No Mochi answered at ${ip}`);
+    else alert(t("stream.noDeviceAt", { ip }));
   };
 
   return (
     <section className="page active">
       <header className="page-head">
-        <h1>Desktop Stream</h1>
-        <p className="page-sub">Push your PC screen to Mochi over LAN · TCP 3333 · JPEG</p>
+        <h1>{t("stream.title")}</h1>
+        <p className="page-sub">{t("stream.subtitle")}</p>
       </header>
 
       {permission !== "granted" && (
         <div className="perm-banner">
-          macOS needs Screen Recording permission for Mochi Desktop.
+          {t("stream.permBanner")}
           <button className="mini-btn" onClick={() => window.mochi.openScreenPermissionSettings()}>
-            OPEN SETTINGS
+            {t("stream.openSettings")}
           </button>
         </div>
       )}
@@ -73,53 +75,53 @@ export default function StreamPage({ devices, state, frameB64, onRefreshDevices,
       <div className="stream-grid">
         <div className="card preview-card">
           <div className="card-title">
-            LIVE PREVIEW
-            <span className="fps-badge">{running ? `${fps} FPS` : "IDLE"}</span>
+            {t("stream.livePreview")}
+            <span className="fps-badge">{running ? `${fps} FPS` : t("stream.idle")}</span>
           </div>
           <div className="mochi-screen">
             <div className="mochi-screen-inner">
               {frameB64
                 ? <img className="preview-img" src={`data:image/jpeg;base64,${frameB64}`} alt="stream preview" />
-                : <div className="preview-idle">◉ ‿ ◉<span>waiting to stream</span></div>}
+                : <div className="preview-idle">◉ ‿ ◉<span>{t("stream.waitingToStream")}</span></div>}
             </div>
             <div className="mochi-chin">MOCHI</div>
           </div>
           <div className="preview-meta">
             <span>240 × 240 · q{quality}</span>
-            <span className="meta-dim">{MODES.find(m => m.id === mode)?.name}</span>
+            <span className="meta-dim">{t(MODES.find(m => m.id === mode)!.nameKey as never)}</span>
           </div>
         </div>
 
         <div className="card">
-          <div className="card-title">CAPTURE MODE</div>
+          <div className="card-title">{t("stream.captureMode")}</div>
           <div className="mode-list" role="radiogroup">
             {MODES.map(m => (
               <label key={m.id} className={"mode-item" + (mode === m.id ? " selected" : "")}>
                 <input type="radio" name="mode" checked={mode === m.id}
                        onChange={() => setMode(m.id)} disabled={running} />
                 <span className="mode-box">
-                  <span className="mode-name">{m.name}{m.def && <em>default</em>}</span>
-                  <span className="mode-desc">{m.desc}</span>
+                  <span className="mode-name">{t(m.nameKey as never)}{m.def && <em>{t("stream.defaultTag")}</em>}</span>
+                  <span className="mode-desc">{t(m.descKey as never)}</span>
                 </span>
               </label>
             ))}
           </div>
 
-          <div className="card-title" style={{ marginTop: 18 }}>PARAMETERS</div>
+          <div className="card-title" style={{ marginTop: 18 }}>{t("stream.parameters")}</div>
           <div className="param-row">
-            <label>Frame rate</label>
+            <label>{t("stream.frameRate")}</label>
             <input type="range" min={3} max={15} value={fps} disabled={running}
                    onChange={e => setFps(+e.target.value)} />
             <span className="param-val">{fps} fps</span>
           </div>
           <div className="param-row">
-            <label>JPEG quality</label>
+            <label>{t("stream.jpegQuality")}</label>
             <input type="range" min={30} max={80} value={quality} disabled={running}
                    onChange={e => setQuality(+e.target.value)} />
             <span className="param-val">{quality}</span>
           </div>
           <div className="param-row">
-            <label>Display</label>
+            <label>{t("stream.display")}</label>
             <select className="sel" value={sourceId ?? ""} disabled={running}
                     onChange={e => setSourceId(e.target.value)}>
               {displays.map(d => <option key={d.id} value={d.id}>{d.label} · {d.size.width}×{d.size.height}</option>)}
@@ -129,15 +131,15 @@ export default function StreamPage({ devices, state, frameB64, onRefreshDevices,
           <button className={"cta" + (running ? " stop" : "")}
                   onClick={running ? stop : start}
                   disabled={!running && !selectedIp}>
-            {running ? "■ STOP STREAMING" : "▶ START STREAMING"}
+            {running ? `■ ${t("stream.stopStreaming")}` : `▶ ${t("stream.startStreaming")}`}
           </button>
         </div>
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
         <div className="card-title">
-          DEVICES ON LAN
-          <button className="mini-btn" onClick={onRefreshDevices}>RESCAN</button>
+          {t("stream.devices")}
+          <button className="mini-btn" onClick={onRefreshDevices}>{t("stream.rescan")}</button>
         </div>
         <div className="dev-list">
           {devices.map(d => (
@@ -159,16 +161,16 @@ export default function StreamPage({ devices, state, frameB64, onRefreshDevices,
           {!devices.length && (
             <div className="dev-row dim">
               <span className="dev-eyes idle">◉x◉</span>
-              <div className="dev-info"><b>Searching…</b><span>no broadcast yet — is Mochi on this LAN?</span></div>
+              <div className="dev-info"><b>Searching…</b><span>{t("app.noDevice")}</span></div>
             </div>
           )}
           <div className="dev-row dim">
             <span className="dev-eyes idle">◉+◉</span>
-            <div className="dev-info"><b>Manual device</b><span>enter an IP to add</span></div>
+            <div className="dev-info"><b>{t("stream.manualDevice")}</b><span>{t("stream.manualHint")}</span></div>
             <input className="ip-input" placeholder="192.168.1.___" value={manualIp}
                    onChange={e => setManualIp(e.target.value)}
                    onKeyDown={e => e.key === "Enter" && addManual()} />
-            <button className="mini-btn" onClick={addManual}>ADD</button>
+            <button className="mini-btn" onClick={addManual}>{t("stream.add")}</button>
           </div>
         </div>
       </div>
