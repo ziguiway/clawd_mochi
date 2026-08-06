@@ -30,24 +30,6 @@ void LANWorkingState::onUpdate() {
     // Web 独占视图优先，退出后再按最新 Codex 状态恢复面板。
     if (_ctx->display()->isExclusiveDisplayActive()) return;
 
-    // 配网引导屏优先,但仅当 WiFi 已持续断开超过宽限期;
-    // 短暂重连(含 CONNECTED 确认屏)不打断工作面板,与 8s 掉线宽限一致。
-    auto provMode = _ctx->wifi()->getProvisioningMode();
-    const bool provisioningActive =
-        provMode == WifiConfigService::ProvisioningMode::AP_FALLBACK ||
-        provMode == WifiConfigService::ProvisioningMode::CONNECTING ||
-        provMode == WifiConfigService::ProvisioningMode::RETRY_WAIT;
-    if (provisioningActive && !_ctx->wifi()->isConnected()) {
-        if (!_wifiLost) {
-            _wifiLost = true;
-            _wifiLostSinceMs = millis();
-        }
-        if (millis() - _wifiLostSinceMs >= WIFI_LOST_GRACE_MS) {
-            _ctx->display()->updateProvisioning();
-            return;
-        }
-    }
-
     // WiFi 持续断开超过宽限期:回空闲表情,后台继续重连。
     if (!_ctx->wifi()->isConnected()) {
         if (!_wifiLost) {
