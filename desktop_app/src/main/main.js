@@ -8,6 +8,7 @@ const {
 const path = require("node:path");
 const dgram = require("node:dgram");
 const net = require("node:net");
+const uiohook = require("uiohook-napi");
 
 const FRAME_W = 240;
 const FRAME_H = 240;
@@ -21,6 +22,49 @@ let win = null;
 let tray = null;
 let sharp = null;
 try { sharp = require("sharp"); } catch (e) { console.error("sharp unavailable", e); }
+
+const KEYBOARD_PET_PORT = 4212;
+const pet = { running: false, ip: null, socket: null };
+let petHooksBound = false;
+const LEFT_KEYS = new Set([16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 30, 31, 32, 33, 34, 35, 41, 42, 44, 45, 46, 47]);
+function petSide(keycode) {
+  if (keycode === 57419 || keycode === 57416) return "left";
+  if (keycode === 57421 || keycode === 57424) return "right";
+  return LEFT_KEYS.has(keycode) ? "left" : "right";
+}
+function sendPet(action, keycode) {
+  if (!pet.running || !pet.socket || !pet.ip) return;
+  const packet = Buffer.from(`KP:${action}:${petSide(keycode)}`);
+  pet.socket.send(packet, KEYBOARD_PET_PORT, pet.ip);
+}
+function setPetHooks(active) {
+  if (active) {
+    if (!petHooksBound) {
+      uiohook.uIOhook.on("keydown", e => sendPet("down", e.keycode));
+      uiohook.uIOhook.on("keyup", e => sendPet("up", e.keycode));
+      petHooksBound = true;
+    }
+    uiohook.uIOhook.start();
+  } else {
+    try { uiohook.uIOhook.stop(); } catch (_) {}
+  }
+}
+async function startKeyboardPet(ip) {
+  stopKeyboardPet();
+  pet.ip = ip;
+  try { await httpPost(ip, "/keyboard_pet/start"); } catch (e) { console.error("keyboard pet start failed", e); return; }
+  pet.socket = dgram.createSocket("udp4");
+  pet.running = true;
+  setPetHooks(true);
+  if (win) win.webContents.send("pet:state", { running: true, ip });
+}
+function stopKeyboardPet() {
+  pet.running = false;
+  setPetHooks(false);
+  if (pet.socket) { pet.socket.close(); pet.socket = null; }
+  if (pet.ip) fetch(`http://${pet.ip}/keyboard_pet/stop`, { method: "POST" }).catch(() => {});
+  if (win) win.webContents.send("pet:state", { running: false, ip: pet.ip });
+}
 
 // ── Streamer ──────────────────────────────────────────────────
 const streamer = {
@@ -291,6 +335,9 @@ ipcMain.handle("devices:check", async (_e, ip) => {
     return res.ok;
   } catch (_) { return false; }
 });
+ipcMain.handle("pet:start", (_e, ip) => startKeyboardPet(ip));
+ipcMain.handle("pet:stop", () => stopKeyboardPet());
+ipcMain.handle("pet:getState", () => ({ running: pet.running, ip: pet.ip }));
 ipcMain.handle("displays:list", () =>
   screen.getAllDisplays().map(d => ({ id: String(d.id), label: d.label || `Display ${d.id}`, size: d.size })));
 ipcMain.handle("screen:checkPermission", () => {
@@ -308,4 +355,4 @@ app.whenReady().then(() => {
   app.on("activate", () => win.show());
 });
 app.on("window-all-closed", () => { /* tray keeps app alive */ });
-app.on("before-quit", () => { app.isQuitting = true; stopStreaming(true); });
+app.on("before-quit", () => { app.isQuitting = true; stopStreaming(true); stopKeyboardPet(); });

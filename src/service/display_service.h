@@ -18,6 +18,7 @@
 #include "salary_counter_service.h"
 #include "timetable_service.h"
 #include "desktop_stream_service.h"
+#include "keyboard_pet_service.h"
 #include "../config/cfg_display.h"
 
 class U8G2_FOR_ADAFRUIT_GFX;
@@ -56,6 +57,7 @@ enum class InteractiveView {
     MEDIA,
     STATS,
     DESKTOP_STREAM
+    , KEYBOARD_PET
 };
 
 enum class PomodoroPhase {
@@ -77,7 +79,8 @@ public:
                    MarketService* marketService,
                    HolidayService* holidayService,
                    TimetableService* timetableService,
-                   DesktopStreamService* streamService);
+                   DesktopStreamService* streamService,
+                   KeyboardPetService* keyboardPetService);
     ~DisplayService();
     void init();
     void update();
@@ -150,7 +153,8 @@ public:
     unsigned long getMediaLastRenderMs() const { return _mediaLastRenderMs; }
     uint32_t getMediaRenderedFrames() const { return _mediaRenderedFrames; }
     bool isExclusiveDisplayActive() const {
-        return isGameActive() || _mediaActive || _streamActive;
+        return isGameActive() || _mediaActive || _streamActive ||
+               _interactiveView == InteractiveView::KEYBOARD_PET;
     }
 
     // 桌面投屏(Desktop Stream):进入/退出视图与状态查询
@@ -243,7 +247,10 @@ private:
     ArcadeCanvas* _arcadeCanvas;
     IArcadeGame* _activeArcadeGame;
     DesktopStreamService* _streamService;
+    KeyboardPetService* _keyboardPetService;
     bool _streamActive;
+    KeyboardPetService::Paw _lastPetPaw;
+    void drawKeyboardPet(KeyboardPetService::Paw paw);
     uint16_t* _mediaRowBuffer;
     fs::File* _mediaFile;
     AnimatedGIF* _mediaGif;

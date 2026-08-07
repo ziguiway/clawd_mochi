@@ -12,4 +12,8 @@ contextBridge.exposeInMainWorld("mochi", {
   onStreamState: (cb) => ipcRenderer.on("stream:state", (_e, s) => cb(s)),
   onStreamFrame: (cb) => ipcRenderer.on("stream:frame", (_e, b64) => cb(b64)),
   onDevices: (cb) => ipcRenderer.on("devices:list", (_e, d) => cb(d))
+  ,startKeyboardPet: (ip) => ipcRenderer.invoke("pet:start", ip),
+  stopKeyboardPet: () => ipcRenderer.invoke("pet:stop"),
+  getKeyboardPetState: () => ipcRenderer.invoke("pet:getState"),
+  onKeyboardPetState: (cb) => ipcRenderer.on("pet:state", (_e, s) => cb(s))
 });

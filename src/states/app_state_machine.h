@@ -28,6 +28,7 @@
 #include "../service/operation_mode_service.h"
 #include "../service/boot_button_service.h"
 #include "../service/desktop_stream_service.h"
+#include "../service/keyboard_pet_service.h"
 #include "../utils/state_machine.h"
 #include "../utils/logger.h"
 
@@ -60,6 +61,7 @@ public:
     SerialCommandService* serial()      override { return &_serial; }
     OperationModeService* opMode()      override { return &_opMode; }
     BootButtonService*    bootButton()  override { return &_bootButton; }
+    KeyboardPetService*   keyboardPet() { return &_keyboardPet; }
     PreferenceService*    prefs()       override { return &_prefs; }
 
 private:
@@ -77,6 +79,7 @@ private:
     TimetableService     _timetable;
     OtaService           _ota;
     DesktopStreamService _stream;
+    KeyboardPetService   _keyboardPet;
     DisplayService       _display;
     WebService           _web;
     SerialCommandService _serial;

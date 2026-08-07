@@ -156,6 +156,8 @@ void WebService::setupRoutes() {
     _server.on("/stream/enter", HTTP_POST, [this]() { handleStreamEnter(); });
     _server.on("/stream/exit", HTTP_POST, [this]() { handleStreamExit(); });
     _server.on("/stream/status", HTTP_GET, [this]() { handleStreamStatus(); });
+    _server.on("/keyboard_pet/start", HTTP_POST, [this]() { handleKeyboardPetStart(); });
+    _server.on("/keyboard_pet/stop", HTTP_POST, [this]() { handleKeyboardPetStop(); });
     _server.on("/ota/status", HTTP_GET, [this]() { handleOtaStatus(); });
     _server.on("/ota/check", HTTP_POST, [this]() { handleOtaCheck(); });
     _server.on("/ota/install", HTTP_POST, [this]() { handleOtaInstall(); });
@@ -441,6 +443,16 @@ void WebService::handleStreamStatus() {
     _server.send(200, "application/json", _displayService->getStreamStatusJson());
 }
 
+void WebService::handleKeyboardPetStart() {
+    _displayService->setInteractiveView(VIEW_KEYBOARD_PET);
+    _server.send(200, "application/json", "{\"active\":true}");
+}
+
+void WebService::handleKeyboardPetStop() {
+    _displayService->exitInteractive();
+    _server.send(200, "application/json", "{\"active\":false}");
+}
+
 void WebService::handleMediaStatus() {
     String json = "{\"active\":";
     json += _displayService->isMediaActive() ? "true" : "false";
@@ -560,7 +572,7 @@ void WebService::handleCanvas() {
 }
 
 void WebService::handleDrawClear() {
-    const String bg = _server.hasArg("bg") ? _server.arg("bg") : "#aa4818";
+    const String bg = _server.hasArg("bg") ? _server.arg("bg") : "#da1100";
     _displayService->drawClear(_displayService->hexToRgb565(bg));
     _server.send(200, "application/json", "{\"ok\":1}");
 }
@@ -1024,7 +1036,7 @@ void WebService::handlePrefs() {
             return;
         }
         _preferenceService->setDisplayTheme(theme);
-        const char* background = "#e22400";
+        const char* background = "#da1100";
         uint8_t brightness = 100;
         uint8_t nightBrightness = 25;
         ExpressionId expression = ExpressionId::NORMAL;

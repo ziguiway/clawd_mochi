@@ -105,7 +105,8 @@ public:
 
 private:
     Preferences _prefs;
-    String _defaultBgHex = "#aa4818";
+    // 与开机动画的 color565(218, 17, 0) 保持一致。
+    String _defaultBgHex = "#da1100";
     uint8_t _animSpeed = 1;
     uint8_t _startupView = 0;
     uint8_t _brightnessPercent = 100;

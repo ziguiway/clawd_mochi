@@ -17,7 +17,7 @@ AppStateMachine::AppStateMachine()
     , _ota(&_wifi, &_time)
     , _stream(&_tft)
     , _display(&_tft, &_cc, &_wifi, &_time, &_prefs, &_weather, &_crypto,
-               &_market, &_holiday, &_timetable, &_stream)
+               &_market, &_holiday, &_timetable, &_stream, &_keyboardPet)
     , _web(&_cc, &_wifi, &_time, &_display, &_prefs, &_crypto, &_market,
            &_timetable, &_ota)
     , _serial(&_wifi, &_cc, &_time)
@@ -70,6 +70,7 @@ void AppStateMachine::init() {
 }
 
 void AppStateMachine::update() {
+    _keyboardPet.update();
     if (_current) _current->onUpdate();
     _bootButton.update();
     confirmOtaBootIfReady();

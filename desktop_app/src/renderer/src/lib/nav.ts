@@ -6,6 +6,7 @@ export interface NavGroup { labelKey: string; pages: NavPage[]; }
 export const NAV: NavGroup[] = [
   { labelKey: "nav.stream", pages: [
     { id: "stream", labelKey: "nav.desktopStream", icon: "▣" },
+    { id: "keyboardPet", labelKey: "nav.keyboardPet", icon: "◎" },
   ]},
   { labelKey: "nav.face", pages: [
     { id: "expressions", labelKey: "nav.expressions", icon: "◉", soon: true },

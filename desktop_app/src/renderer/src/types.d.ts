@@ -4,6 +4,7 @@ export interface StreamState {
   mode: "cursor" | "full" | "region"; fps: number; quality: number;
 }
 export interface DisplayInfo { id: string; label: string; size: { width: number; height: number }; }
+export interface KeyboardPetState { running: boolean; ip: string | null; }
 
 declare global {
   interface Window {
@@ -22,6 +23,10 @@ declare global {
       onStreamState(cb: (s: Partial<StreamState>) => void): void;
       onStreamFrame(cb: (b64: string) => void): void;
       onDevices(cb: (d: DeviceInfo[]) => void): void;
+      startKeyboardPet(ip: string): Promise<void>;
+      stopKeyboardPet(): Promise<void>;
+      getKeyboardPetState(): Promise<KeyboardPetState>;
+      onKeyboardPetState(cb: (s: KeyboardPetState) => void): void;
     };
   }
 }

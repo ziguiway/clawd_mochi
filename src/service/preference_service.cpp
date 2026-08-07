@@ -5,7 +5,7 @@
 void PreferenceService::init() {
     _prefs.begin("clawd-prefs", false);
     _defaultBgHex = _prefs.getString("bg", _defaultBgHex);
-    if (!isValidHexColor(_defaultBgHex)) _defaultBgHex = "#aa4818";
+    if (!isValidHexColor(_defaultBgHex)) _defaultBgHex = "#da1100";
     _animSpeed = constrain(_prefs.getUChar("speed", _animSpeed), 1, 3);
     _startupView = _prefs.getUChar("startup", _startupView);
     if (!isStartupViewAllowed(_startupView)) _startupView = VIEW_EYES_NORMAL;

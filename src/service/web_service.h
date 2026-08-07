@@ -125,6 +125,8 @@ private:
     void handleStreamEnter();
     void handleStreamExit();
     void handleStreamStatus();
+    void handleKeyboardPetStart();
+    void handleKeyboardPetStop();
     void handleOtaStatus();
     void handleOtaCheck();
     void handleOtaInstall();

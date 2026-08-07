@@ -65,7 +65,8 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
                                MarketService* marketService,
                                HolidayService* holidayService,
                                TimetableService* timetableService,
-                               DesktopStreamService* streamService)
+                               DesktopStreamService* streamService,
+                               KeyboardPetService* keyboardPetService)
     : _tft(tft), _ccService(ccService), _wifiService(wifiService), _timeService(timeService)
     , _preferenceService(preferenceService)
     , _weatherService(weatherService)
@@ -74,7 +75,9 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _holidayService(holidayService)
     , _timetableService(timetableService)
     , _streamService(streamService)
+    , _keyboardPetService(keyboardPetService)
     , _streamActive(false)
+    , _lastPetPaw(KeyboardPetService::Paw::NONE)
     , _salaryCounter(nullptr)
     , _ccView(tft), _eyesView(tft)
     , _monoGameBuffer(nullptr)
@@ -1245,6 +1248,10 @@ void DisplayService::setInteractiveView(uint8_t view) {
                 _streamService->drawWaitingPage();
             }
             break;
+        case InteractiveView::KEYBOARD_PET:
+            _lastPetPaw = KeyboardPetService::Paw::NONE;
+            drawKeyboardPet(_lastPetPaw);
+            break;
         case InteractiveView::DINO_GAME:
         case InteractiveView::SOKOBAN_GAME:
         case InteractiveView::TETRIS_GAME:
@@ -1283,6 +1290,9 @@ void DisplayService::redrawCurrentView() {
             break;
         case InteractiveView::DESKTOP_STREAM:
             // 等待页/末帧已保留，无需重画。
+            break;
+        case InteractiveView::KEYBOARD_PET:
+            drawKeyboardPet(_keyboardPetService ? _keyboardPetService->paw() : KeyboardPetService::Paw::NONE);
             break;
         case InteractiveView::DINO_GAME:
         case InteractiveView::SOKOBAN_GAME:
@@ -2832,6 +2842,15 @@ void DisplayService::update() {
             if (_streamService) _streamService->update();
             return;
         }
+        if (_interactiveView == InteractiveView::KEYBOARD_PET) {
+            const auto paw = _keyboardPetService ? _keyboardPetService->paw()
+                                                  : KeyboardPetService::Paw::NONE;
+            if (paw != _lastPetPaw) {
+                _lastPetPaw = paw;
+                drawKeyboardPet(paw);
+            }
+            return;
+        }
         if (isArcadeGameView() && _activeArcadeGame) {
             _activeArcadeGame->update();
             return;
@@ -2933,6 +2952,28 @@ void DisplayService::update() {
                        _ccService->getModel(),
                        _ccService->getElapsedMs());
     }
+}
+
+void DisplayService::drawKeyboardPet(KeyboardPetService::Paw paw) {
+    // 小型程序化像素猫:只使用 ST7789 基础图形，不引入 Live2D 或帧缓冲。
+    _tft->fillScreen(COLOR_ORANGE);
+    const uint16_t ink = COLOR_BLACK;
+    _tft->fillRect(62, 55, 116, 88, ink);
+    _tft->fillRect(76, 42, 24, 20, ink);
+    _tft->fillRect(140, 42, 24, 20, ink);
+    _tft->fillRect(82, 62, 76, 62, COLOR_WHITE);
+    _tft->fillRect(94, 78, 10, 14, ink);
+    _tft->fillRect(136, 78, 10, 14, ink);
+    _tft->fillRect(112, 101, 24, 6, ink);
+    _tft->fillRect(108, 107, 8, 8, ink);
+    _tft->fillRect(128, 107, 8, 8, ink);
+    const bool leftDown = paw == KeyboardPetService::Paw::LEFT || paw == KeyboardPetService::Paw::BOTH;
+    const bool rightDown = paw == KeyboardPetService::Paw::RIGHT || paw == KeyboardPetService::Paw::BOTH;
+    _tft->fillRect(28, leftDown ? 162 : 142, 62, 24, ink);
+    _tft->fillRect(150, rightDown ? 162 : 142, 62, 24, ink);
+    _tft->fillRect(40, leftDown ? 186 : 166, 38, 18, COLOR_WHITE);
+    _tft->fillRect(162, rightDown ? 186 : 166, 38, 18, COLOR_WHITE);
+    _tft->drawTextCentered(220, leftDown && rightDown ? "BONGO!" : (leftDown ? "LEFT PAW" : (rightDown ? "RIGHT PAW" : "READY")), ink, COLOR_ORANGE, FONT_SMALL);
 }
 
 void DisplayService::updateProvisioning() {
