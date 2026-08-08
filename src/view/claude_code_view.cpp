@@ -17,7 +17,8 @@ static constexpr int16_t CAPTION_X = 0;
 static constexpr int16_t CAPTION_Y = 202;
 static constexpr int16_t CAPTION_W = CFG_DISPLAY_WIDTH;
 static constexpr int16_t CAPTION_H = 38;
-static constexpr unsigned long THINKING_FRAME_MS = 300;
+static constexpr unsigned long THINKING_FRAME_MS = 280;
+static constexpr uint8_t THINKING_DOT_FRAMES[] = {1, 2, 3, 2};
 
 static const char* statusToText(ClaudeCodeService::Status status) {
     switch (status) {
@@ -40,7 +41,7 @@ ClaudeCodeView::ClaudeCodeView(TftDisplay* tft)
     , _lastStatus(ClaudeCodeService::Status::IDLE)
     , _lastElapsedSec(0)
     , _lastThinkingFrameMs(0)
-    , _thinkingFrame(1)
+    , _thinkingFrame(2)
 {
     _lastHook[0] = '\0';
     _lastTool[0] = '\0';
@@ -61,7 +62,7 @@ void ClaudeCodeView::reset() {
     _lastModel[0] = '\0';
     _lastElapsedSec = 0xFFFFFFFF;
     _lastThinkingFrameMs = 0;
-    _thinkingFrame = 1;
+    _thinkingFrame = 2;
 }
 
 void ClaudeCodeView::render(ClaudeCodeService::Status status, const char* hookName,
@@ -79,7 +80,7 @@ void ClaudeCodeView::render(ClaudeCodeService::Status status, const char* hookNa
         _layoutDrawn = true;
         _lastStatus = status;
         if (status == ClaudeCodeService::Status::THINKING) {
-            _thinkingFrame = 1;
+            _thinkingFrame = 2;
             _lastThinkingFrameMs = millis();
         }
         drawHeader(status);
@@ -98,7 +99,7 @@ void ClaudeCodeView::render(ClaudeCodeService::Status status, const char* hookNa
     if (status != _lastStatus) {
         _lastStatus = status;
         if (status == ClaudeCodeService::Status::THINKING) {
-            _thinkingFrame = 1;
+            _thinkingFrame = 2;
             _lastThinkingFrameMs = millis();
         }
         drawHeader(status);
@@ -110,8 +111,8 @@ void ClaudeCodeView::render(ClaudeCodeService::Status status, const char* hookNa
     if (status == ClaudeCodeService::Status::THINKING &&
         millis() - _lastThinkingFrameMs >= THINKING_FRAME_MS) {
         _lastThinkingFrameMs = millis();
-        _thinkingFrame = (_thinkingFrame % 3) + 1;
-        drawThinkingDots(_thinkingFrame);
+        _thinkingFrame = (_thinkingFrame + 1) % 4;
+        drawThinkingDots(THINKING_DOT_FRAMES[_thinkingFrame]);
     }
 
     if (textChanged(_lastHook, hookName) || textChanged(_lastTool, toolName)) {
@@ -186,6 +187,8 @@ void ClaudeCodeView::drawFooter(const char* model, unsigned long elapsedSec) {
 void ClaudeCodeView::drawStatusIcon(ClaudeCodeService::Status status, int x, int y) {
     (void)x;
     (void)y;
+    // Thinking 的点位在状态面板顶部之外，切换到其他状态时也必须清除。
+    _tft->fillRect(190, 10, 50, 16, COLOR_MOCHI_BG);
     switch (status) {
         case ClaudeCodeService::Status::IDLE:
         case ClaudeCodeService::Status::WORKING:
@@ -237,15 +240,18 @@ void ClaudeCodeView::drawStatusIcon(ClaudeCodeService::Status status, int x, int
             break;
         }
         case ClaudeCodeService::Status::SLEEPING: {
-            const int16_t eyeY = FACE_EYE_Y + 34;
-            _tft->fillRect(FACE_EYE_X - 2, eyeY, FACE_EYE_W + 4, 8,
+            // 与网页控制端的 Sleeping 表情共用相同坐标和字形。
+            const int16_t eyeY = FACE_EYE_Y + FACE_EYE_H / 2;
+            _tft->fillRect(FACE_EYE_X - 4, eyeY - 4, FACE_EYE_W + 8, 8,
                            COLOR_EYES);
-            _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP - 2,
-                           eyeY, FACE_EYE_W + 4, 8, COLOR_EYES);
-            _tft->drawText(176, 28, "Z", COLOR_EYES,
+            _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP - 4,
+                           eyeY - 4, FACE_EYE_W + 8, 8, COLOR_EYES);
+            _tft->drawText(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP + 28,
+                           eyeY - 50, "Z", COLOR_EYES,
                            COLOR_MOCHI_BG, FONT_MEDIUM);
-            _tft->drawText(150, 50, "z", COLOR_EYES,
-                           COLOR_MOCHI_BG, FONT_MEDIUM);
+            _tft->drawText(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP + 8,
+                           eyeY - 30, "z", COLOR_EYES,
+                           COLOR_MOCHI_BG, FONT_SMALL);
             break;
         }
         case ClaudeCodeService::Status::DONE:
@@ -280,11 +286,16 @@ void ClaudeCodeView::drawStatusIcon(ClaudeCodeService::Status status, int x, int
 }
 
 void ClaudeCodeView::drawThinkingDots(uint8_t visibleDots) {
-    // 只刷新思考点区域，避免整张脸反复重绘造成闪烁。
-    _tft->fillRect(204, 24, 36, 26, COLOR_MOCHI_BG);
-    if (visibleDots >= 1) _tft->fillRect(207, 42, 6, 6, COLOR_EYES);
-    if (visibleDots >= 2) _tft->fillRect(217, 32, 8, 8, COLOR_EYES);
-    if (visibleDots >= 3) _tft->fillRect(227, 24, 10, 10, COLOR_EYES);
+    // 与网页控制端的 Thinking 表情共用相同思考点区域和节奏。
+    constexpr int16_t DOT_X = 194;
+    constexpr int16_t DOT_Y = 14;
+    constexpr int16_t DOT_SIZE = 8;
+    constexpr int16_t DOT_STEP = 14;
+    _tft->fillRect(DOT_X - 2, DOT_Y - 2, 42, 12, COLOR_MOCHI_BG);
+    for (uint8_t index = 0; index < visibleDots && index < 3; index++) {
+        _tft->fillRect(DOT_X + index * DOT_STEP, DOT_Y,
+                       DOT_SIZE, DOT_SIZE, COLOR_EYES);
+    }
 }
 
 uint16_t ClaudeCodeView::getStatusColor(ClaudeCodeService::Status status) {

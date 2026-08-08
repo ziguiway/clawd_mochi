@@ -1037,63 +1037,6 @@ void DisplayService::exitTerminal() {
     drawCodeView();
 }
 
-// ── Animations ─────────────────────────────────────────────────
-void DisplayService::drawThinking(uint8_t dotCount) {
-    _tft->fillScreen(_animBgColor);
-    const int16_t lx = eyeLX(0), rx = eyeRX(0);
-    const int16_t ey = eyeY(), cy = eyeCY();
-    _tft->fillRect(lx, ey, EYE_W, EYE_H, COLOR_EYES);
-    _tft->fillRect(lx + EYE_W/2 - 3, cy - 3, 6, 6, _animBgColor);
-    _tft->fillRect(rx, ey, EYE_W, EYE_H, COLOR_EYES);
-    _tft->fillRect(rx + EYE_W - 10, ey + 6, 6, 6, _animBgColor);
-    if (dotCount > 0) {
-        int16_t dx = rx + EYE_W/2;
-        int16_t dy = ey - 18;
-        if (dotCount >= 1) _tft->fillCircle(dx - 10, dy, 3, COLOR_GREEN);
-        if (dotCount >= 2) _tft->fillCircle(dx,      dy, 3, COLOR_GREEN);
-        if (dotCount >= 3) _tft->fillCircle(dx + 10, dy, 3, COLOR_GREEN);
-    }
-}
-
-void DisplayService::animThinking() {
-    _busy = true;
-    for (uint8_t rep = 0; rep < 3; rep++) {
-        for (uint8_t d = 1; d <= 3; d++) { drawThinking(d); delay(speedMs(300)); }
-        drawThinking(0); delay(speedMs(200));
-    }
-    _busy = false;
-}
-
-void DisplayService::drawWorking(bool blinkLeft, bool blinkRight) {
-    _tft->fillScreen(_animBgColor);
-    const int16_t lx = eyeLX(0), rx = eyeRX(0);
-    const int16_t ey = eyeY(), cy = eyeCY();
-    if (blinkLeft) {
-        _tft->fillRect(lx, cy - 5, EYE_W, 10, COLOR_EYES);
-    } else {
-        _tft->fillRect(lx, ey, EYE_W, EYE_H, COLOR_EYES);
-        _tft->fillRect(lx + EYE_W/2 - 3, cy + 10, 6, 6, _animBgColor);
-    }
-    if (blinkRight) {
-        _tft->fillRect(rx, cy - 5, EYE_W, 10, COLOR_EYES);
-    } else {
-        _tft->fillRect(rx, ey, EYE_W, EYE_H, COLOR_EYES);
-        _tft->fillRect(rx + EYE_W/2 - 3, cy + 10, 6, 6, _animBgColor);
-    }
-    _tft->fillRect(lx - 10, ey + EYE_H + 12, (rx - lx + EYE_W + 20), 3, COLOR_ORANGE);
-}
-
-void DisplayService::animWorking() {
-    _busy = true;
-    for (uint8_t i = 0; i < 4; i++) {
-        drawWorking(true, false); delay(speedMs(100));
-        drawWorking();            delay(speedMs(60));
-        drawWorking(false, true); delay(speedMs(100));
-        drawWorking();            delay(speedMs(60));
-    }
-    _busy = false;
-}
-
 void DisplayService::animLogoReveal() {
     _busy = true;
     const String line1 = _preferenceService
@@ -1206,11 +1149,11 @@ void DisplayService::setInteractiveView(uint8_t view) {
             _tft->fillScreen(_drawBgColor);
             break;
         case InteractiveView::THINKING:
-            animThinking();
-            break;
+            showExpression(ExpressionId::THINKING);
+            return;
         case InteractiveView::WORKING:
-            animWorking();
-            break;
+            showExpression(ExpressionId::NORMAL);
+            return;
         case InteractiveView::CLOCK:
             showClock();
             break;
@@ -1269,8 +1212,10 @@ void DisplayService::redrawCurrentView() {
         case InteractiveView::EYES_SQUISH: _eyesView.redraw(); break;
         case InteractiveView::CODE_VIEW:   drawCodeView();   break;
         case InteractiveView::DRAW:        _tft->fillScreen(_drawBgColor); break;
-        case InteractiveView::THINKING:    drawThinking(); break;
-        case InteractiveView::WORKING:     drawWorking();  break;
+        case InteractiveView::THINKING:
+        case InteractiveView::WORKING:
+            _eyesView.redraw();
+            break;
         case InteractiveView::CLOCK:       drawClockView(); break;
         case InteractiveView::POMODORO:    drawPomodoroView(); break;
         case InteractiveView::WEATHER:     drawWeatherView(); break;
@@ -3178,9 +3123,27 @@ void DisplayService::switchToExpressionMode() {
         return;
     }
     auto status = _ccService->getStatus();
-    if (status == ClaudeCodeService::Status::THINKING) drawThinking(3);
-    else if (status == ClaudeCodeService::Status::WORKING) drawWorking();
-    else applyIdleDefaultView();
+    // Claude Code 触发表情时只复用网页控制端的 ExpressionId。
+    ExpressionId expression;
+    switch (status) {
+        case ClaudeCodeService::Status::THINKING:
+        case ClaudeCodeService::Status::SWEEPING:
+            expression = ExpressionId::THINKING;
+            break;
+        case ClaudeCodeService::Status::WORKING:
+            expression = ExpressionId::NORMAL;
+            break;
+        case ClaudeCodeService::Status::PERMISSION:
+            expression = ExpressionId::CURIOUS;
+            break;
+        case ClaudeCodeService::Status::SLEEPING:
+            expression = ExpressionId::SLEEPING;
+            break;
+        default:
+            applyIdleDefaultView();
+            return;
+    }
+    showExpression(expression);
 }
 
 void DisplayService::switchToInfoMode() {

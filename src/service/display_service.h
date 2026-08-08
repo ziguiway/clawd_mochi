@@ -173,11 +173,6 @@ public:
     // Logo animation
     void animLogoReveal();
 
-    void drawThinking(uint8_t dotCount = 0);
-    void drawWorking(bool blinkLeft = false, bool blinkRight = false);
-    void animThinking();
-    void animWorking();
-
     bool isBusy() const { return _busy; }
 
     uint16_t hexToRgb565(const String& hex);
