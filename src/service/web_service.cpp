@@ -88,6 +88,9 @@ void WebService::setupRoutes() {
     _server.on("/wakeup_import.js", HTTP_GET, [this]() {
         handleFile("/wakeup_import.js", "application/javascript");
     });
+    _server.on("/onboarding.js", HTTP_GET, [this]() {
+        handleFile("/onboarding.js", "application/javascript");
+    });
     _server.on("/media.js", HTTP_GET, [this]() {
         handleFile("/media.js", "application/javascript");
     });
@@ -201,6 +204,8 @@ void WebService::setupRoutes() {
 
     // Static files from LittleFS
     _server.serveStatic("/style.css", LittleFS, "/style.css");
+    _server.serveStatic("/controller.css", LittleFS, "/controller.css");
+    _server.serveStatic("/controller.js", LittleFS, "/controller.js");
     _server.serveStatic("/app.js", LittleFS, "/app.js");
     _server.serveStatic("/claude_code.js", LittleFS, "/claude_code.js");
     _server.serveStatic("/wifi.js", LittleFS, "/wifi.js");

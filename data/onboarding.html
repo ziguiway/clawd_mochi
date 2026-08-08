@@ -3,61 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Get Started - Clawd Mochi</title>
+    <title>Welcome - Clawd Mochi</title>
     <link rel="stylesheet" href="/style.css">
 </head>
-<body class="provision-page">
-    <main class="container setup-shell">
-        <header class="setup-header">
-            <div class="brand-lockup"><span class="brand-mark">CM</span><span>Clawd Mochi</span></div>
-            <span class="setup-status"><i></i> LOCAL SETUP</span>
-        </header>
-
-        <section class="setup-intro">
-            <p class="kicker">FIRST RUN</p>
-            <h1>Bring Mochi<br><em>to life.</em></h1>
-            <p class="subtitle">Choose a networked companion or keep this one delightfully local.</p>
+<body class="provision-page console-page">
+    <main class="setup-console">
+        <aside class="setup-rail" aria-label="Setup progress">
+            <a class="console-brand" href="/" aria-label="Clawd Mochi"><span class="brand-mark">CM</span><span>CLAWD · MOCHI</span></a>
+            <p class="rail-label">SETUP FLOW</p>
+            <div class="rail-step active"><span>01</span><strong>Choose mode</strong></div>
+            <div class="rail-step"><span>02</span>Connect WiFi</div>
+            <div class="rail-step"><span>03</span>Open controller</div>
+            <div class="rail-device"><span class="rail-device-face">■ ■</span><small>RECOVERY AP</small><strong>192.168.4.1</strong></div>
+        </aside>
+        <section class="setup-main">
+            <header class="setup-header"><span class="setup-status"><i></i> LOCAL SETUP</span><span class="setup-code">FIRST RUN / 01</span></header>
+            <div class="setup-intro console-intro">
+                <p class="kicker">DEVICE READY</p>
+                <h1>Welcome,<br><span>Mochi.</span></h1>
+                <p class="subtitle">Connect to WiFi for the full controller, Claude Code status and desktop features.</p>
+            </div>
+            <section class="setup-choice" aria-label="Choose setup mode">
+                <a class="setup-option setup-option-primary" href="/wifi_setup">
+                    <span class="option-index">01 / ONLINE</span><span class="option-icon">→</span>
+                    <strong>Connect to WiFi</strong>
+                    <span class="option-copy">Join your home network and unlock the complete controller.</span>
+                    <span class="option-link">CONTINUE TO NETWORK <b>→</b></span>
+                </a>
+                <button class="setup-option setup-option-secondary" id="offline-button" type="button">
+                    <span class="option-index">02 / LOCAL</span><span class="option-icon">○</span>
+                    <strong>Stay offline</strong>
+                    <span class="option-copy">Use expressions only. WiFi can be configured later.</span>
+                    <span class="option-link">USE DEFAULT EXPRESSIONS <b>→</b></span>
+                </button>
+            </section>
+            <p class="status-msg" id="onboarding-msg" role="status"></p>
+            <footer class="setup-footer"><span>AP ACTIVE</span><b>ClaWD-Mochi</b><span class="footer-dot">·</span><span>LOCAL ACCESS</span></footer>
         </section>
-
-        <section class="onboarding-choice" aria-label="Choose setup mode">
-            <a class="setup-option setup-option-primary" href="/wifi_setup">
-                <span class="option-index">01</span>
-                <span class="option-icon">↗</span>
-                <strong>Online Mode</strong>
-                <span class="option-copy">Connect Mochi to your home network for the full controller and Claude Code status.</span>
-                <span class="option-link">Connect to a network <b>→</b></span>
-            </a>
-            <button class="setup-option setup-option-secondary" id="offline-button" type="button">
-                <span class="option-index">02</span>
-                <span class="option-icon">○</span>
-                <strong>Stay offline</strong>
-                <span class="option-copy">Show expressions only. You can connect WiFi later from the local controller.</span>
-                <span class="option-link">Use default expressions <b>→</b></span>
-            </button>
-        </section>
-
-        <p class="status-msg" id="onboarding-msg" role="status"></p>
-        <footer class="setup-footer"><span>CONNECTED TO</span><b>ClaWD-Mochi</b><span class="footer-dot">•</span><span>192.168.4.1</span></footer>
     </main>
-    <script>
-        const button = document.getElementById('offline-button');
-        const message = document.getElementById('onboarding-msg');
-        button.addEventListener('click', async () => {
-            button.disabled = true;
-            message.className = 'status-msg info';
-            message.textContent = 'Saving offline mode...';
-            try {
-                const response = await fetch('/onboarding/offline', {method: 'POST'});
-                if (!response.ok) throw new Error('request failed');
-                message.className = 'status-msg success';
-                message.textContent = 'Offline mode is ready. Opening the controller...';
-                setTimeout(() => { window.location.href = '/'; }, 700);
-            } catch (error) {
-                button.disabled = false;
-                message.className = 'status-msg error';
-                message.textContent = 'Could not save this choice. Try again.';
-            }
-        });
-    </script>
+    <script src="/onboarding.js"></script>
 </body>
 </html>

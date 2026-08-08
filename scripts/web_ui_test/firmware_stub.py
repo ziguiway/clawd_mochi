@@ -24,6 +24,8 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
     gif_reader_js = (ROOT / "data" / "gif_reader.js").read_text()
     gif_encoder_js = (ROOT / "data" / "gif_encoder.js").read_text()
     media_js = (ROOT / "data" / "media.js").read_text()
+    controller_js = (ROOT / "data" / "controller.js").read_text()
+    controller_css = (ROOT / "data" / "controller.css").read_text()
     media_frame_count = 0
     media_animation_count = 0
     media_stop_count = 0
@@ -182,6 +184,20 @@ class FirmwareStubHandler(BaseHTTPRequestHandler):
             body = self.media_js.encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/javascript")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        elif path == "/controller.js":
+            body = self.controller_js.encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/javascript")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        elif path == "/controller.css":
+            body = self.controller_css.encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/css")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
