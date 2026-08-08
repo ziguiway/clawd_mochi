@@ -2744,6 +2744,15 @@ void DisplayService::updateProvisioning() {
     static char lastPhase[16] = "";
     auto mode = _wifiService->getProvisioningMode();
 
+    // 配网流程结束后必须退出 PROVISIONING,否则只会留下一个 WiFi Setup 标题。
+    if (mode == WifiConfigService::ProvisioningMode::NONE) {
+        if (_currentMode == DisplayMode::PROVISIONING) {
+            _currentMode = DisplayMode::EXPRESSION;
+            switchToExpressionMode();
+        }
+        return;
+    }
+
     // 模式切换(或从其它显示模式回来)时整屏重绘静态内容;
     // 模式不变时只刷新下方动态元素,避免整屏闪烁
     if (mode != lastMode || _currentMode != DisplayMode::PROVISIONING) {
@@ -2771,8 +2780,8 @@ void DisplayService::updateProvisioning() {
             _tft->getTft().setTextSize(1);
             // 重试打满回到配网页时,提示用户重新配置
             const char* subtitle = _wifiService->isRetryExhausted()
-                ? "Too many attempts, set up again"
-                : "Keep this page open";
+                ? "Too many attempts, connect again"
+                : "Connect to ClaWD-Mochi";
             int16_t subX = (CFG_DISPLAY_WIDTH - (int)strlen(subtitle) * 6) / 2;
             _tft->getTft().setCursor(subX, 46);
             _tft->getTft().print(subtitle);
@@ -2780,7 +2789,7 @@ void DisplayService::updateProvisioning() {
             // 二维码:白底黑码,保证扫码对比度
             QRCode qrcode;
             uint8_t qrcodeData[qrcode_getBufferSize(3)];
-            qrcode_initText(&qrcode, qrcodeData, 3, ECC_LOW, "http://192.168.4.1");
+            qrcode_initText(&qrcode, qrcodeData, 3, ECC_LOW, "http://192.168.4.1/onboarding");
             const int16_t scale = 3;
             const int16_t qrSize = qrcode.size * scale;
             const int16_t pad = 4;
@@ -2800,7 +2809,7 @@ void DisplayService::updateProvisioning() {
             _tft->getTft().setTextColor(COLOR_WHITE);
             _tft->getTft().setTextSize(1);
             const char* scan = "Scan QR or open:";
-            const char* url = "http://192.168.4.1";
+            const char* url = "192.168.4.1/onboarding";
             _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - (int)strlen(scan) * 6) / 2, 174);
             _tft->getTft().print(scan);
             _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - (int)strlen(url) * 6) / 2, 190);

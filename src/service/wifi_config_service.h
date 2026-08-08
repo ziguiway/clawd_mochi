@@ -23,6 +23,7 @@ public:
     void update();
 
     bool isConfigured();
+    bool isOfflineMode() const { return _offlineMode; }
     bool isConnected();
     String getIP();
     String getLanIP();
@@ -53,6 +54,7 @@ public:
     void saveCredentials(const char* ssid, const char* password);
     void clearCredentials();
     void reset();
+    void setOfflineMode(bool enabled);
 
     void handleScanRequest(WebServer& server);
     void handleConnectRequest(WebServer& server);
@@ -81,6 +83,7 @@ private:
     bool _highThroughputMode;
     Preferences _credentialPrefs;
     bool _credentialPrefsReady;
+    bool _offlineMode;
     String _pendingSsid;
     String _pendingPassword;
     bool _credentialChangePending;

@@ -72,6 +72,19 @@ void WebService::update() {
 void WebService::setupRoutes() {
     // Original interactive routes
     _server.on("/",            HTTP_GET, [this]() { handleRoot(); });
+    _server.on("/onboarding", HTTP_GET, [this]() { handleOnboarding(); });
+    _server.on("/onboarding/status", HTTP_GET,
+        [this]() { handleOnboardingStatus(); });
+    _server.on("/onboarding/offline", HTTP_POST,
+        [this]() { handleOfflineMode(); });
+    const auto redirectToOnboarding = [this]() {
+        _server.sendHeader("Location", "/onboarding", true);
+        _server.send(302, "text/plain", "Captive portal");
+    };
+    _server.on("/generate_204", HTTP_GET, redirectToOnboarding);
+    _server.on("/hotspot-detect.html", HTTP_GET, redirectToOnboarding);
+    _server.on("/connecttest.txt", HTTP_GET, redirectToOnboarding);
+    _server.on("/ncsi.txt", HTTP_GET, redirectToOnboarding);
     _server.on("/wakeup_import.js", HTTP_GET, [this]() {
         handleFile("/wakeup_import.js", "application/javascript");
     });
@@ -196,6 +209,10 @@ void WebService::setupRoutes() {
         String path = _server.uri();
         if (LittleFS.exists(path)) {
             handleFile(path.c_str(), getContentType(path).c_str());
+        } else if (!_wifiService->isConfigured() &&
+                   !_wifiService->isOfflineMode()) {
+            _server.sendHeader("Location", "/onboarding", true);
+            _server.send(302, "text/plain", "Captive portal");
         } else {
             _server.send(404, "text/plain", "Not Found");
         }
@@ -204,9 +221,34 @@ void WebService::setupRoutes() {
 
 // ── Original interactive handlers ──────────────────────────────
 void WebService::handleRoot() {
+    if (!_wifiService->isConfigured() && !_wifiService->isOfflineMode()) {
+        handleOnboarding();
+        return;
+    }
     _server.sendHeader("Cache-Control", "no-store, no-cache, must-revalidate");
     _server.sendHeader("Pragma", "no-cache");
     handleFile("/controller.html", "text/html");
+}
+
+void WebService::handleOnboarding() {
+    handleFile("/onboarding.html", "text/html");
+}
+
+void WebService::handleOnboardingStatus() {
+    String json = "{\"configured\":";
+    json += _wifiService->isConfigured() ? "true" : "false";
+    json += ",\"offline\":";
+    json += _wifiService->isOfflineMode() ? "true" : "false";
+    json += ",\"apSsid\":\"" + String(CFG_WIFI_AP_SSID) +
+            "\",\"apIp\":\"" + _wifiService->getAPIP() + "\"}";
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json", json);
+}
+
+void WebService::handleOfflineMode() {
+    _wifiService->setOfflineMode(true);
+    _server.send(200, "application/json",
+                 "{\"ok\":true,\"mode\":\"offline\"}");
 }
 
 void WebService::handleMediaFrameUpload() {

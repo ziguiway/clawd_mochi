@@ -21,6 +21,7 @@
 #define CFG_WIFI_NVS_NAMESPACE            "clawd-wifi"
 #define CFG_WIFI_NVS_SSID_KEY             "ssid"
 #define CFG_WIFI_NVS_PASS_KEY             "password"
+#define CFG_WIFI_NVS_OFFLINE_KEY          "offline"
 
 // 仅用于从旧固件迁移，迁移成功后删除。
 #define CFG_WIFI_LEGACY_CRED_PATH          "/wifi.json"

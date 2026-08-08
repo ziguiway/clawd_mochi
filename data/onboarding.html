@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Started - Clawd Mochi</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="provision-page">
+    <main class="container setup-shell">
+        <header class="setup-header">
+            <div class="brand-lockup"><span class="brand-mark">CM</span><span>Clawd Mochi</span></div>
+            <span class="setup-status"><i></i> LOCAL SETUP</span>
+        </header>
+
+        <section class="setup-intro">
+            <p class="kicker">FIRST RUN</p>
+            <h1>Bring Mochi<br><em>to life.</em></h1>
+            <p class="subtitle">Choose a networked companion or keep this one delightfully local.</p>
+        </section>
+
+        <section class="onboarding-choice" aria-label="Choose setup mode">
+            <a class="setup-option setup-option-primary" href="/wifi_setup">
+                <span class="option-index">01</span>
+                <span class="option-icon">↗</span>
+                <strong>Online Mode</strong>
+                <span class="option-copy">Connect Mochi to your home network for the full controller and Claude Code status.</span>
+                <span class="option-link">Connect to a network <b>→</b></span>
+            </a>
+            <button class="setup-option setup-option-secondary" id="offline-button" type="button">
+                <span class="option-index">02</span>
+                <span class="option-icon">○</span>
+                <strong>Stay offline</strong>
+                <span class="option-copy">Show expressions only. You can connect WiFi later from the local controller.</span>
+                <span class="option-link">Use default expressions <b>→</b></span>
+            </button>
+        </section>
+
+        <p class="status-msg" id="onboarding-msg" role="status"></p>
+        <footer class="setup-footer"><span>CONNECTED TO</span><b>ClaWD-Mochi</b><span class="footer-dot">•</span><span>192.168.4.1</span></footer>
+    </main>
+    <script>
+        const button = document.getElementById('offline-button');
+        const message = document.getElementById('onboarding-msg');
+        button.addEventListener('click', async () => {
+            button.disabled = true;
+            message.className = 'status-msg info';
+            message.textContent = 'Saving offline mode...';
+            try {
+                const response = await fetch('/onboarding/offline', {method: 'POST'});
+                if (!response.ok) throw new Error('request failed');
+                message.className = 'status-msg success';
+                message.textContent = 'Offline mode is ready. Opening the controller...';
+                setTimeout(() => { window.location.href = '/'; }, 700);
+            } catch (error) {
+                button.disabled = false;
+                message.className = 'status-msg error';
+                message.textContent = 'Could not save this choice. Try again.';
+            }
+        });
+    </script>
+</body>
+</html>

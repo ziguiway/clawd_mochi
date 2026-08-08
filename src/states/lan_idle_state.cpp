@@ -12,7 +12,15 @@ bool shouldShowInfo(ClaudeCodeService::Status status) {
 }
 
 void LANIdleState::onEnter() {
-    if (_ctx->wifi()->isConnected()) {
+    const bool showOnboarding =
+        (!_ctx->wifi()->isConfigured() && !_ctx->wifi()->isOfflineMode()) ||
+        (_ctx->wifi()->getProvisioningMode() ==
+             WifiConfigService::ProvisioningMode::AP_FALLBACK &&
+         _ctx->wifi()->isRetryExhausted());
+    if (showOnboarding) {
+        // 首次启动保留设备上的 onboarding 提示，直到用户完成选择。
+        _ctx->display()->updateProvisioning();
+    } else if (_ctx->wifi()->isConnected()) {
         _ctx->display()->switchToIdleDisplay();
     } else {
         _ctx->display()->switchToExpressionMode();

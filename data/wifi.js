@@ -1,12 +1,22 @@
 let selectedSSID = '';
 async function scanWifi() {
     const list = document.getElementById('wifi-list');
-    if (list) list.innerHTML = '<li class="wifi-item loading"><span>Scanning...</span></li>';
+    const rescan = document.getElementById('rescan-button');
+    if (rescan) { rescan.disabled = true; rescan.setAttribute('aria-busy', 'true'); }
+    if (list) {
+        list.setAttribute('aria-busy', 'true');
+        list.innerHTML = '<li class="wifi-item loading" aria-busy="true"><span>Scanning for nearby networks...</span></li>';
+    }
     const data = await fetchJson('/wifi/scan');
-    if (!data || !Array.isArray(data)) { if (list) list.innerHTML = '<li class="wifi-item loading"><span>Scan failed</span></li>'; return; }
+    if (rescan) { rescan.disabled = false; rescan.removeAttribute('aria-busy'); }
+    if (list) { list.removeAttribute('aria-busy'); }
+    if (!data || !Array.isArray(data)) {
+        if (list) list.innerHTML = '<li class="wifi-item empty"><span>Scan failed. Try again.</span></li>';
+        return;
+    }
     if (list) list.innerHTML = '';
     if (data.length === 0) {
-        if (list) list.innerHTML = '<li class="wifi-item loading"><span>No networks found</span></li>';
+        if (list) list.innerHTML = '<li class="wifi-item empty"><span>No networks found</span></li>';
         return;
     }
     data.sort((a, b) => b.rssi - a.rssi);
@@ -18,6 +28,16 @@ async function scanWifi() {
         li.onclick = () => selectNetwork(net.ssid);
         if (list) list.appendChild(li);
     });
+}
+function togglePassword() {
+    const input = document.getElementById('password-input');
+    const button = document.getElementById('password-toggle');
+    if (!input || !button) return;
+    const visible = input.type === 'text';
+    input.type = visible ? 'password' : 'text';
+    button.setAttribute('aria-label', visible ? 'Show password' : 'Hide password');
+    button.setAttribute('title', visible ? 'Show password' : 'Hide password');
+    button.classList.toggle('visible', !visible);
 }
 function selectNetwork(ssid) {
     selectedSSID = ssid;
@@ -66,4 +86,7 @@ async function connectWifi() {
         msg.className = 'status-msg error';
     }
 }
-document.addEventListener('DOMContentLoaded', scanWifi);
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('password-toggle')?.addEventListener('click', togglePassword);
+    scanWifi();
+});

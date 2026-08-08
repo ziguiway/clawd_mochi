@@ -12,7 +12,7 @@ WifiConfigService::WifiConfigService()
     , _filteredRssi(0), _currentTxPower(WIFI_POWER_19_5dBm)
     , _wifiSleepEnabled(true), _radioProfileInitialized(false)
     , _highThroughputMode(false)
-    , _credentialPrefsReady(false), _credentialChangePending(false)
+    , _credentialPrefsReady(false), _offlineMode(false), _credentialChangePending(false)
     , _connectPhase(ConnectPhase::ASSOCIATING), _lastDisconnectReason(0)
     , _lastError(""), _retryCount(0), _retryExhausted(false)
     , _provMode(ProvisioningMode::NONE), _provModeStartMs(0)
@@ -28,7 +28,13 @@ void WifiConfigService::init() {
         LOG_ERROR("WiFi", "WiFi NVS 初始化失败");
     }
     loadCredentials();
-    if (_configured) {
+    _offlineMode = _credentialPrefsReady && _credentialPrefs.getBool(
+        CFG_WIFI_NVS_OFFLINE_KEY, false);
+    if (_offlineMode) {
+        ensureAccessPoint();
+        setProvisioningMode(ProvisioningMode::NONE);
+        LOG_INFO("WiFi", "离线模式,仅启动本地 AP");
+    } else if (_configured) {
         LOG_INFO("WiFi", "已有凭据,连接: %s", _ssid.c_str());
         connectToWifi(_ssid.c_str(), _password.c_str());
     } else {
@@ -158,6 +164,10 @@ void WifiConfigService::update() {
                     _ssid = _pendingSsid;
                     _password = _pendingPassword;
                     _configured = true;
+                    _offlineMode = false;
+                    if (_credentialPrefsReady) {
+                        _credentialPrefs.putBool(CFG_WIFI_NVS_OFFLINE_KEY, false);
+                    }
                     LOG_INFO("WiFi", "新网络验证成功并保存到 NVS: %s",
                              _ssid.c_str());
                 } else {
@@ -363,6 +373,7 @@ bool WifiConfigService::configureAndConnect(const char* ssid,
     _lastError = "";
     _retryCount = 0;
     _retryExhausted = false;
+    _offlineMode = false;
     return connectToWifi(_pendingSsid.c_str(), _pendingPassword.c_str());
 }
 
@@ -384,6 +395,24 @@ void WifiConfigService::clearCredentials() {
     _pendingPassword = "";
     _credentialChangePending = false;
     _configured = false;
+    _offlineMode = false;
+}
+
+void WifiConfigService::setOfflineMode(bool enabled) {
+    _offlineMode = enabled;
+    _connecting = false;
+    _credentialChangePending = false;
+    _pendingSsid = "";
+    _pendingPassword = "";
+    if (_credentialPrefsReady) {
+        _credentialPrefs.putBool(CFG_WIFI_NVS_OFFLINE_KEY, enabled);
+    }
+    if (enabled) {
+        stopMDNS();
+        ensureAccessPoint();
+        setProvisioningMode(ProvisioningMode::NONE);
+        LOG_INFO("WiFi", "已启用离线模式");
+    }
 }
 
 void WifiConfigService::reset() {

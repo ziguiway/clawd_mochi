@@ -57,6 +57,9 @@ private:
 
     // Original interactive routes
     void handleRoot();
+    void handleOnboarding();
+    void handleOnboardingStatus();
+    void handleOfflineMode();
     void handleCmd();
     void handleChar();
     void handleSpeed();

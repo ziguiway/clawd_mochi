@@ -7,17 +7,17 @@
     <link rel="stylesheet" href="/style.css">
 </head>
 <body class="provision-page">
-    <div class="container provision-shell">
-        <header class="provision-hero">
-            <p class="kicker">Clawd Mochi</p>
-            <h1>WiFi Setup</h1>
-            <p class="subtitle">Choose a local network or replace the current one. Saved credentials are changed only after the new connection succeeds.</p>
+    <div class="container setup-shell wifi-setup-shell">
+        <header class="setup-header">
+            <a class="back-link setup-back" href="/onboarding">← Get started</a>
+            <div class="brand-lockup"><span class="brand-mark">CM</span><span>Clawd Mochi</span></div>
+            <span class="setup-status"><i></i> ONLINE MODE</span>
         </header>
 
-        <section class="setup-steps" aria-label="Setup steps">
-            <div><span>1</span><strong>Scan</strong></div>
-            <div><span>2</span><strong>Select</strong></div>
-            <div><span>3</span><strong>Connect</strong></div>
+        <section class="setup-intro wifi-intro">
+            <p class="kicker">ONLINE MODE / STEP 01</p>
+            <h1>Bring Mochi<br><em>online.</em></h1>
+            <p class="subtitle">Mochi will remember this network only after the connection succeeds.</p>
         </section>
 
         <section class="card provision-card">
@@ -26,17 +26,14 @@
                     <h2>Nearby Networks</h2>
                     <p>Tap a network to prepare the connection.</p>
                 </div>
-                <button class="ghost-btn" onclick="scanWifi()">Rescan</button>
+                <button class="ghost-btn" id="rescan-button" onclick="scanWifi()">Rescan</button>
             </div>
             <ul class="wifi-list provision-list" id="wifi-list">
-                <li class="wifi-item loading"><span>Scanning...</span></li>
+                <li class="wifi-item loading" aria-busy="true"><span>Scanning for nearby networks...</span></li>
             </ul>
         </section>
 
-        <div class="status-msg info">
-            Recovery access stays available: join <strong>ClaWD-Mochi</strong>
-            and open <strong>192.168.4.1</strong>.
-        </div>
+        <div class="status-msg info setup-note"><span class="note-mark">i</span><span>Recovery access stays available on <strong>ClaWD-Mochi</strong> at <strong>192.168.4.1</strong>.</span></div>
 
         <section class="card provision-card connect-panel" id="connect-form" style="display:none">
             <h2>Connect</h2>
@@ -44,13 +41,19 @@
             <input type="text" id="ssid-input" maxlength="32"
                    placeholder="Network name">
             <label class="field-label" for="password-input">Password</label>
-            <input type="password" id="password-input" maxlength="64"
-                   placeholder="Empty for an open network">
+            <div class="password-field">
+                <input type="password" id="password-input" maxlength="64"
+                       placeholder="Empty for an open network">
+                <button class="password-toggle" id="password-toggle" type="button"
+                        aria-label="Show password" title="Show password">
+                    <span class="eye-icon" aria-hidden="true"></span>
+                </button>
+            </div>
             <div id="connect-msg"></div>
             <button class="primary-btn" onclick="connectWifi()">Connect Device</button>
         </section>
 
-        <a class="back-link" href="/">Back to controller</a>
+        <footer class="setup-footer"><span>LOCAL SETUP</span><b>Clawd Mochi</b><span class="footer-dot">•</span><span>SECURE ON DEVICE</span></footer>
     </div>
     <script src="/app.js"></script>
     <script src="/wifi.js"></script>
