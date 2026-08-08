@@ -19,7 +19,6 @@ export const zh = {
     clock: "时钟与番茄钟",
     weather: "天气",
     market: "股票与加密货币",
-    stats: "专注统计",
     timetable: "课程表",
     arcade: "街机游戏",
     media: "媒体投屏",

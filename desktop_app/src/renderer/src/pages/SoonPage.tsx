@@ -4,7 +4,7 @@ import { NAV } from "../lib/nav";
 
 const ARTS: Record<string, string> = {
   expressions: "◉ ‿ ◉", clock: "◷", weather: "☁", market: "↗",
-  stats: "∑", timetable: "☷", arcade: "▶", media: "▤",
+  timetable: "☷", arcade: "▶", media: "▤",
 };
 const DESC_KEYS: Record<string, MsgKey> = {
   expressions: "soon.expressionsDesc",

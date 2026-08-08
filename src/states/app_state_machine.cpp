@@ -9,7 +9,7 @@ constexpr uint32_t OTA_BOOT_CONFIRM_DELAY_MS = 5000;
 }
 
 AppStateMachine::AppStateMachine()
-    : _cc(&_sm, &_time)
+    : _cc(&_sm)
     , _weather(&_wifi)
     , _crypto(&_wifi)
     , _market(&_wifi)

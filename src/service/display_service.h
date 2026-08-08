@@ -55,9 +55,8 @@ enum class InteractiveView {
     SALARY_COUNTER,
     TIMETABLE,
     MEDIA,
-    STATS,
-    DESKTOP_STREAM
-    , KEYBOARD_PET
+    DESKTOP_STREAM = 21,
+    KEYBOARD_PET = 22
 };
 
 enum class PomodoroPhase {
@@ -197,9 +196,6 @@ public:
     bool showSalaryCounter();
     void refreshSalaryCounter();
     bool isSalarySessionActive() const;
-
-    // Claude Code 会话/今日统计面板(数据来自 ClaudeCodeService,收益由薪资时薪合成)
-    bool showStatsView();
 
     // Backlight brightness
     void setBrightnessPercent(uint8_t percent);
@@ -346,14 +342,6 @@ private:
     int16_t _lastSalaryWorkedX;
     uint8_t _lastSalaryWorkedSize;
 
-    // STATS 视图渲染缓存(反闪烁)
-    char _lastStatsWorked[16];
-    char _lastStatsEarned[16];
-    char _lastStatsCounts[24];
-    char _lastStatsLongest[12];
-    char _lastStatsSession[12];
-    unsigned long _lastStatsRenderMs;
-
     IArcadeGame* createArcadeGame(const String& slug);
     void releaseArcadeGame();
     void releaseMediaBuffer();
@@ -398,8 +386,6 @@ private:
                                  int16_t firstBaseline);
     const char* timetableWeekday(uint8_t weekday) const;
     void drawSalaryCounterLayout();
-    void drawStatsView();
-    void drawStatsLayout();
     void updateSalarySchedule(unsigned long now);
     void formatMarketPrice(float price, char* output, size_t size);
     void renderTimeScreen(const char* mark, const char* timeText, const char* subText,

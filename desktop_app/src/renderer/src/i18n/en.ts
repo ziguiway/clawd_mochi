@@ -20,7 +20,6 @@ export const en: Messages = {
     clock: "Clock & Pomodoro",
     weather: "Weather",
     market: "Stocks & Crypto",
-    stats: "Focus Stats",
     timetable: "Timetable",
     arcade: "Arcade",
     media: "Media Cast",

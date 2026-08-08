@@ -85,7 +85,6 @@ body{background:#1c1c20;font-family:'Courier New',monospace;color:#e8e4dc;
 .vbtn[data-v="17"].active{border-color:#f0a060;background:#22140a}
 .vbtn[data-v="18"].active{border-color:#f0a060;background:#22140a}
 .vbtn[data-v="19"].active{border-color:#f0a060;background:#22140a}
-.vbtn[data-v="20"].active{border-color:#f0a060;background:#22140a}
 .media-wrap{width:100%;max-width:390px;background:#151418;border:1.5px solid #c96a3e;
   border-radius:14px;padding:14px;display:none;flex-direction:column;gap:12px}
 .media-wrap.open{display:flex}
@@ -271,12 +270,13 @@ body{background:#1c1c20;font-family:'Courier New',monospace;color:#e8e4dc;
 .paddle-control{display:flex;align-items:center;gap:10px;background:#211d22;
   border:1px solid #413941;border-radius:10px;padding:12px}
 .paddle-control input{width:100%;height:32px;accent-color:#c96a3e}
-.speed-row{width:100%;max-width:390px;display:flex;align-items:center;gap:10px}
 .sl{font-size:10px;color:#6a6058;white-space:nowrap;min-width:36px}
 input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
 .sv{font-size:11px;color:#c96a3e;min-width:44px;text-align:right;font-weight:bold}
 .twrap{width:100%;max-width:390px;display:none;flex-direction:column;gap:8px}
 .twrap.open{display:flex}
+.term-panel{display:none}
+.term-panel.open{display:block}
 .thdr{display:flex;justify-content:space-between;align-items:center}
 .tttl{font-size:11px;color:#28b878;letter-spacing:1px;font-weight:bold}
 .tx{background:#0c1e12;border:2px solid #1a4828;border-radius:9px;
@@ -584,16 +584,6 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
   <input id="configFile" type="file" accept="application/json,.json" hidden onchange="importConfig(this.files[0])">
   <div class="minfo">Printable ASCII only. Changes to boot text appear after restart.</div>
 </div>
-<div class="sec">// firmware</div>
-<div class="ota-panel">
-  <div class="ota-head"><span>FIRMWARE</span><span id="otaState">NOT CHECKED</span></div>
-  <div class="ota-meta"><span>NOW <strong id="otaVersion">--</strong></span><span>LATEST <strong id="otaLatest">--</strong></span></div>
-  <div class="ota-notes" id="otaNotes">Local firmware and LittleFS updates are available through this device.</div>
-  <div class="ctrl"><button class="cbtn" id="otaCheckBtn" onclick="checkOta()">CHECK NOW</button><button class="cbtn" id="otaInstallBtn" onclick="installOta()" disabled>INSTALL</button></div>
-  <div class="ctrl"><button class="cbtn" onclick="document.getElementById('otaFirmwareFile').click()">UPLOAD FIRMWARE</button><button class="cbtn" onclick="document.getElementById('otaFsFile').click()">UPLOAD LITTLEFS</button></div>
-  <input id="otaFirmwareFile" type="file" accept=".bin" hidden onchange="uploadOta(this.files[0])">
-  <input id="otaFsFile" type="file" accept=".bin" hidden onchange="uploadOta(this.files[0])">
-</div>
 <div class="sec">// network</div>
 <div class="wwrap" id="wwrap">
   <div class="whead">
@@ -652,11 +642,6 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <span class="ic">CNY +</span>
     <span class="nm">Live Ledger</span>
     <span class="ht">work earnings</span>
-  </button>
-  <button class="vbtn" data-v="20" onclick="setView(20)">
-    <span class="ic">1:42</span>
-    <span class="nm">Focus</span>
-    <span class="ht">Claude session stats</span>
   </button>
   <button class="vbtn" data-v="8" onclick="setView(8)">
     <span class="ic">31&#176; / CLOUD</span>
@@ -1020,18 +1005,6 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
   </div>
   <div class="yprivacy">LOCAL DEVICE ONLY · ESTIMATED EARNINGS</div>
 </div>
-<div class="mwrap" id="fwrap">
-  <div class="mttl">// CLAUDE FOCUS</div>
-  <div class="mlabel">SESSION &amp; TODAY STATS</div>
-  <div class="msel" id="fStats">
-    <div class="yfield" style="flex-direction:column;align-items:flex-start;gap:4px"><label>TODAY WORKED</label><strong id="fToday">0:00</strong></div>
-    <div class="yfield" style="flex-direction:column;align-items:flex-start;gap:4px"><label>SESSION</label><strong id="fSession">0:00</strong></div>
-    <div class="yfield" style="flex-direction:column;align-items:flex-start;gap:4px"><label>LONGEST RUN</label><strong id="fLongest">0:00</strong></div>
-    <div class="yfield" style="flex-direction:column;align-items:flex-start;gap:4px"><label>DONE / ERR / PERM</label><strong id="fCounts">0 / 0 / 0</strong></div>
-  </div>
-  <div class="ctrl"><button class="cbtn" id="fReset" onclick="resetStats()">RESET STATS</button></div>
-  <div class="minfo">Today's WORKING time × your pay rate. Persists across reboots; resets at midnight.</div>
-</div>
 <div class="mwrap" id="mwrap">
   <div class="mttl">// crypto display</div>
   <div class="mlabel">LIVE PREVIEW (240x240)</div>
@@ -1066,12 +1039,6 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
   <div class="minfo">The Market title stays fixed.<br>Replace the default indices with up to 5 A-share stocks.</div>
   <div class="mauto"><strong id="sAuto">● SAVED TO DEVICE</strong><span>AUTO-SAVED</span></div>
 </div>
-<div class="sec">// speed</div>
-<div class="speed-row">
-  <span class="sl">slow</span>
-  <input type="range" id="spd" min="1" max="3" value="1" step="1" oninput="setSpeed(this.value)">
-  <span class="sv" id="spdV">slow</span>
-</div>
 <div class="ctrl">
   <div class="ci" style="flex:1;display:flex;flex-direction:column;gap:4px;align-items:stretch">
     <span class="cl" style="font-size:10px;color:#8a8278;letter-spacing:1px;font-weight:bold;text-align:center">BACKGROUND</span>
@@ -1082,8 +1049,9 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <input type="color" class="cs" id="penCol" value="#000000">
   </div>
 </div>
-<div class="sec">// terminal</div>
-<div class="twrap" id="twrap">
+<div class="term-panel" id="termPanel">
+  <div class="sec">// terminal</div>
+  <div class="twrap" id="twrap">
   <div class="thdr">
     <span class="tttl">&#9658; clawd:~$</span>
     <button class="tx" onclick="closeTerm()">&#x2715; exit terminal</button>
@@ -1093,6 +1061,7 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
            autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
     <button class="tgo" onclick="termEnter()">&#8629;</button>
   </div>
+  </div>
 </div>
 <div class="cwrap" id="cwrap">
   <div class="dacts">
@@ -1100,6 +1069,16 @@ canvas{width:100%;border-radius:8px;border:1.5px solid #38343a;
     <button class="db" style="border-color:#28b878;color:#28b878" onclick="toggleCanvas()">&#10003; done</button>
   </div>
   <canvas id="cvs" width="240" height="240"></canvas>
+</div>
+<div class="sec">// firmware</div>
+<div class="ota-panel">
+  <div class="ota-head"><span>FIRMWARE</span><span id="otaState">NOT CHECKED</span></div>
+  <div class="ota-meta"><span>NOW <strong id="otaVersion">--</strong></span><span>LATEST <strong id="otaLatest">--</strong></span></div>
+  <div class="ota-notes" id="otaNotes">Local firmware and LittleFS updates are available through this device.</div>
+  <div class="ctrl"><button class="cbtn" id="otaCheckBtn" onclick="checkOta()">CHECK NOW</button><button class="cbtn" id="otaInstallBtn" onclick="installOta()" disabled>INSTALL</button></div>
+  <div class="ctrl"><button class="cbtn" onclick="document.getElementById('otaFirmwareFile').click()">UPLOAD FIRMWARE</button><button class="cbtn" onclick="document.getElementById('otaFsFile').click()">UPLOAD LITTLEFS</button></div>
+  <input id="otaFirmwareFile" type="file" accept=".bin" hidden onchange="uploadOta(this.files[0])">
+  <input id="otaFsFile" type="file" accept=".bin" hidden onchange="uploadOta(this.files[0])">
 </div>
 <div class="toast" id="toast"></div>
 <script src="/wakeup_import.js"></script>
@@ -1167,7 +1146,6 @@ let marketSelected=[],marketDirectory=[],marketLoaded=false,marketSaving=false,m
 let stockSelected=[],stockSaving=false,stockSaveQueued=false,stockUpdatedAt=null,stockDrag=null,stockSearchTimer=null,stockSearchSeq=0;
 let carouselConfig={enabled:false,speed:12,order:[8,9,10,6,17],fixed:8},carouselSpeedTimer=null,carouselPanelOpen=false,carouselDrag=null;
 let salaryState=null,salaryConfigured=false,salarySettingsOpen=false,salaryRequestPending=false,lastSalaryStatus=null,salaryMotionBase=0,salaryMotionAt=0;
-const spdLabels=['','slow','normal','fast'];
 function toast(msg,ok=true){const el=document.getElementById('toast');el.textContent=msg;el.style.borderColor=ok?'#28b878':'#c96a3e';el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),1300);}
 function setBusy(b){isBusy=b;document.getElementById('busy').classList.toggle('show',b);const locked=b||termOpen;document.querySelectorAll('.vbtn').forEach(el=>{el.disabled=canvasOpen?parseInt(el.dataset.v)!==3:locked;});document.querySelectorAll('.ebtn').forEach(el=>{el.disabled=locked||canvasOpen;});document.querySelectorAll('.cbtn').forEach(el=>{if(el.id!=='blBtn'&&el.id!=='ccStatusBtn')el.disabled=locked;});}
 async function req(path){try{const r=await fetch(path);return r.ok;}catch(e){toast('no connection',false);return false;}}
@@ -1191,7 +1169,6 @@ function onBgChange(hex){
   if(typeof redrawSelectedMedia==='function')redrawSelectedMedia();
   scheduleBgPreview();
 }
-async function setSpeed(v){document.getElementById('spdV').textContent=spdLabels[v];await req('/speed?v='+v);}
 function applyExpressionState(state){
   expressionState={mode:state.mode==='auto'?'auto':'manual',selected:state.selected||'normal',rendered:state.rendered||state.selected||'normal'};
   const shown=expressionState.mode==='auto'?expressionState.rendered:expressionState.selected;
@@ -1217,7 +1194,7 @@ async function loadOta(){try{const r=await fetch('/ota/status',{cache:'no-store'
 async function checkOta(){const b=document.getElementById('otaCheckBtn');b.disabled=true;b.textContent='CHECKING...';try{const r=await fetch('/ota/check',{method:'POST'});renderOta(await r.json());}catch(e){toast('OTA check failed',false);}finally{b.disabled=false;b.textContent='CHECK NOW';}}
 async function installOta(){if(!confirm('Install the available update and restart the device?'))return;const b=document.getElementById('otaInstallBtn');b.disabled=true;b.textContent='INSTALLING...';try{const r=await fetch('/ota/install',{method:'POST'});if(!r.ok)throw new Error();toast('device is restarting');}catch(e){toast('OTA install failed',false);loadOta();}}
 async function uploadOta(file){if(!file)return;if(!confirm('Upload '+file.name+' and restart the device?'))return;try{const form=new FormData();form.append('file',file,file.name);const r=await fetch('/ota/upload',{method:'POST',body:form});const j=await r.json();if(!r.ok)throw new Error(j.error||'upload failed');toast('device is restarting');}catch(e){toast(e.message||'OTA upload failed',false);}finally{document.getElementById('otaFirmwareFile').value='';document.getElementById('otaFsFile').value='';}}
-async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(activeView===19)await leaveMediaForView();if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e',9:'m',10:'k',17:'y',18:'u',20:'t'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);document.getElementById('ywrap').classList.toggle('open',v===17);document.getElementById('mwrap').classList.toggle('open',v===9);document.getElementById('swrap').classList.toggle('open',v===10);document.getElementById('uwrap').classList.toggle('open',v===18);document.getElementById('fwrap').classList.toggle('open',v===20);if(v===18){await Promise.all([loadTimetable(),pollTimetableStatus()]);toast('timetable open');return;}if(v===20){await pollStats();toast('focus open');return;}if(v===17){await loadSalaryConfig();await pollSalary();toast('live ledger open');return;}if(v===9){await loadMarketConfig();loadMarketDirectory();toast('crypto open');return;}if(v===10){await loadStockConfig();toast('market open');return;}if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
+async function setView(v){if(isBusy||termOpen||canvasOpen)return;if(activeView===19)await leaveMediaForView();if(v===3){toggleCanvas();return;}const keys={0:'w',1:'s',2:'d',6:'c',7:'p',8:'e',9:'m',10:'k',17:'y',18:'u'};if(!await req('/cmd?k='+keys[v]))return;activeView=v;document.querySelectorAll('.vbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.v)===v));document.getElementById('pwrap').classList.toggle('open',v===7);document.getElementById('ywrap').classList.toggle('open',v===17);document.getElementById('mwrap').classList.toggle('open',v===9);document.getElementById('swrap').classList.toggle('open',v===10);document.getElementById('uwrap').classList.toggle('open',v===18);document.getElementById('termPanel').classList.toggle('open',v===2);if(v===18){await Promise.all([loadTimetable(),pollTimetableStatus()]);toast('timetable open');return;}if(v===17){await loadSalaryConfig();await pollSalary();toast('live ledger open');return;}if(v===9){await loadMarketConfig();loadMarketDirectory();toast('crypto open');return;}if(v===10){await loadStockConfig();toast('market open');return;}if(v===2){termOpen=true;document.getElementById('twrap').classList.add('open');setBusy(false);setBusy(false);document.querySelectorAll('.vbtn,.lbtn').forEach(b=>b.disabled=true);document.getElementById('tin').focus();toast('terminal open');return;}if(v===6||v===7||v===8){toast(v===6?'clock open':(v===7?'pomodoro open':'locating weather'));return;}setBusy(true);await waitNotBusy();setBusy(false);}
 function timetableDay(day){return['','MON','TUE','WED','THU','FRI','SAT','SUN'][Number(day)]||'---';}
 function timetablePreviewNode(className,text){const node=document.createElement('span');node.className=className;if(text!==undefined)node.textContent=text;return node;}
 function splitTimetableCourse(course){const name=String(course.name||'UNTITLED CLASS'),fits=(value,size)=>value.length*size*.6<=212;if(fits(name,27))return{name,size:4};for(let i=name.length-1;i>0;i--){if(name[i]===' '&&fits(name.slice(0,i),27)&&fits(name.slice(i+1),27))return{name:name.slice(0,i)+'\n'+name.slice(i+1),size:4};}const shortName=String(course.shortName||name);return{name:shortName,size:fits(shortName,21)?3:2};}
@@ -1377,7 +1354,7 @@ async function setDisplayTheme(theme){try{const r=await fetch('/prefs?theme='+en
 function applyFontStyle(style){const allowed=['pixel','courier','terminal','dashboard'];fontStyle=allowed.includes(style)?style:'pixel';document.documentElement.dataset.fontStyle=fontStyle;const select=document.getElementById('fontSelect');if(select)select.value=fontStyle;}
 async function setFontStyle(style){try{const r=await fetch('/prefs?fontStyle='+encodeURIComponent(style),{cache:'no-store'});if(!r.ok)throw new Error();const p=await r.json();applyFontStyle(p.fontStyle);toast(fontStyle+' font selected');}catch(e){toast('font save failed',false);}}
 async function setBrightness(v){v=parseInt(v||0);document.getElementById('brightV').textContent=v+'%';blOn=v>0;updateBlButton();await req('/brightness?v='+v);}
-async function loadPrefs(){try{const r=await fetch('/prefs');const p=await r.json();const bg=p.bg||'#aa4818';bgPreviewHex=bg;document.getElementById('bgCol').value=bg;document.getElementById('mediaBg').value=bg;document.getElementById('spd').value=p.speed||1;document.getElementById('spdV').textContent=spdLabels[p.speed||1];claudeStatusOn=p.claudeStatus!==false;updateClaudeStatusButton();applyDisplayTheme(p.theme);applyFontStyle(p.fontStyle);applyCarouselPrefs(p);redrawCanvas(bg);if(typeof redrawSelectedMedia==='function')redrawSelectedMedia();}catch(e){applyDisplayTheme(1);applyFontStyle('pixel');renderCarousel();}}
+async function loadPrefs(){try{const r=await fetch('/prefs');const p=await r.json();const bg=p.bg||'#aa4818';bgPreviewHex=bg;document.getElementById('bgCol').value=bg;document.getElementById('mediaBg').value=bg;claudeStatusOn=p.claudeStatus!==false;updateClaudeStatusButton();applyDisplayTheme(p.theme);applyFontStyle(p.fontStyle);applyCarouselPrefs(p);redrawCanvas(bg);if(typeof redrawSelectedMedia==='function')redrawSelectedMedia();}catch(e){applyDisplayTheme(1);applyFontStyle('pixel');renderCarousel();}}
 function fmtSec(s){s=Math.max(0,parseInt(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
 async function pollTimer(){try{const r=await fetch('/timer/status');const j=await r.json();document.getElementById('pPhase').textContent=(j.phase==='break'?'BREAK':'FOCUS')+(j.paused?' / PAUSED':'');document.getElementById('pTime').textContent=fmtSec(j.remaining);document.getElementById('focusMin').value=j.focus;document.getElementById('breakMin').value=j.break;}catch(e){}}
 async function startTimer(phase){await fetch('/timer/start?phase='+phase);document.getElementById('pwrap').classList.add('open');await pollTimer();toast(phase==='break'?'break started':'focus started');}
@@ -1454,11 +1431,6 @@ async function salaryPrimary(){
 }
 async function salaryFinish(){if(!confirm('Clock out and finish today?'))return;if(await salaryPost('/salary/finish'))toast('day finished');}
 async function salaryReset(){if(!confirm("Reset today's earnings?"))return;if(await salaryPost('/salary/reset'))toast('today reset');}
-
-// —— Claude Code 会话/今日统计 ——
-function fmtDuration(ms){const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;return h>0?(h+':'+String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0')):(m+':'+String(ss).padStart(2,'0'));}
-async function pollStats(){if(activeView!==20)return;try{const r=await fetch('/cc/stats',{cache:'no-store'}),j=await r.json();if(!r.ok)return;document.getElementById('fToday').textContent=fmtDuration(j.todayMs||0);document.getElementById('fSession').textContent=fmtDuration(j.sessionMs||0);document.getElementById('fLongest').textContent=fmtDuration(j.longestMs||0);document.getElementById('fCounts').textContent=(j.done||0)+' / '+(j.error||0)+' / '+(j.permission||0);}catch(e){}}
-async function resetStats(){if(!confirm('Reset Claude session stats?'))return;try{const r=await fetch('/cc/stats/reset',{method:'POST'});if(r.ok){await pollStats();toast('stats reset');}else toast('reset failed',false);}catch(e){toast('reset failed',false);}}
 
 function toggleSalarySettings(force){salarySettingsOpen=typeof force==='boolean'?force:!salarySettingsOpen;document.getElementById('ySettings').classList.toggle('open',salarySettingsOpen);document.getElementById('ySettingsState').textContent=salarySettingsOpen?'CLOSE':'OPEN';}
 function marketPrice(v){if(v==null)return'--';if(v>=1000000)return'$'+(v/1000000).toFixed(2)+'M';if(v>=100000)return'$'+Math.round(v/1000)+'K';if(v>=10000)return'$'+(v/1000).toFixed(1)+'K';if(v>=1000)return'$'+Math.round(v);if(v>=100)return'$'+v.toFixed(1);if(v>=1)return'$'+v.toFixed(2);if(v>=.01)return'$'+v.toFixed(4);return'$'+v.toFixed(6);}
@@ -1692,7 +1664,7 @@ const tin=document.getElementById('tin');let lastVal='';
 tin.addEventListener('input',async()=>{const cur=tin.value,prev=lastVal;if(cur.length>prev.length){await req('/char?c='+encodeURIComponent(cur[cur.length-1]));}else if(cur.length<prev.length){await req('/char?c=%08');}lastVal=cur;});
 async function termEnter(){await req('/char?c=%0A');tin.value='';lastVal='';tin.focus();}
 tin.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();termEnter();}});
-async function closeTerm(){await req('/cmd?k=q');termOpen=false;document.getElementById('twrap').classList.remove('open');setBusy(false);toast('terminal closed');}
+async function closeTerm(){await req('/cmd?k=q');termOpen=false;document.getElementById('twrap').classList.remove('open');document.getElementById('termPanel').classList.remove('open');setBusy(false);toast('terminal closed');}
 const cvs=document.getElementById('cvs');const ctx=cvs.getContext('2d');let strokePts=[];   
 function getPos(e){const r=cvs.getBoundingClientRect();const sx=cvs.width/r.width,sy=cvs.height/r.height;const s=e.touches?e.touches[0]:e;return{x:(s.clientX-r.left)*sx,y:(s.clientY-r.top)*sy};}
 function redrawCanvas(hex){ctx.fillStyle=hex;ctx.fillRect(0,0,cvs.width,cvs.height);}
