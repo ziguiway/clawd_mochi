@@ -116,8 +116,10 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _expressionPreferred(true)
     , _carouselEnabled(false), _carouselSpeedSeconds(12)
     , _carouselOrder{
-        VIEW_WEATHER, VIEW_CRYPTO, VIEW_MARKET, VIEW_CLOCK, VIEW_SALARY
+        VIEW_WEATHER, VIEW_CRYPTO, VIEW_MARKET, VIEW_CLOCK, VIEW_SALARY,
+        VIEW_POMODORO, VIEW_TIMETABLE
     }
+    , _carouselViewCount(CAROUSEL_SUPPORTED_VIEW_COUNT)
     , _carouselFixedView(VIEW_WEATHER), _carouselIndex(0)
     , _carouselPageStartedMs(0), _carouselSuspended(false)
     , _focusMinutes(25), _breakMinutes(5), _pomodoroPhase(PomodoroPhase::FOCUS)
@@ -2523,9 +2525,10 @@ void DisplayService::applyIdleDefaultView() {
 }
 
 bool DisplayService::isCarouselView(uint8_t view) const {
-    return view == VIEW_CLOCK || view == VIEW_WEATHER ||
-           view == VIEW_CRYPTO || view == VIEW_MARKET ||
-           view == VIEW_SALARY;
+    for (uint8_t i = 0; i < CAROUSEL_SUPPORTED_VIEW_COUNT; i++) {
+        if (CAROUSEL_SUPPORTED_VIEW_IDS[i] == view) return true;
+    }
+    return false;
 }
 
 void DisplayService::loadIdleDisplayPreferences() {
@@ -2533,14 +2536,18 @@ void DisplayService::loadIdleDisplayPreferences() {
     _carouselEnabled = _preferenceService->getCarouselEnabled();
     _carouselSpeedSeconds = _preferenceService->getCarouselSpeedSeconds();
     _carouselFixedView = _preferenceService->getCarouselFixedView();
-    for (uint8_t i = 0; i < CAROUSEL_VIEW_COUNT; i++) {
+    _carouselViewCount = _preferenceService->getCarouselViewCount();
+    if (_carouselViewCount == 0 || _carouselViewCount > CAROUSEL_MAX_VIEW_COUNT) {
+        _carouselViewCount = 1;
+    }
+    for (uint8_t i = 0; i < _carouselViewCount; i++) {
         _carouselOrder[i] = _preferenceService->getCarouselView(i);
     }
-    if (_carouselIndex >= CAROUSEL_VIEW_COUNT) _carouselIndex = 0;
+    if (_carouselIndex >= _carouselViewCount) _carouselIndex = 0;
 }
 
 void DisplayService::syncCarouselIndexForView(uint8_t view) {
-    for (uint8_t i = 0; i < CAROUSEL_VIEW_COUNT; i++) {
+    for (uint8_t i = 0; i < _carouselViewCount; i++) {
         if (_carouselOrder[i] == view) {
             _carouselIndex = i;
             return;
@@ -2550,7 +2557,8 @@ void DisplayService::syncCarouselIndexForView(uint8_t view) {
 }
 
 void DisplayService::showCarouselCurrentView() {
-    _carouselIndex %= CAROUSEL_VIEW_COUNT;
+    if (_carouselViewCount == 0) return;
+    _carouselIndex %= _carouselViewCount;
     _carouselSuspended = false;
     _carouselPageStartedMs = millis();
     setInteractiveView(_carouselOrder[_carouselIndex]);
@@ -2627,7 +2635,7 @@ void DisplayService::update() {
             isCarouselView(static_cast<uint8_t>(_interactiveView)) &&
             now - _carouselPageStartedMs >=
                 static_cast<unsigned long>(_carouselSpeedSeconds) * 1000UL) {
-            _carouselIndex = (_carouselIndex + 1) % CAROUSEL_VIEW_COUNT;
+            _carouselIndex = (_carouselIndex + 1) % _carouselViewCount;
             showCarouselCurrentView();
             return;
         }

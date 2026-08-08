@@ -50,13 +50,14 @@ public:
     FontStyle getFontStyle() const { return _fontStyle; }
     void setFontStyle(FontStyle style);
 
-    // 空闲信息轮播（天气 / Crypto / Market / 时间）
+    // 空闲信息轮播。顺序数组使用固定上限，实际数量由 _carouselViewCount 决定。
     bool getCarouselEnabled() const { return _carouselEnabled; }
     void setCarouselEnabled(bool enabled);
     uint8_t getCarouselSpeedSeconds() const { return _carouselSpeedSeconds; }
     void setCarouselSpeedSeconds(uint8_t seconds);
     uint8_t getCarouselView(uint8_t index) const;
-    bool setCarouselOrder(const uint8_t order[CAROUSEL_VIEW_COUNT]);
+    uint8_t getCarouselViewCount() const { return _carouselViewCount; }
+    bool setCarouselOrder(const uint8_t* order, uint8_t count);
     uint8_t getCarouselFixedView() const { return _carouselFixedView; }
     void setCarouselFixedView(uint8_t view);
 
@@ -122,9 +123,11 @@ private:
     FontStyle _fontStyle = FontStyle::PIXEL;
     bool _carouselEnabled = false;
     uint8_t _carouselSpeedSeconds = 12;
-    uint8_t _carouselOrder[CAROUSEL_VIEW_COUNT] = {
-        VIEW_WEATHER, VIEW_CRYPTO, VIEW_MARKET, VIEW_CLOCK, VIEW_SALARY
+    uint8_t _carouselOrder[CAROUSEL_MAX_VIEW_COUNT] = {
+        VIEW_WEATHER, VIEW_CRYPTO, VIEW_MARKET, VIEW_CLOCK, VIEW_SALARY,
+        VIEW_POMODORO, VIEW_TIMETABLE
     };
+    uint8_t _carouselViewCount = 7;
     uint8_t _carouselFixedView = VIEW_WEATHER;
     bool _nightDimEnabled = false;
     uint8_t _nightStartHour = 22;

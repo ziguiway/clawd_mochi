@@ -487,10 +487,11 @@
 <button class="cbtn idle-open" id="carouselPanelBtn" onclick="toggleCarouselPanel()"><span>↻ idle display settings</span><span id="carouselPanelState">open</span></button>
 <div class="rwrap" id="carouselWrap">
   <div class="rhead"><span class="rttl">INFO CAROUSEL</span><button class="cbtn rtoggle" id="carouselToggle" onclick="toggleCarousel()">○ carousel off</button></div>
-  <div class="rrow"><span class="mlabel">FIXED PAGE</span><select class="rselect" id="carouselFixed" onchange="setCarouselFixed(this.value)"><option value="6">Clock</option><option value="8">Weather</option><option value="9">Crypto</option><option value="10">Market</option><option value="17">Live Ledger</option></select></div>
+  <div class="rrow"><span class="mlabel">FIXED PAGE</span><select class="rselect" id="carouselFixed" onchange="setCarouselFixed(this.value)"><option value="6">Clock</option><option value="7">Pomodoro</option><option value="8">Weather</option><option value="9">Crypto</option><option value="10">Market</option><option value="17">Live Ledger</option><option value="18">Timetable</option></select></div>
   <div class="rrow"><span class="mlabel">INTERVAL</span><input class="rrange" id="carouselSpeed" type="range" min="5" max="60" step="1" oninput="setCarouselSpeed(this.value)"><span class="rtime" id="carouselSpeedV">12s</span></div>
   <div class="mlabel">ROTATION ORDER</div>
   <div class="rorder" id="carouselOrder"></div>
+  <div class="rrow raddrow"><select class="rselect" id="carouselAdd"><option value="">ADD PAGE...</option><option value="6">Clock</option><option value="7">Pomodoro</option><option value="8">Weather</option><option value="9">Crypto</option><option value="10">Market</option><option value="17">Live Ledger</option><option value="18">Timetable</option></select><button class="cbtn" type="button" onclick="addCarouselPage()">ADD</button></div>
   <div class="minfo" id="carouselHint">When Claude Code becomes active, the carousel pauses and resumes from the same page afterwards.</div>
 </div>
 <div class="pwrap" id="pwrap">

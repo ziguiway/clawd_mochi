@@ -436,6 +436,7 @@ input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
   transition:transform .08s,opacity .08s}.ritem:last-child{border-bottom:0}.ritem.dragging{opacity:.75;background:#2d201a;z-index:3}
   .rindex{font-size:10px;color:#746b63;min-width:16px}.rname{flex:1;color:#f0ece4;font-size:12px;font-weight:bold}
   .rdrag:disabled{opacity:.25;cursor:default}
+  .raddrow{align-items:stretch}.raddrow .rselect{min-width:0}.raddrow .cbtn{flex:none;padding-inline:13px}.rremove{width:28px;color:#df6734;font-size:22px;line-height:1;cursor:pointer}.rremove:disabled{opacity:.25;cursor:default}
 .gwrap{width:100%;max-width:390px;background:#171418;border:1.5px solid #c96a3e;
   border-radius:12px;padding:14px;display:none;flex-direction:column;gap:12px}
 .gwrap.open{display:flex}

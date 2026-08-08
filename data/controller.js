@@ -74,7 +74,7 @@ let bgPreviewHex='#aa4818',bgPreviewRevision=0,bgPreviewTimer=0,bgPreviewInFligh
 let lastX=0,lastY=0,tt;
 let marketSelected=[],marketDirectory=[],marketLoaded=false,marketSaving=false,marketSaveQueued=false,marketUpdatedAt=null,marketDrag=null;
 let stockSelected=[],stockSaving=false,stockSaveQueued=false,stockUpdatedAt=null,stockDrag=null,stockSearchTimer=null,stockSearchSeq=0;
-let carouselConfig={enabled:false,speed:12,order:[8,9,10,6,17],fixed:8},carouselSpeedTimer=null,carouselPanelOpen=false,carouselDrag=null;
+let carouselConfig={enabled:false,speed:12,order:[8,9,10,6,17,7,18],fixed:8},carouselSpeedTimer=null,carouselPanelOpen=false,carouselDrag=null;
 let salaryState=null,salaryConfigured=false,salarySettingsOpen=false,salaryRequestPending=false,lastSalaryStatus=null,salaryMotionBase=0,salaryMotionAt=0;
 function toast(msg,ok=true){const el=document.getElementById('toast');el.textContent=msg;el.style.borderColor=ok?'#28b878':'#c96a3e';el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),1300);}
 function setBusy(b){isBusy=b;document.getElementById('busy').classList.toggle('show',b);const locked=b||termOpen;document.querySelectorAll('.vbtn').forEach(el=>{el.disabled=canvasOpen?parseInt(el.dataset.v)!==3:locked;});document.querySelectorAll('.ebtn').forEach(el=>{el.disabled=locked||canvasOpen;});document.querySelectorAll('.cbtn').forEach(el=>{if(el.id!=='blBtn'&&el.id!=='ccStatusBtn')el.disabled=locked;});}
@@ -243,25 +243,30 @@ document.getElementById('breakoutPaddle').addEventListener('input',e=>{clearTime
 window.addEventListener('keydown',e=>{if(dinoOpen&&(e.code==='Space'||e.key===' ')){e.preventDefault();jumpDino();return;}if(sokobanOpen){const direction={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'}[e.key];if(direction){e.preventDefault();moveSokoban(direction);}else if(e.key.toLowerCase()==='u'){e.preventDefault();undoSokoban();}else if(e.key.toLowerCase()==='r'){e.preventDefault();restartSokoban();}return;}if(!arcadeGameOpen)return;let action='';if(arcadeGameOpen==='tetris'){action={ArrowLeft:'left',ArrowRight:'right',ArrowDown:'down',ArrowUp:'rotate',Space:'drop'}[e.code]||'';}else if(arcadeGameOpen==='snake'||arcadeGameOpen==='2048'){action={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'}[e.key]||'';}else if(arcadeGameOpen==='breakout'){action={ArrowLeft:'left',ArrowRight:'right',Space:'launch'}[e.code]||'';}if(action){e.preventDefault();arcadeAction(action);}else if(e.key.toLowerCase()==='r'){e.preventDefault();arcadeAction('restart');}});
 function updateBlButton(){const b=document.getElementById('blBtn');b.textContent=blOn?'☀ display on':'○ display off';b.classList.toggle('on',blOn);b.classList.toggle('dim',!blOn);}
 function updateClaudeStatusButton(){const b=document.getElementById('ccStatusBtn');b.textContent=claudeStatusOn?'◆ claude status on':'◇ claude status off';b.classList.toggle('on',claudeStatusOn);b.classList.toggle('dim',!claudeStatusOn);const activityClaude=document.getElementById('activityClaude');if(activityClaude)activityClaude.textContent=claudeStatusOn?'ON':'OFF';}
-function carouselName(v){return({6:'Clock',8:'Weather',9:'Crypto',10:'Market',17:'Live Ledger'})[v]||'Weather';}
+let carouselPages=[{id:6,name:'Clock'},{id:7,name:'Pomodoro'},{id:8,name:'Weather'},{id:9,name:'Crypto'},{id:10,name:'Market'},{id:17,name:'Live Ledger'},{id:18,name:'Timetable'}];
+function carouselName(v){return carouselPages.find(p=>p.id===Number(v))?.name||'Unknown page';}
 function applyCarouselPrefs(p){
   carouselConfig.enabled=p.carousel===true;carouselConfig.speed=Math.max(5,Math.min(60,Number(p.carouselSpeed)||12));
-  carouselConfig.order=Array.isArray(p.carouselOrder)&&p.carouselOrder.length===5?p.carouselOrder.map(Number):[8,9,10,6,17];
-  carouselConfig.fixed=[6,8,9,10,17].includes(Number(p.carouselFixed))?Number(p.carouselFixed):8;renderCarousel();
+  if(Array.isArray(p.carouselPages)&&p.carouselPages.length){const oldNames=new Map(carouselPages.map(x=>[x.id,x.name]));carouselPages=p.carouselPages.map(Number).filter((v,i,a)=>a.indexOf(v)===i).map(id=>({id,name:oldNames.get(id)||('Page '+id)}));}
+  const order=Array.isArray(p.carouselOrder)?p.carouselOrder.map(Number).filter((v,i,a)=>carouselPages.some(x=>x.id===v)&&a.indexOf(v)===i):[];
+  carouselConfig.order=order.length?order:carouselPages.map(x=>x.id);
+  carouselConfig.fixed=carouselPages.some(x=>x.id===Number(p.carouselFixed))?Number(p.carouselFixed):8;renderCarousel();
 }
 function renderCarousel(){
   const enabled=carouselConfig.enabled,toggle=document.getElementById('carouselToggle'),fixed=document.getElementById('carouselFixed'),speed=document.getElementById('carouselSpeed');
   toggle.textContent=enabled?'● carousel on':'○ carousel off';toggle.classList.toggle('on',enabled);toggle.classList.toggle('dim',!enabled);
-  fixed.value=String(carouselConfig.fixed);fixed.disabled=enabled;speed.value=String(carouselConfig.speed);speed.disabled=!enabled;document.getElementById('carouselSpeedV').textContent=carouselConfig.speed+'s';
+  fixed.innerHTML='';carouselPages.forEach(p=>{const o=document.createElement('option');o.value=String(p.id);o.textContent=p.name;fixed.appendChild(o);});fixed.value=String(carouselConfig.fixed);fixed.disabled=enabled;speed.value=String(carouselConfig.speed);speed.disabled=!enabled;document.getElementById('carouselSpeedV').textContent=carouselConfig.speed+'s';
   document.getElementById('carouselHint').textContent=enabled?'Claude Code pauses the carousel, then it resumes from the interrupted page.':'Select the single info page shown while the carousel is off.';
   const out=document.getElementById('carouselOrder');out.innerHTML='';carouselConfig.order.forEach((view,i)=>{
     const row=document.createElement('div');row.className='ritem';
     const index=document.createElement('span');index.className='rindex';index.textContent=String(i+1).padStart(2,'0');
     const name=document.createElement('span');name.className='rname';name.textContent=carouselName(view);
+    const remove=document.createElement('button');remove.className='mdrag rremove';remove.type='button';remove.textContent='×';remove.disabled=carouselConfig.order.length<=1;remove.setAttribute('aria-label','Remove '+carouselName(view));remove.addEventListener('click',()=>removeCarouselPage(view));
     const handle=document.createElement('button');handle.className='mdrag rdrag';handle.type='button';handle.textContent='⠿';handle.disabled=!enabled;handle.setAttribute('aria-label','Drag '+carouselName(view));
     handle.addEventListener('pointerdown',e=>startCarouselDrag(e,i,row));
-    row.append(index,name,handle);out.appendChild(row);
+    row.append(index,name,remove,handle);out.appendChild(row);
   });
+  const add=document.getElementById('carouselAdd');if(add){add.innerHTML='';const empty=document.createElement('option');empty.value='';empty.textContent='ADD PAGE...';add.appendChild(empty);carouselPages.forEach(p=>{if(!carouselConfig.order.includes(p.id)){const o=document.createElement('option');o.value=String(p.id);o.textContent=p.name;add.appendChild(o);}});add.value='';}
 }
 function toggleCarouselPanel(){carouselPanelOpen=!carouselPanelOpen;const panel=document.getElementById('carouselWrap'),state=document.getElementById('carouselPanelState');panel.classList.toggle('open',carouselPanelOpen);state.textContent=carouselPanelOpen?'close':'open';}
 async function saveCarousel(){
@@ -272,6 +277,8 @@ async function saveCarousel(){
 function toggleCarousel(){carouselConfig.enabled=!carouselConfig.enabled;renderCarousel();saveCarousel();}
 function setCarouselFixed(value){carouselConfig.fixed=Number(value);saveCarousel();}
 function setCarouselSpeed(value){carouselConfig.speed=Number(value);document.getElementById('carouselSpeedV').textContent=carouselConfig.speed+'s';clearTimeout(carouselSpeedTimer);carouselSpeedTimer=setTimeout(saveCarousel,260);}
+function addCarouselPage(){const select=document.getElementById('carouselAdd'),view=Number(select.value);if(!view||carouselConfig.order.includes(view))return;carouselConfig.order.push(view);renderCarousel();saveCarousel();}
+function removeCarouselPage(view){if(carouselConfig.order.length<=1)return;carouselConfig.order=carouselConfig.order.filter(v=>v!==view);renderCarousel();saveCarousel();}
 function startCarouselDrag(e,index,row){
   if(e.button!==undefined&&e.button!==0||!carouselConfig.enabled)return;e.preventDefault();
   const rows=[...document.querySelectorAll('#carouselOrder .ritem')],box=document.getElementById('carouselOrder').getBoundingClientRect();

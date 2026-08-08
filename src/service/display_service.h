@@ -295,7 +295,8 @@ private:
     // 空闲时的信息轮播。Claude Code 进入 INFO 后只暂停，不丢失当前位置。
     bool _carouselEnabled;
     uint8_t _carouselSpeedSeconds;
-    uint8_t _carouselOrder[CAROUSEL_VIEW_COUNT];
+    uint8_t _carouselOrder[CAROUSEL_MAX_VIEW_COUNT];
+    uint8_t _carouselViewCount;
     uint8_t _carouselFixedView;
     uint8_t _carouselIndex;
     unsigned long _carouselPageStartedMs;

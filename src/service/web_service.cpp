@@ -1134,26 +1134,27 @@ void WebService::handlePrefs() {
             static_cast<uint8_t>(_server.arg("carouselFixed").toInt());
         _preferenceService->setCarouselFixedView(fixedView);
         // 关闭轮播时，“固定页”就是用户期望下次上电恢复的页面。
-        if (fixedView == VIEW_CLOCK || fixedView == VIEW_WEATHER ||
+        if (fixedView == VIEW_CLOCK || fixedView == VIEW_POMODORO ||
+            fixedView == VIEW_WEATHER ||
             fixedView == VIEW_CRYPTO || fixedView == VIEW_MARKET ||
-            fixedView == VIEW_SALARY) {
+            fixedView == VIEW_SALARY || fixedView == VIEW_TIMETABLE) {
             _preferenceService->setStartupView(fixedView);
         }
     }
     if (_server.hasArg("carouselOrder")) {
         const String value = _server.arg("carouselOrder");
-        uint8_t order[CAROUSEL_VIEW_COUNT] = {};
+        uint8_t order[CAROUSEL_MAX_VIEW_COUNT] = {};
         uint8_t index = 0;
         int start = 0;
-        while (index < CAROUSEL_VIEW_COUNT && start >= 0) {
+        while (index < CAROUSEL_MAX_VIEW_COUNT && start >= 0) {
             const int comma = value.indexOf(',', start);
             const String part = value.substring(start,
                 comma < 0 ? value.length() : comma);
             order[index++] = static_cast<uint8_t>(part.toInt());
             start = comma < 0 ? -1 : comma + 1;
         }
-        if (index != CAROUSEL_VIEW_COUNT ||
-            !_preferenceService->setCarouselOrder(order)) {
+        if (index == 0 ||
+            !_preferenceService->setCarouselOrder(order, index)) {
             _server.send(400, "application/json", "{\"error\":\"invalid carousel order\"}");
             return;
         }
@@ -1406,13 +1407,14 @@ void WebService::handleConfigImport() {
         return;
     }
     JsonArray orderJson = prefs["carouselOrder"];
-    if (orderJson.size() != CAROUSEL_VIEW_COUNT) {
+    if (orderJson.size() == 0 || orderJson.size() > CAROUSEL_MAX_VIEW_COUNT) {
         _server.send(400, "application/json", "{\"error\":\"invalid carousel order\"}");
         return;
     }
-    uint8_t order[CAROUSEL_VIEW_COUNT] = {};
-    for (uint8_t i = 0; i < CAROUSEL_VIEW_COUNT; i++) order[i] = orderJson[i] | 255;
-    if (!_preferenceService->setCarouselOrder(order)) {
+    const uint8_t orderCount = static_cast<uint8_t>(orderJson.size());
+    uint8_t order[CAROUSEL_MAX_VIEW_COUNT] = {};
+    for (uint8_t i = 0; i < orderCount; i++) order[i] = orderJson[i] | 255;
+    if (!_preferenceService->setCarouselOrder(order, orderCount)) {
         _server.send(400, "application/json", "{\"error\":\"invalid carousel order\"}");
         return;
     }

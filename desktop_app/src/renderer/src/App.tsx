@@ -5,6 +5,7 @@ import SystemPage from "./pages/SystemPage";
 import SoonPage from "./pages/SoonPage";
 import type { DeviceInfo, StreamState } from "./types";
 import KeyboardPetPage from "./pages/KeyboardPetPage";
+import CarouselPage from "./pages/CarouselPage";
 
 export default function App() {
   const [page, setPage] = React.useState("stream");
@@ -37,7 +38,8 @@ export default function App() {
         )}
         {page === "system" && <SystemPage state={streamState} />}
         {page === "keyboardPet" && <KeyboardPetPage devices={devices} state={petState} onStateChange={setPetState} />}
-        {page !== "stream" && page !== "system" && <SoonPage id={page} />}
+        {page === "carousel" && <CarouselPage ip={streamState.ip ?? devices[0]?.ip ?? null} />}
+        {page !== "stream" && page !== "system" && page !== "keyboardPet" && page !== "carousel" && <SoonPage id={page} />}
       </main>
     </div>
   );

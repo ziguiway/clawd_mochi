@@ -24,6 +24,7 @@ export const NAV: NavGroup[] = [
     { id: "media", labelKey: "nav.media", icon: "▤", soon: true },
   ]},
   { labelKey: "nav.device", pages: [
+    { id: "carousel", labelKey: "nav.carousel", icon: "↻" },
     { id: "system", labelKey: "nav.system", icon: "⚙" },
   ]},
 ];
