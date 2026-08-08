@@ -15,7 +15,7 @@ export const NAV: NavGroup[] = [
     { id: "clock", labelKey: "nav.clock", icon: "◷", soon: true },
   ]},
   { labelKey: "nav.info", pages: [
-    { id: "weather", labelKey: "nav.weather", icon: "☁", soon: true },
+    { id: "weather", labelKey: "nav.weather", icon: "☁" },
     { id: "market", labelKey: "nav.market", icon: "↗", soon: true },
     { id: "timetable", labelKey: "nav.timetable", icon: "☷", soon: true },
   ]},

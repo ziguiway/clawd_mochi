@@ -215,6 +215,13 @@
     <span class="ht">choose a game</span>
   </button>
 </div>
+<div class="weather-location" id="weatherLocationWrap">
+  <div class="weather-location-head"><span class="mlabel">WEATHER LOCATION</span><span id="weatherLocationSource">IP AUTO</span></div>
+  <div class="weather-location-row"><input class="tin" id="weatherLocationSearch" type="search" placeholder="Search city or place" autocomplete="off"><button class="cbtn" type="button" onclick="locateWeatherByGps()" id="weatherGpsBtn">&#8982; AUTO LOCATE</button></div>
+  <div class="weather-suggestions" id="weatherSuggestions"></div>
+  <div class="weather-location-current" id="weatherLocationCurrent">IP location will be used after WiFi connects.</div>
+  <button class="cbtn weather-ip-btn" type="button" onclick="resetWeatherToIp()">USE IP LOCATION</button>
+</div>
 <div class="media-wrap" id="mediaWrap">
   <div class="media-head">
     <div class="media-title">MEDIA CAST<small>LOCAL · 240x240 RGB565</small></div>

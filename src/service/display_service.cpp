@@ -712,7 +712,7 @@ void DisplayService::drawWeatherView() {
                                COLOR_ORANGE, FONT_SMALL);
         _tft->fillRect(8, 198, CFG_DISPLAY_WIDTH - 16, 3,
                        _themeForeground);
-        _tft->drawTextCentered(216, "IP LOCATION + OPEN-METEO",
+        _tft->drawTextCentered(216, "IP / GPS / PLACE + OPEN-METEO",
                                _themeForeground, COLOR_ORANGE, FONT_SMALL);
         return;
     }

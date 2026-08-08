@@ -24,6 +24,7 @@ export interface StreamStatus {
 export interface CarouselPrefs {
   carousel: boolean; carouselSpeed: number; carouselOrder: number[]; carouselFixed: number; carouselPages?: number[];
 }
+export interface WeatherLocation { city: string; label: string; lat: number; lon: number; source: "ip" | "gps" | "manual"; override: boolean; }
 
 export const DeviceClient = {
   streamStatus: (ip: string) => request<StreamStatus>(ip, "/stream/status"),
@@ -34,5 +35,10 @@ export const DeviceClient = {
     ip,
     `/prefs?carousel=${prefs.carousel ? "1" : "0"}&carouselSpeed=${prefs.carouselSpeed}` +
       `&carouselFixed=${prefs.carouselFixed}&carouselOrder=${prefs.carouselOrder.join(",")}`
-  )
+  ),
+  weatherLocation: (ip: string) => request<WeatherLocation>(ip, "/weather/location"),
+  saveWeatherLocation: (ip: string, lat: number, lon: number, city: string, source: "gps" | "manual") => request<WeatherLocation>(
+    ip, `/weather/location?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&city=${encodeURIComponent(city)}&source=${source}`, { method: "POST" }
+  ),
+  resetWeatherLocation: (ip: string) => request<WeatherLocation>(ip, "/weather/location/reset", { method: "POST" })
 };

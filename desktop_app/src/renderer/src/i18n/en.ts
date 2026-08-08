@@ -80,6 +80,11 @@ export const en: Messages = {
     active: "Listening is active. macOS may require Input Monitoring permission.",
     permission: "The first start may ask for Input Monitoring permission.",
   },
+  weather: {
+    title: "Weather Location", subtitle: "Choose the weather location used by Mochi.", noDevice: "Connect a Mochi device to edit its weather location.",
+    search: "City or place", searchPlaceholder: "Search city", autoLocate: "AUTO LOCATE", current: "Current", useIp: "USE IP LOCATION",
+    gpsLocation: "GPS location", gpsUnavailable: "Browser GPS is unavailable.", gpsFailed: "GPS location failed.", loadFailed: "Could not load weather location.", searchFailed: "Place search failed.", saveFailed: "Could not save weather location.",
+  },
   carousel: {
     title: "Idle Carousel", subtitle: "Choose, remove, reorder and time the pages shown while Mochi is idle.",
     noDevice: "Connect a Mochi device to edit its carousel.", loading: "Loading carousel settings...",

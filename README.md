@@ -150,7 +150,7 @@ You should see the web controller:
 
 ### Weather data
 
-The Weather view first uses IPWhois to estimate the current city and coordinates, then requests current temperature, humidity, weather code, and the daily high/low from Open-Meteo. It requires internet access but no API key. IP-based location is approximate and can be affected by VPNs or carrier routing. Weather refreshes every 30 minutes and the IP location refreshes every 24 hours.
+The Weather view uses IPWhois to estimate the current city and coordinates by default, then requests current temperature, humidity, weather code, and the daily high/low from Open-Meteo. The Web controller also supports browser GPS and Open-Meteo city/place search; an explicit GPS or place selection is persisted on the device, and `USE IP LOCATION` restores the default. It requires internet access but no API key. IP-based location is approximate and can be affected by VPNs or carrier routing. Weather refreshes every 30 minutes and the IP location refreshes every 24 hours.
 
 ---
 

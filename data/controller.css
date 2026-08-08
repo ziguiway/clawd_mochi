@@ -468,7 +468,9 @@ input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
 .wsetup{display:none;flex-direction:column;gap:9px;border-top:1px solid #4b372c;padding-top:11px}
 .wsetup.open{display:flex}
 .whint{color:#a79e94;font-size:9px;line-height:1.5}
-.wlist{display:none;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
+  .wlist{display:none;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
+  .weather-location{width:100%;max-width:390px;background:#151418;border:1.5px solid #3a3028;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .weather-location-head,.weather-location-row{display:flex;align-items:center;justify-content:space-between;gap:10px}.weather-location-head span:last-child{font-size:9px;color:#28b878;letter-spacing:1px}.weather-location-row .tin{flex:1;min-width:0}.weather-location-row .cbtn{flex:none;padding-inline:10px}.weather-suggestions{display:flex;flex-direction:column;gap:5px;max-height:190px;overflow:auto}.weather-suggestion{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;background:#222126;border:1px solid #39353b;border-radius:8px;color:#f0ece4;font:700 11px 'Courier New',monospace;text-align:left;cursor:pointer}.weather-suggestion small{color:#8a8278;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.weather-location-current{color:#bbb4ac;font-size:10px;line-height:1.4}.weather-ip-btn{align-self:flex-start;font-size:10px;padding:7px 10px}
 .wnet{display:flex;align-items:center;justify-content:space-between;gap:8px;
   width:100%;background:#201f23;border:1px solid #3d393f;border-radius:8px;
   color:#f0ece4;font:700 11px 'Courier New',monospace;padding:10px;text-align:left}

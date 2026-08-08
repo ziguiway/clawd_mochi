@@ -22,6 +22,7 @@ public:
     WebService(ClaudeCodeService* ccService, WifiConfigService* wifiService,
                TimeService* timeService, DisplayService* displayService,
                PreferenceService* preferenceService,
+               WeatherService* weatherService,
                CryptoService* cryptoService,
                MarketService* marketService,
                TimetableService* timetableService,
@@ -37,6 +38,7 @@ private:
     TimeService* _timeService;
     DisplayService* _displayService;
     PreferenceService* _preferenceService;
+    WeatherService* _weatherService;
     CryptoService* _cryptoService;
     MarketService* _marketService;
     TimetableService* _timetableService;
@@ -99,6 +101,8 @@ private:
     void handleArcadeState();
     void handleArcadeCatalog();
     void handlePrefs();
+    void handleWeatherLocation();
+    void handleWeatherLocationReset();
     void handleState();
     void handleExpressions();
     void handleExpressionUpdate();

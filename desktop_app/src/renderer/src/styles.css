@@ -334,6 +334,9 @@ input[type="range"] { accent-color: var(--orange); height: 4px; }
 .drag-handle { color: var(--text-faint); cursor: grab; font-size: 18px; }
 .icon-btn { background: none; border: 0; color: var(--orange); font-size: 20px; padding: 0 4px; }
 .icon-btn:disabled { opacity: .35; cursor: default; }
+.location-results { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 12px 122px; }
+.location-result { display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px; background: var(--bg-raised); border: 1px solid var(--line); border-radius: 6px; color: var(--text); text-align: left; }
+.location-result span { color: var(--text-dim); font-size: 10px; }
 
 /* placeholder pages */
 .soon-page { text-align: center; padding-top: 120px; }

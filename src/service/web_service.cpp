@@ -27,6 +27,7 @@ void appendUInt64(String& output, uint64_t value) {
 WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiService,
                        TimeService* timeService, DisplayService* displayService,
                        PreferenceService* preferenceService,
+                       WeatherService* weatherService,
                        CryptoService* cryptoService,
                        MarketService* marketService,
                        TimetableService* timetableService,
@@ -36,6 +37,7 @@ WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiServ
     , _ccService(ccService), _wifiService(wifiService)
     , _timeService(timeService), _displayService(displayService)
     , _preferenceService(preferenceService)
+    , _weatherService(weatherService)
     , _cryptoService(cryptoService)
     , _marketService(marketService)
     , _timetableService(timetableService)
@@ -140,6 +142,9 @@ void WebService::setupRoutes() {
     _server.on("/game/state", HTTP_GET, [this]() { handleArcadeState(); });
     _server.on("/game/catalog", HTTP_GET, [this]() { handleArcadeCatalog(); });
     _server.on("/prefs",       HTTP_GET, [this]() { handlePrefs(); });
+    _server.on("/weather/location", HTTP_GET, [this]() { handleWeatherLocation(); });
+    _server.on("/weather/location", HTTP_POST, [this]() { handleWeatherLocation(); });
+    _server.on("/weather/location/reset", HTTP_POST, [this]() { handleWeatherLocationReset(); });
     _server.on("/state",       HTTP_GET, [this]() { handleState(); });
     _server.on("/expressions", HTTP_GET, [this]() { handleExpressions(); });
     _server.on("/expression/current", HTTP_GET, [this]() { sendExpressionState(false); });
@@ -1034,6 +1039,44 @@ void WebService::handleSalaryReset() {
     counter->reset();
     _displayService->refreshSalaryCounter();
     sendSalaryStatus();
+}
+
+void WebService::handleWeatherLocation() {
+    if (!_weatherService) {
+        _server.send(503, "application/json", "{\"error\":\"weather unavailable\"}");
+        return;
+    }
+    if (_server.method() == HTTP_POST && _server.hasArg("lat") &&
+        _server.hasArg("lon") && _server.hasArg("city")) {
+        const String source = _server.arg("source");
+        const WeatherService::LocationSource locationSource = source == "gps"
+            ? WeatherService::LocationSource::GPS
+            : WeatherService::LocationSource::MANUAL;
+        if (!_weatherService->setLocationOverride(
+                _server.arg("lat").toFloat(), _server.arg("lon").toFloat(),
+                _server.arg("city"), locationSource)) {
+            _server.send(400, "application/json", "{\"error\":\"invalid weather location\"}");
+            return;
+        }
+    }
+    String json = "{\"city\":\"" + String(_weatherService->getCity()) +
+                  "\",\"label\":\"" + String(_weatherService->getLocationLabel()) +
+                  "\",\"lat\":" + String(_weatherService->getLatitude(), 5) +
+                  ",\"lon\":" + String(_weatherService->getLongitude(), 5) +
+                  ",\"source\":\"" +
+                  String(_weatherService->getLocationSourceName()) +
+                  "\",\"override\":" +
+                  String(_weatherService->hasLocationOverride() ? "true" : "false") + "}";
+    _server.send(200, "application/json", json);
+}
+
+void WebService::handleWeatherLocationReset() {
+    if (!_weatherService) {
+        _server.send(503, "application/json", "{\"error\":\"weather unavailable\"}");
+        return;
+    }
+    _weatherService->clearLocationOverride();
+    handleWeatherLocation();
 }
 
 void WebService::handlePrefs() {
