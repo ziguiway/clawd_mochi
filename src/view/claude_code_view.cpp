@@ -191,12 +191,30 @@ void ClaudeCodeView::drawStatusIcon(ClaudeCodeService::Status status, int x, int
     _tft->fillRect(190, 10, 50, 16, COLOR_MOCHI_BG);
     switch (status) {
         case ClaudeCodeService::Status::IDLE:
-        case ClaudeCodeService::Status::WORKING:
             _tft->fillRect(FACE_EYE_X, FACE_EYE_Y, FACE_EYE_W, FACE_EYE_H,
                            COLOR_EYES);
             _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP, FACE_EYE_Y,
                            FACE_EYE_W, FACE_EYE_H, COLOR_EYES);
             break;
+        case ClaudeCodeService::Status::WORKING: {
+            // 与网页控制端的 Grumpy 表情共用相同几何。
+            const int16_t leftX = FACE_EYE_X;
+            const int16_t rightX = FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP;
+            const int16_t eyeY = FACE_EYE_Y;
+            for (int8_t thickness = -5; thickness <= 5; thickness++) {
+                _tft->drawLine(leftX - 5, eyeY + 2 + thickness,
+                               leftX + FACE_EYE_W + 5, eyeY + 22 + thickness,
+                               COLOR_EYES);
+                _tft->drawLine(rightX - 5, eyeY + 22 + thickness,
+                               rightX + FACE_EYE_W + 5, eyeY + 2 + thickness,
+                               COLOR_EYES);
+            }
+            _tft->fillRect(leftX, eyeY + 25, FACE_EYE_W,
+                           FACE_EYE_H - 25, COLOR_EYES);
+            _tft->fillRect(rightX, eyeY + 25, FACE_EYE_W,
+                           FACE_EYE_H - 25, COLOR_EYES);
+            break;
+        }
         case ClaudeCodeService::Status::THINKING:
             _tft->fillRect(FACE_EYE_X, FACE_EYE_Y, FACE_EYE_W, FACE_EYE_H,
                            COLOR_EYES);
@@ -210,12 +228,9 @@ void ClaudeCodeView::drawStatusIcon(ClaudeCodeService::Status status, int x, int
             _tft->fillRect(FACE_EYE_X + FACE_EYE_W + FACE_EYE_GAP, FACE_EYE_Y,
                            FACE_EYE_W, FACE_EYE_H, COLOR_EYES);
 
-            // 右上角粗像素问号：表示正在等待用户授权。
-            _tft->fillRect(214, 24, 16, 6, COLOR_EYES);
-            _tft->fillRect(230, 30, 6, 16, COLOR_EYES);
-            _tft->fillRect(220, 46, 16, 6, COLOR_EYES);
-            _tft->fillRect(220, 52, 6, 8, COLOR_EYES);
-            _tft->fillRect(220, 66, 6, 6, COLOR_EYES);
+            // 与网页控制端的 Surprised 表情共用感叹号。
+            _tft->fillRect(CFG_DISPLAY_WIDTH - 20, 14, 8, 24, COLOR_EYES);
+            _tft->fillRect(CFG_DISPLAY_WIDTH - 20, 44, 8, 8, COLOR_EYES);
             break;
         case ClaudeCodeService::Status::ERROR: {
             const int16_t leftX = FACE_EYE_X;

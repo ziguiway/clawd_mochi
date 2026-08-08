@@ -3131,10 +3131,10 @@ void DisplayService::switchToExpressionMode() {
             expression = ExpressionId::THINKING;
             break;
         case ClaudeCodeService::Status::WORKING:
-            expression = ExpressionId::NORMAL;
+            expression = ExpressionId::GRUMPY;
             break;
         case ClaudeCodeService::Status::PERMISSION:
-            expression = ExpressionId::CURIOUS;
+            expression = ExpressionId::SURPRISED;
             break;
         case ClaudeCodeService::Status::SLEEPING:
             expression = ExpressionId::SLEEPING;
