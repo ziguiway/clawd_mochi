@@ -27,6 +27,7 @@ void appendUInt64(String& output, uint64_t value) {
 WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiService,
                        TimeService* timeService, DisplayService* displayService,
                        PreferenceService* preferenceService,
+                       WeatherService* weatherService,
                        CryptoService* cryptoService,
                        MarketService* marketService,
                        TimetableService* timetableService,
@@ -36,6 +37,7 @@ WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiServ
     , _ccService(ccService), _wifiService(wifiService)
     , _timeService(timeService), _displayService(displayService)
     , _preferenceService(preferenceService)
+    , _weatherService(weatherService)
     , _cryptoService(cryptoService)
     , _marketService(marketService)
     , _timetableService(timetableService)
@@ -88,6 +90,9 @@ void WebService::setupRoutes() {
     _server.on("/wakeup_import.js", HTTP_GET, [this]() {
         handleFile("/wakeup_import.js", "application/javascript");
     });
+    _server.on("/onboarding.js", HTTP_GET, [this]() {
+        handleFile("/onboarding.js", "application/javascript");
+    });
     _server.on("/media.js", HTTP_GET, [this]() {
         handleFile("/media.js", "application/javascript");
     });
@@ -137,6 +142,9 @@ void WebService::setupRoutes() {
     _server.on("/game/state", HTTP_GET, [this]() { handleArcadeState(); });
     _server.on("/game/catalog", HTTP_GET, [this]() { handleArcadeCatalog(); });
     _server.on("/prefs",       HTTP_GET, [this]() { handlePrefs(); });
+    _server.on("/weather/location", HTTP_GET, [this]() { handleWeatherLocation(); });
+    _server.on("/weather/location", HTTP_POST, [this]() { handleWeatherLocation(); });
+    _server.on("/weather/location/reset", HTTP_POST, [this]() { handleWeatherLocationReset(); });
     _server.on("/state",       HTTP_GET, [this]() { handleState(); });
     _server.on("/expressions", HTTP_GET, [this]() { handleExpressions(); });
     _server.on("/expression/current", HTTP_GET, [this]() { sendExpressionState(false); });
@@ -201,6 +209,8 @@ void WebService::setupRoutes() {
 
     // Static files from LittleFS
     _server.serveStatic("/style.css", LittleFS, "/style.css");
+    _server.serveStatic("/controller.css", LittleFS, "/controller.css");
+    _server.serveStatic("/controller.js", LittleFS, "/controller.js");
     _server.serveStatic("/app.js", LittleFS, "/app.js");
     _server.serveStatic("/claude_code.js", LittleFS, "/claude_code.js");
     _server.serveStatic("/wifi.js", LittleFS, "/wifi.js");
@@ -1031,6 +1041,44 @@ void WebService::handleSalaryReset() {
     sendSalaryStatus();
 }
 
+void WebService::handleWeatherLocation() {
+    if (!_weatherService) {
+        _server.send(503, "application/json", "{\"error\":\"weather unavailable\"}");
+        return;
+    }
+    if (_server.method() == HTTP_POST && _server.hasArg("lat") &&
+        _server.hasArg("lon") && _server.hasArg("city")) {
+        const String source = _server.arg("source");
+        const WeatherService::LocationSource locationSource = source == "gps"
+            ? WeatherService::LocationSource::GPS
+            : WeatherService::LocationSource::MANUAL;
+        if (!_weatherService->setLocationOverride(
+                _server.arg("lat").toFloat(), _server.arg("lon").toFloat(),
+                _server.arg("city"), locationSource)) {
+            _server.send(400, "application/json", "{\"error\":\"invalid weather location\"}");
+            return;
+        }
+    }
+    String json = "{\"city\":\"" + String(_weatherService->getCity()) +
+                  "\",\"label\":\"" + String(_weatherService->getLocationLabel()) +
+                  "\",\"lat\":" + String(_weatherService->getLatitude(), 5) +
+                  ",\"lon\":" + String(_weatherService->getLongitude(), 5) +
+                  ",\"source\":\"" +
+                  String(_weatherService->getLocationSourceName()) +
+                  "\",\"override\":" +
+                  String(_weatherService->hasLocationOverride() ? "true" : "false") + "}";
+    _server.send(200, "application/json", json);
+}
+
+void WebService::handleWeatherLocationReset() {
+    if (!_weatherService) {
+        _server.send(503, "application/json", "{\"error\":\"weather unavailable\"}");
+        return;
+    }
+    _weatherService->clearLocationOverride();
+    handleWeatherLocation();
+}
+
 void WebService::handlePrefs() {
     if (!_preferenceService) {
         _server.send(500, "application/json", "{\"error\":\"preferences unavailable\"}");
@@ -1129,26 +1177,27 @@ void WebService::handlePrefs() {
             static_cast<uint8_t>(_server.arg("carouselFixed").toInt());
         _preferenceService->setCarouselFixedView(fixedView);
         // 关闭轮播时，“固定页”就是用户期望下次上电恢复的页面。
-        if (fixedView == VIEW_CLOCK || fixedView == VIEW_WEATHER ||
+        if (fixedView == VIEW_CLOCK || fixedView == VIEW_POMODORO ||
+            fixedView == VIEW_WEATHER ||
             fixedView == VIEW_CRYPTO || fixedView == VIEW_MARKET ||
-            fixedView == VIEW_SALARY) {
+            fixedView == VIEW_SALARY || fixedView == VIEW_TIMETABLE) {
             _preferenceService->setStartupView(fixedView);
         }
     }
     if (_server.hasArg("carouselOrder")) {
         const String value = _server.arg("carouselOrder");
-        uint8_t order[CAROUSEL_VIEW_COUNT] = {};
+        uint8_t order[CAROUSEL_MAX_VIEW_COUNT] = {};
         uint8_t index = 0;
         int start = 0;
-        while (index < CAROUSEL_VIEW_COUNT && start >= 0) {
+        while (index < CAROUSEL_MAX_VIEW_COUNT && start >= 0) {
             const int comma = value.indexOf(',', start);
             const String part = value.substring(start,
                 comma < 0 ? value.length() : comma);
             order[index++] = static_cast<uint8_t>(part.toInt());
             start = comma < 0 ? -1 : comma + 1;
         }
-        if (index != CAROUSEL_VIEW_COUNT ||
-            !_preferenceService->setCarouselOrder(order)) {
+        if (index == 0 ||
+            !_preferenceService->setCarouselOrder(order, index)) {
             _server.send(400, "application/json", "{\"error\":\"invalid carousel order\"}");
             return;
         }
@@ -1401,13 +1450,14 @@ void WebService::handleConfigImport() {
         return;
     }
     JsonArray orderJson = prefs["carouselOrder"];
-    if (orderJson.size() != CAROUSEL_VIEW_COUNT) {
+    if (orderJson.size() == 0 || orderJson.size() > CAROUSEL_MAX_VIEW_COUNT) {
         _server.send(400, "application/json", "{\"error\":\"invalid carousel order\"}");
         return;
     }
-    uint8_t order[CAROUSEL_VIEW_COUNT] = {};
-    for (uint8_t i = 0; i < CAROUSEL_VIEW_COUNT; i++) order[i] = orderJson[i] | 255;
-    if (!_preferenceService->setCarouselOrder(order)) {
+    const uint8_t orderCount = static_cast<uint8_t>(orderJson.size());
+    uint8_t order[CAROUSEL_MAX_VIEW_COUNT] = {};
+    for (uint8_t i = 0; i < orderCount; i++) order[i] = orderJson[i] | 255;
+    if (!_preferenceService->setCarouselOrder(order, orderCount)) {
         _server.send(400, "application/json", "{\"error\":\"invalid carousel order\"}");
         return;
     }

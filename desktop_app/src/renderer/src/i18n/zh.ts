@@ -22,6 +22,7 @@ export const zh = {
     timetable: "课程表",
     arcade: "街机游戏",
     media: "媒体投屏",
+    carousel: "待机轮播",
     system: "系统",
   },
   stream: {
@@ -77,6 +78,19 @@ export const zh = {
     stop: "停止键盘宠物",
     active: "监听已开启。macOS 需要授予输入监控权限。",
     permission: "首次启动时，系统可能会要求输入监控权限。",
+  },
+  weather: {
+    title: "天气定位", subtitle: "选择 Mochi 用于天气数据的地点。", noDevice: "请先连接 Mochi 设备再修改天气地点。",
+    search: "城市或地点", searchPlaceholder: "搜索城市", autoLocate: "自动定位", current: "当前地点", useIp: "使用 IP 定位",
+    gpsLocation: "GPS 定位", gpsUnavailable: "浏览器不支持 GPS 定位。", gpsFailed: "GPS 定位失败。", loadFailed: "天气地点加载失败。", searchFailed: "地点搜索失败。", saveFailed: "天气地点保存失败。",
+  },
+  carousel: {
+    title: "待机轮播", subtitle: "选择、删除、拖动排序并调整 Mochi 待机时展示的页面。",
+    noDevice: "请先连接 Mochi 设备再编辑轮播配置。", loading: "正在加载轮播配置...",
+    enabled: "轮播", on: "开启", off: "关闭", interval: "轮播间隔", fixed: "固定页面",
+    order: "轮播顺序", add: "添加页面", choose: "选择页面", remove: "删除页面",
+    unknown: "未知页面", loadFailed: "轮播配置加载失败。", saveFailed: "轮播配置保存失败。",
+    clock: "时钟", pomodoro: "番茄钟", weather: "天气", crypto: "加密货币", market: "股票", salary: "Live Ledger", timetable: "课程表",
   },
   soon: {
     expressionsDesc: "8 种像素表情、手动/自动模式与眨眼速度 —— 将随网页控制台迁入。",

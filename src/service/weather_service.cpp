@@ -14,9 +14,14 @@ WeatherService::WeatherService(WifiConfigService* wifiService)
     , _valid(false)
     , _loading(false)
     , _locationValid(false)
+    , _locationOverride(false)
     , _refreshRequested(false)
     , _latitude(0.0f)
     , _longitude(0.0f)
+    , _fallbackLatitude(0.0f)
+    , _fallbackLongitude(0.0f)
+    , _fallbackSource(LocationSource::MANUAL)
+    , _locationSource(LocationSource::IP)
     , _temperature(0)
     , _highTemperature(0)
     , _lowTemperature(0)
@@ -31,9 +36,28 @@ WeatherService::WeatherService(WifiConfigService* wifiService)
 {
     strncpy(_city, "LOCATING", sizeof(_city) - 1);
     _city[sizeof(_city) - 1] = '\0';
+    strncpy(_locationLabel, "LOCATING", sizeof(_locationLabel) - 1);
+    _locationLabel[sizeof(_locationLabel) - 1] = '\0';
+    _fallbackCity[0] = '\0';
 }
 
 void WeatherService::init() {
+    _prefs.begin("clawd-weather", false);
+    const uint8_t mode = _prefs.getUChar("mode", 0);
+    _locationOverride = mode == 1 || mode == 2;
+    _fallbackLatitude = _prefs.getFloat("lat", 0.0f);
+    _fallbackLongitude = _prefs.getFloat("lon", 0.0f);
+    const String savedCity = _prefs.getString("city", "");
+    strncpy(_fallbackCity, savedCity.c_str(), sizeof(_fallbackCity) - 1);
+    _fallbackCity[sizeof(_fallbackCity) - 1] = '\0';
+    strncpy(_locationLabel, _fallbackCity[0] ? _fallbackCity : "LOCATING",
+            sizeof(_locationLabel) - 1);
+    _locationLabel[sizeof(_locationLabel) - 1] = '\0';
+    const uint8_t fallbackMode = _prefs.getUChar("src", mode);
+    _fallbackSource = fallbackMode == 1 ? LocationSource::GPS : LocationSource::MANUAL;
+    if (_locationOverride && !_fallbackLatitude && !_fallbackLongitude) {
+        _locationOverride = false;
+    }
     _refreshRequested = false;
     _loading = false;
 }
@@ -41,6 +65,49 @@ void WeatherService::init() {
 void WeatherService::requestRefresh() {
     _refreshRequested = true;
     _version++;
+}
+
+bool WeatherService::setLocationOverride(float latitude, float longitude,
+                                          const String& city,
+                                          LocationSource source) {
+    if (latitude < -90.0f || latitude > 90.0f || longitude < -180.0f ||
+        longitude > 180.0f || (latitude == 0.0f && longitude == 0.0f) ||
+        city.length() == 0 || city.length() >= sizeof(_fallbackCity) ||
+        source == LocationSource::IP) {
+        return false;
+    }
+    _fallbackLatitude = latitude;
+    _fallbackLongitude = longitude;
+    strncpy(_fallbackCity, city.c_str(), sizeof(_fallbackCity) - 1);
+    _fallbackCity[sizeof(_fallbackCity) - 1] = '\0';
+    strncpy(_locationLabel, _fallbackCity, sizeof(_locationLabel) - 1);
+    _locationLabel[sizeof(_locationLabel) - 1] = '\0';
+    _fallbackSource = source;
+    _locationOverride = true;
+    _prefs.putUChar("mode", source == LocationSource::GPS ? 1 : 2);
+    _prefs.putUChar("src", source == LocationSource::GPS ? 1 : 2);
+    _prefs.putFloat("lat", latitude);
+    _prefs.putFloat("lon", longitude);
+    _prefs.putString("city", city);
+    _locationValid = false;
+    requestRefresh();
+    return true;
+}
+
+void WeatherService::clearLocationOverride() {
+    _locationOverride = false;
+    _prefs.putUChar("mode", 0);
+    _locationValid = false;
+    requestRefresh();
+}
+
+const char* WeatherService::getLocationSourceName() const {
+    switch (_locationSource) {
+        case LocationSource::GPS: return "gps";
+        case LocationSource::MANUAL: return "manual";
+        case LocationSource::IP:
+        default: return "ip";
+    }
 }
 
 void WeatherService::update() {
@@ -107,6 +174,7 @@ void WeatherService::runRefresh() {
 }
 
 bool WeatherService::fetchLocation() {
+    if (_locationOverride) return applyFallbackLocation();
     WiFiClientSecure client;
     client.setInsecure();
     client.setHandshakeTimeout(15);
@@ -114,7 +182,7 @@ bool WeatherService::fetchLocation() {
     HTTPClient http;
     http.setConnectTimeout(12000);
     http.setTimeout(10000);
-    if (!http.begin(client, "https://ipwho.is/")) return false;
+    if (!http.begin(client, "https://ipwho.is/")) return applyFallbackLocation();
     http.useHTTP10(true);
     http.addHeader("Accept-Encoding", "identity");
 
@@ -124,7 +192,7 @@ bool WeatherService::fetchLocation() {
         LOG_WARN("Weather", "IP 定位请求失败 HTTP=%d reason=%s",
                  code, reason.c_str());
         http.end();
-        return false;
+        return applyFallbackLocation();
     }
 
     const String payload = http.getString();
@@ -135,19 +203,42 @@ bool WeatherService::fetchLocation() {
         LOG_WARN("Weather", "IP 定位响应解析失败 json=%s bytes=%u",
                  error ? error.c_str() : "invalid response",
                  static_cast<unsigned int>(payload.length()));
-        return false;
+        return applyFallbackLocation();
     }
 
     _latitude = doc["latitude"] | 0.0f;
     _longitude = doc["longitude"] | 0.0f;
     const char* city = doc["city"] | "LOCAL";
-    if (_latitude == 0.0f && _longitude == 0.0f) return false;
+    if (_latitude == 0.0f && _longitude == 0.0f) return applyFallbackLocation();
 
     copyCity(city);
+    strncpy(_locationLabel, city, sizeof(_locationLabel) - 1);
+    _locationLabel[sizeof(_locationLabel) - 1] = '\0';
     _locationValid = true;
+    _locationSource = LocationSource::IP;
     _lastLocationMs = millis();
     LOG_INFO("Weather", "IP 定位城市=%s lat=%.3f lon=%.3f",
              _city, _latitude, _longitude);
+    return true;
+}
+
+bool WeatherService::applyFallbackLocation() {
+    if (_fallbackLatitude < -90.0f || _fallbackLatitude > 90.0f ||
+        _fallbackLongitude < -180.0f || _fallbackLongitude > 180.0f ||
+        (_fallbackLatitude == 0.0f && _fallbackLongitude == 0.0f) ||
+        _fallbackCity[0] == '\0') {
+        return false;
+    }
+    _latitude = _fallbackLatitude;
+    _longitude = _fallbackLongitude;
+    copyCity(_fallbackCity);
+    strncpy(_locationLabel, _fallbackCity, sizeof(_locationLabel) - 1);
+    _locationLabel[sizeof(_locationLabel) - 1] = '\0';
+    _locationSource = _fallbackSource;
+    _locationValid = true;
+    _lastLocationMs = millis();
+    LOG_INFO("Weather", "使用备用定位 source=%s city=%s lat=%.3f lon=%.3f",
+             getLocationSourceName(), _city, _latitude, _longitude);
     return true;
 }
 

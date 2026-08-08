@@ -127,7 +127,7 @@ All services are owned by `AppStateMachine` and accessed via `IAppContext`:
 | `OperationModeService` | Global singleton (`bind()/current()`) — LAN vs SERIAL mode detection (3s startup window) |
 | `BootButtonService` | 5-second hold on GPIO9 (BOOT button) triggers factory reset |
 | `PreferenceService` | NVS-backed settings: bg color, anim speed, startup view, brightness, claude status enabled, carousel config (enabled/speed/order/fixedView), night dimming |
-| `WeatherService` | IP-located weather (IPWhois + Open-Meteo). 30-min refresh, 24h location refresh. Uses `NetworkRequestGate` |
+| `WeatherService` | IP-first weather location (IPWhois + Open-Meteo), with browser GPS/place overrides from the Web controller. 30-min refresh, 24h IP location refresh. Uses `NetworkRequestGate` |
 | `CryptoService` | Cryptocurrency assets (max 5, CoinLore source). 10-min refresh, 2-min retry. Persists via `Preferences`. Uses `NetworkRequestGate` |
 | `MarketService` | Stock market assets (max 5, Tencent quote source). 5-min refresh, 2-min retry. Uses `NetworkRequestGate` |
 | `OtaService` | HTTP OTA firmware update — daily remote-manifest check, remote install, local upload streaming, checksum verify, and boot-rollback. Driven via `WebService` `/ota/*` endpoints |

@@ -23,6 +23,7 @@ export const en: Messages = {
     timetable: "Timetable",
     arcade: "Arcade",
     media: "Media Cast",
+    carousel: "Idle Carousel",
     system: "System",
   },
   stream: {
@@ -78,6 +79,19 @@ export const en: Messages = {
     stop: "Stop keyboard pet",
     active: "Listening is active. macOS may require Input Monitoring permission.",
     permission: "The first start may ask for Input Monitoring permission.",
+  },
+  weather: {
+    title: "Weather Location", subtitle: "Choose the weather location used by Mochi.", noDevice: "Connect a Mochi device to edit its weather location.",
+    search: "City or place", searchPlaceholder: "Search city", autoLocate: "AUTO LOCATE", current: "Current", useIp: "USE IP LOCATION",
+    gpsLocation: "GPS location", gpsUnavailable: "Browser GPS is unavailable.", gpsFailed: "GPS location failed.", loadFailed: "Could not load weather location.", searchFailed: "Place search failed.", saveFailed: "Could not save weather location.",
+  },
+  carousel: {
+    title: "Idle Carousel", subtitle: "Choose, remove, reorder and time the pages shown while Mochi is idle.",
+    noDevice: "Connect a Mochi device to edit its carousel.", loading: "Loading carousel settings...",
+    enabled: "Carousel", on: "ON", off: "OFF", interval: "Interval", fixed: "Fixed page",
+    order: "ROTATION ORDER", add: "Add page", choose: "Choose a page", remove: "Remove page",
+    unknown: "Unknown page", loadFailed: "Could not load carousel settings.", saveFailed: "Could not save carousel settings.",
+    clock: "Clock", pomodoro: "Pomodoro", weather: "Weather", crypto: "Crypto", market: "Market", salary: "Live Ledger", timetable: "Timetable",
   },
   soon: {
     expressionsDesc: "8 pixel faces, manual / auto mode and blink speed — coming in the web-console migration.",
