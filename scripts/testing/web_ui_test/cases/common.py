@@ -18,6 +18,16 @@ def result_symbols(page: Page) -> list[str]:
     return page.locator("#mResults .mresname strong").all_text_contents()
 
 def open_controller(page: Page) -> None:
+    if getattr(page, "_reuse_controller", False) and page.url.endswith("/?test=1"):
+        try:
+            if page.evaluate("() => initialLoadComplete === true"):
+                page.locator('button[data-console-view="control"]').click()
+                page.locator('[data-console-section="control"].console-view-active').wait_for(
+                    state="visible"
+                )
+                return
+        except Exception:
+            pass
     page.goto("/?test=1", wait_until="domcontentloaded")
     page.wait_for_function("() => initialLoadComplete === true")
 

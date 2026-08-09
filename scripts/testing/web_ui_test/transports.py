@@ -5,6 +5,7 @@ from __future__ import annotations
 import threading
 import time
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
 if TYPE_CHECKING:
     from playwright.sync_api import Route
@@ -52,6 +53,12 @@ class DeviceRequestThrottle:
         self._lock = threading.Lock()
 
     def __call__(self, route: "Route | Any") -> None:
+        path = urlparse(route.request.url).path
+        if path == "/" or path.rsplit("/", 1)[-1].endswith(
+            (".html", ".js", ".css", ".png", ".jpg", ".gif", ".ico", ".woff2")
+        ):
+            route.continue_()
+            return
         with self._lock:
             wait_seconds = self._interval - (time.monotonic() - self._last_request)
             if wait_seconds > 0:

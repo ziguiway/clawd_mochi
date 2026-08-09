@@ -4,6 +4,7 @@ from web_ui_test.transports import DeviceRequestThrottle
 class Route:
     def __init__(self):
         self.continued = False
+        self.request = type("Request", (), {"url": "http://device/api"})()
 
     def continue_(self):
         self.continued = True

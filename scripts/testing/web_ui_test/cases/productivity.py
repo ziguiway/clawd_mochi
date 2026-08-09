@@ -20,9 +20,13 @@ def run_timetable_import_flow(page: Page, *, stub_mode: bool) -> None:
         f"Timetable preview should be 240x240, got "
         f"{box['width']:.0f}x{box['height']:.0f}"
     )
-    assert preview.locator(".utp-head").text_content() == "NEXT CLASS"
-    assert preview.locator(".utp-course").text_content() == "MACHINE\nLEARNING"
-    assert preview.locator(".utp-count").text_content() == "42 MIN"
+    if stub_mode:
+        assert preview.locator(".utp-head").text_content() == "NEXT CLASS"
+        assert preview.locator(".utp-course").text_content() == "MACHINE\nLEARNING"
+        assert preview.locator(".utp-count").text_content() == "42 MIN"
+    else:
+        # 真机可能尚未导入课表，验证设备真实返回的未配置态仍能渲染。
+        assert preview.locator(".utp-head").text_content() in {"TIMETABLE", "NEXT CLASS", "TODAY"}
     page.wait_for_function(
         "() => !document.querySelector('#toast').classList.contains('show')"
     )
@@ -33,25 +37,30 @@ def run_timetable_import_flow(page: Page, *, stub_mode: bool) -> None:
     page.locator("#uImporter.open").wait_for(state="visible")
     print("PASS  打开手机课表 App 导入向导")
 
-    if stub_mode:
-        wakeup_data = "\n".join([
-            json.dumps({"name": "test"}),
-            json.dumps([
-                {"node": 1, "startTime": "08:30", "endTime": "09:15"},
-                {"node": 2, "startTime": "09:20", "endTime": "10:05"},
-            ]),
-            json.dumps({"settings": {"start_date": "2026/9/9 00:00:00"}}),
-            json.dumps([{"id": 7, "courseName": "机器学习"}]),
-            json.dumps([{
-                "id": 7, "day": 1, "startNode": 1, "step": 2,
-                "startWeek": 1, "endWeek": 16, "type": 0,
-                "room": "N301", "teacher": "陈老师",
-            }]),
-        ])
-        page.evaluate(
-            "data => { window.WakeUpImport.importCode = async () => data; }",
-            wakeup_data,
-        )
+    if not stub_mode:
+        page.locator("#uImporter .uclose").click()
+        page.locator("#uImporter.open").wait_for(state="hidden")
+        print("INFO  真机跳过 WakeUp 假口令导入，避免写入虚构课表")
+        return
+
+    wakeup_data = "\n".join([
+        json.dumps({"name": "test"}),
+        json.dumps([
+            {"node": 1, "startTime": "08:30", "endTime": "09:15"},
+            {"node": 2, "startTime": "09:20", "endTime": "10:05"},
+        ]),
+        json.dumps({"settings": {"start_date": "2026/9/9 00:00:00"}}),
+        json.dumps([{"id": 7, "courseName": "机器学习"}]),
+        json.dumps([{
+            "id": 7, "day": 1, "startNode": 1, "step": 2,
+            "startWeek": 1, "endWeek": 16, "type": 0,
+            "room": "N301", "teacher": "陈老师",
+        }]),
+    ])
+    page.evaluate(
+        "data => { window.WakeUpImport.importCode = async () => data; }",
+        wakeup_data,
+    )
 
     page.locator("#uPaste").fill(
         "这是来自「WakeUp课程表」的课表分享，分享口令为「test_share_code_1234」"

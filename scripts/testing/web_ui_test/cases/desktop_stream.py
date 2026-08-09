@@ -139,13 +139,13 @@ def run_desktop_stream_flow(page: Page, *, stub_mode: bool,
             timeout=5000,
         )
         page.locator("#streamExit").click()
+        page.wait_for_function(
+            "() => document.querySelector('#streamState').textContent === 'OFF'"
+        )
         # Opening another view may clean up an already active stream first;
         # verify the observable contract rather than an implementation count.
         assert FirmwareStubHandler.stream_exit_count >= 1
         assert not FirmwareStubHandler.stream_status["active"]
-        page.wait_for_function(
-            "() => document.querySelector('#streamState').textContent === 'OFF'"
-        )
         print("PASS  Desktop Stream 面板 enter/status/exit UI 流程(stub)")
     else:
         base = device_url.rstrip("/")
@@ -200,8 +200,11 @@ def _run_device_link(page: Page, base: str) -> None:
         streamer2.start(jpeg2, fps=8.0)
         assert streamer2.wait_connected(), f"重连失败: {streamer2.error}"
         f1 = _get(base, "/stream/status")["frames"]
-        time.sleep(2)
-        f2 = _get(base, "/stream/status")["frames"]
+        deadline = time.monotonic() + 5
+        f2 = f1
+        while time.monotonic() < deadline and f2 <= f1:
+            time.sleep(0.25)
+            f2 = _get(base, "/stream/status")["frames"]
         assert f2 > f1, (f1, f2)
         streamer2.stop()
         print("PASS  断流后重连恢复, 帧内容持续更新")

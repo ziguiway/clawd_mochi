@@ -249,6 +249,7 @@ def main() -> int:
                 viewport={"width": 430, "height": 932},
             )
             page = context.new_page()
+            page._reuse_controller = bool(args.device_url)
             if args.device_url:
                 page.route(
                     f"{base_url}**",

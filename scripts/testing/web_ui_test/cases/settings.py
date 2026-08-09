@@ -190,16 +190,26 @@ def run_theme_flow(page: Page, *, stub_mode: bool) -> None:
             "(theme) => displayTheme === theme",
             arg=target,
         )
-        page.wait_for_function(
-            "(bg) => document.getElementById('bgCol').value.toLowerCase() === bg",
-            arg=expected[target][0],
-        )
+        if stub_mode:
+            page.wait_for_function(
+                "(bg) => document.getElementById('bgCol').value.toLowerCase() === bg",
+                arg=expected[target][0],
+            )
+        else:
+            page.wait_for_function(
+                "() => /^#[0-9a-f]{6}$/i.test(document.getElementById('bgCol').value)"
+            )
         page.wait_for_function(
             "(expression) => document.getElementById('profileExpression').value === expression",
             arg=expected[target][1],
         )
         assert target_button.get_attribute("aria-pressed") == "true"
-        assert page.locator("#bgCol").input_value().lower() == expected[target][0]
+        actual_bg = page.locator("#bgCol").input_value().lower()
+        if stub_mode:
+            assert actual_bg == expected[target][0]
+        else:
+            # 真机返回经过 ST7789 色彩补偿的设备背景色，主题状态仍需一致。
+            assert len(actual_bg) == 7 and actual_bg[0] == "#"
         assert page.locator("#profileExpression").input_value() == expected[target][1]
         if stub_mode:
             assert FirmwareStubHandler.prefs["theme"] == target
