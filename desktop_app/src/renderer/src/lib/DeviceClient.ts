@@ -25,6 +25,7 @@ export interface CarouselPrefs {
   carousel: boolean; carouselSpeed: number; carouselOrder: number[]; carouselFixed: number; carouselPages?: number[];
 }
 export interface WeatherLocation { city: string; label: string; lat: number; lon: number; source: "ip" | "gps" | "manual"; override: boolean; }
+export interface UsageStatus { configured: boolean; loading: boolean; valid: boolean; authError: boolean; status: string; sessionUsed: number; sessionLeft: number; sessionResetMins: number; weeklyUsed: number; weeklyLeft: number; weeklyResetMins: number; }
 
 export const DeviceClient = {
   streamStatus: (ip: string) => request<StreamStatus>(ip, "/stream/status"),
@@ -40,5 +41,9 @@ export const DeviceClient = {
   saveWeatherLocation: (ip: string, lat: number, lon: number, city: string, source: "gps" | "manual") => request<WeatherLocation>(
     ip, `/weather/location?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&city=${encodeURIComponent(city)}&source=${source}`, { method: "POST" }
   ),
-  resetWeatherLocation: (ip: string) => request<WeatherLocation>(ip, "/weather/location/reset", { method: "POST" })
+  resetWeatherLocation: (ip: string) => request<WeatherLocation>(ip, "/weather/location/reset", { method: "POST" }),
+  usage: (ip: string) => request<UsageStatus>(ip, "/usage/config"),
+  saveUsageToken: (ip: string, token: string) => request<UsageStatus>(ip, "/usage/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }) }),
+  clearUsageToken: (ip: string) => request<UsageStatus>(ip, "/usage/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clear: true }) }),
+  refreshUsage: (ip: string) => request<{ ok: boolean }>(ip, "/usage/refresh", { method: "POST" })
 };

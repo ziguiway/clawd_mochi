@@ -18,6 +18,7 @@
 #include "../service/preference_service.h"
 #include "../service/weather_service.h"
 #include "../service/crypto_service.h"
+#include "../service/claude_usage_service.h"
 #include "../service/market_service.h"
 #include "../service/holiday_service.h"
 #include "../service/timetable_service.h"
@@ -74,6 +75,7 @@ private:
     PreferenceService    _prefs;
     WeatherService       _weather;
     CryptoService        _crypto;
+    ClaudeUsageService   _claudeUsage;
     MarketService        _market;
     HolidayService       _holiday;
     TimetableService     _timetable;

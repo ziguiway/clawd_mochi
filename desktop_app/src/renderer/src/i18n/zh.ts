@@ -18,6 +18,7 @@ export const zh = {
     expressions: "眼睛与表情",
     clock: "时钟与番茄钟",
     weather: "天气",
+    usage: "Claude 用量",
     market: "股票与加密货币",
     timetable: "课程表",
     arcade: "街机游戏",
@@ -90,7 +91,10 @@ export const zh = {
     enabled: "轮播", on: "开启", off: "关闭", interval: "轮播间隔", fixed: "固定页面",
     order: "轮播顺序", add: "添加页面", choose: "选择页面", remove: "删除页面",
     unknown: "未知页面", loadFailed: "轮播配置加载失败。", saveFailed: "轮播配置保存失败。",
-    clock: "时钟", pomodoro: "番茄钟", weather: "天气", crypto: "加密货币", market: "股票", salary: "Live Ledger", timetable: "课程表",
+    clock: "时钟", pomodoro: "番茄钟", weather: "天气", crypto: "加密货币", market: "股票", salary: "Live Ledger", timetable: "课程表", usage: "Claude 用量",
+  },
+  usage: {
+    title: "Claude 用量", subtitle: "凭证写入设备，由 Mochi 独立查询并显示剩余额度。", noDevice: "请先连接 Mochi 设备。", status: "状态", live: "实时数据", loading: "查询中", saved: "已保存", notSet: "未设置", tokenError: "凭证无效", fiveHour: "5 小时窗口", sevenDay: "7 天窗口", resetsIn: "重置倒计时", credential: "Claude 凭证", placeholder: "粘贴凭证", save: "保存凭证", clear: "清除", refresh: "立即刷新", deviceOnly: "凭证保存在设备 NVS，查询请求直接从设备发出。", replaceToken: "凭证已被拒绝，请替换后重试。", loadFailed: "用量状态加载失败。", saveFailed: "凭证保存失败。", unknown: "未知", days: "天", hours: "小时", minutes: "分钟",
   },
   soon: {
     expressionsDesc: "8 种像素表情、手动/自动模式与眨眼速度 —— 将随网页控制台迁入。",

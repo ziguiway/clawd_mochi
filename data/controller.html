@@ -199,6 +199,11 @@
     <span class="nm">Timetable</span>
     <span class="ht">classes & import</span>
   </button>
+  <button class="vbtn" data-v="20" onclick="setView(20)">
+    <span class="ic">5H / 7D</span>
+    <span class="nm">Usage</span>
+    <span class="ht">Claude quota left</span>
+  </button>
   <button class="vbtn" data-v="19" onclick="openMediaPanel()">
     <span class="ic">IMG / GIF</span>
     <span class="nm">Media Cast</span>
@@ -487,11 +492,11 @@
 <button class="cbtn idle-open" id="carouselPanelBtn" onclick="toggleCarouselPanel()"><span>↻ idle display settings</span><span id="carouselPanelState">open</span></button>
 <div class="rwrap" id="carouselWrap">
   <div class="rhead"><span class="rttl">INFO CAROUSEL</span><button class="cbtn rtoggle" id="carouselToggle" onclick="toggleCarousel()">○ carousel off</button></div>
-  <div class="rrow"><span class="mlabel">FIXED PAGE</span><select class="rselect" id="carouselFixed" onchange="setCarouselFixed(this.value)"><option value="6">Clock</option><option value="7">Pomodoro</option><option value="8">Weather</option><option value="9">Crypto</option><option value="10">Market</option><option value="17">Live Ledger</option><option value="18">Timetable</option></select></div>
+  <div class="rrow"><span class="mlabel">FIXED PAGE</span><select class="rselect" id="carouselFixed" onchange="setCarouselFixed(this.value)"><option value="6">Clock</option><option value="7">Pomodoro</option><option value="8">Weather</option><option value="9">Crypto</option><option value="10">Market</option><option value="17">Live Ledger</option><option value="18">Timetable</option><option value="20">Usage</option></select></div>
   <div class="rrow"><span class="mlabel">INTERVAL</span><input class="rrange" id="carouselSpeed" type="range" min="5" max="60" step="1" oninput="setCarouselSpeed(this.value)"><span class="rtime" id="carouselSpeedV">12s</span></div>
   <div class="mlabel">ROTATION ORDER</div>
   <div class="rorder" id="carouselOrder"></div>
-  <div class="rrow raddrow"><select class="rselect" id="carouselAdd"><option value="">ADD PAGE...</option><option value="6">Clock</option><option value="7">Pomodoro</option><option value="8">Weather</option><option value="9">Crypto</option><option value="10">Market</option><option value="17">Live Ledger</option><option value="18">Timetable</option></select><button class="cbtn" type="button" onclick="addCarouselPage()">ADD</button></div>
+  <div class="rrow raddrow"><select class="rselect" id="carouselAdd"><option value="">ADD PAGE...</option><option value="6">Clock</option><option value="7">Pomodoro</option><option value="8">Weather</option><option value="9">Crypto</option><option value="10">Market</option><option value="17">Live Ledger</option><option value="18">Timetable</option><option value="20">Usage</option></select><button class="cbtn" type="button" onclick="addCarouselPage()">ADD</button></div>
   <div class="minfo" id="carouselHint">When Claude Code becomes active, the carousel pauses and resumes from the same page afterwards.</div>
 </div>
 <div class="pwrap" id="pwrap">
@@ -558,6 +563,16 @@
     <div class="ctrl"><button class="cbtn on" id="ySave" onclick="saveSalaryConfig()">SAVE SETTINGS</button><button class="cbtn" id="yReset" onclick="salaryReset()">RESET TODAY</button></div>
   </div>
   <div class="yprivacy">LOCAL DEVICE ONLY · ESTIMATED EARNINGS</div>
+</div>
+<div class="usage-wrap" id="usageWrap">
+  <div class="usage-head"><div class="usage-title">CLAUDE USAGE<small>QUERIED BY MOCHI · LOCAL CREDENTIAL</small></div><span class="usage-state" id="usageState">NOT SET</span></div>
+  <div class="usage-status" id="usageStatus">Add a Claude credential to let the device query its own quota.</div>
+  <div class="usage-bars">
+    <div class="usage-window"><div class="usage-label"><span>5 HOUR WINDOW</span><strong id="usage5hLeft">--% LEFT</strong></div><div class="usage-bar"><span id="usage5hBar"></span></div><div class="usage-reset" id="usage5hReset">RESET --</div></div>
+    <div class="usage-window"><div class="usage-label"><span>7 DAY WINDOW</span><strong id="usage7dLeft">--% LEFT</strong></div><div class="usage-bar"><span id="usage7dBar"></span></div><div class="usage-reset" id="usage7dReset">RESET --</div></div>
+  </div>
+  <div class="usage-credential"><label for="usageToken">CREDENTIAL</label><input class="uinput" id="usageToken" type="password" placeholder="Paste token; it is never displayed back" autocomplete="off"><div class="usage-actions"><button class="cbtn on" type="button" onclick="saveUsageToken()">SAVE CREDENTIAL</button><button class="cbtn" type="button" onclick="clearUsageToken()">CLEAR</button><button class="cbtn" type="button" onclick="refreshUsage()">REFRESH</button></div></div>
+  <div class="usage-note">Stored on the device in NVS. Requests go directly from Mochi to Anthropic over WiFi.</div>
 </div>
 <div class="mwrap" id="mwrap">
   <div class="mttl">// crypto display</div>

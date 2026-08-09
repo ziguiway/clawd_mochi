@@ -19,6 +19,7 @@ export const en: Messages = {
     expressions: "Expressions",
     clock: "Clock & Pomodoro",
     weather: "Weather",
+    usage: "Claude Usage",
     market: "Stocks & Crypto",
     timetable: "Timetable",
     arcade: "Arcade",
@@ -91,7 +92,10 @@ export const en: Messages = {
     enabled: "Carousel", on: "ON", off: "OFF", interval: "Interval", fixed: "Fixed page",
     order: "ROTATION ORDER", add: "Add page", choose: "Choose a page", remove: "Remove page",
     unknown: "Unknown page", loadFailed: "Could not load carousel settings.", saveFailed: "Could not save carousel settings.",
-    clock: "Clock", pomodoro: "Pomodoro", weather: "Weather", crypto: "Crypto", market: "Market", salary: "Live Ledger", timetable: "Timetable",
+    clock: "Clock", pomodoro: "Pomodoro", weather: "Weather", crypto: "Crypto", market: "Market", salary: "Live Ledger", timetable: "Timetable", usage: "Claude Usage",
+  },
+  usage: {
+    title: "Claude Usage", subtitle: "The device stores the credential and queries its own remaining quota.", noDevice: "Connect a Mochi device first.", status: "STATUS", live: "LIVE DATA", loading: "QUERYING", saved: "SAVED", notSet: "NOT SET", tokenError: "TOKEN ERROR", fiveHour: "5-hour window", sevenDay: "7-day window", resetsIn: "Resets in", credential: "Claude credential", placeholder: "Paste credential", save: "SAVE CREDENTIAL", clear: "CLEAR", refresh: "REFRESH", deviceOnly: "Stored in device NVS; quota requests go directly from Mochi.", replaceToken: "The credential was rejected. Replace it and try again.", loadFailed: "Could not load usage status.", saveFailed: "Could not save credential.", unknown: "unknown", days: "d", hours: "h", minutes: "m",
   },
   soon: {
     expressionsDesc: "8 pixel faces, manual / auto mode and blink speed — coming in the web-console migration.",

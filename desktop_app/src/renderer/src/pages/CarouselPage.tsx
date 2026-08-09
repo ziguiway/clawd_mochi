@@ -6,8 +6,9 @@ const PAGES = [
   [6, "carousel.clock"], [7, "carousel.pomodoro"], [8, "carousel.weather"],
   [9, "carousel.crypto"], [10, "carousel.market"], [17, "carousel.salary"],
   [18, "carousel.timetable"],
+  [20, "carousel.usage"],
 ] as const;
-const DEFAULT_ORDER = [8, 9, 10, 6, 17, 7, 18];
+const DEFAULT_ORDER = [8, 9, 10, 6, 17, 7, 18, 20];
 
 export default function CarouselPage({ ip }: { ip: string | null }) {
   const { t } = useI18n();

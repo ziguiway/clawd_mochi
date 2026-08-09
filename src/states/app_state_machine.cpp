@@ -12,13 +12,15 @@ AppStateMachine::AppStateMachine()
     : _cc(&_sm)
     , _weather(&_wifi)
     , _crypto(&_wifi)
+    , _claudeUsage(&_wifi)
     , _market(&_wifi)
     , _holiday(&_wifi, &_time)
     , _ota(&_wifi, &_time)
     , _stream(&_tft)
     , _display(&_tft, &_cc, &_wifi, &_time, &_prefs, &_weather, &_crypto,
-               &_market, &_holiday, &_timetable, &_stream, &_keyboardPet)
-    , _web(&_cc, &_wifi, &_time, &_display, &_prefs, &_weather, &_crypto, &_market,
+               &_claudeUsage, &_market, &_holiday, &_timetable, &_stream, &_keyboardPet)
+    , _web(&_cc, &_wifi, &_time, &_display, &_prefs, &_weather, &_crypto,
+           &_claudeUsage, &_market,
            &_timetable, &_ota)
     , _serial(&_wifi, &_cc, &_time)
     , _bootButton(&_tft, &_wifi)
@@ -45,6 +47,7 @@ void AppStateMachine::init() {
     _prefs.init();
     _weather.init();
     _crypto.init();
+    _claudeUsage.init();
     _market.init();
     _holiday.init();
     _timetable.init();

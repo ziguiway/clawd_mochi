@@ -11,6 +11,7 @@
 #include "display_service.h"
 #include "preference_service.h"
 #include "crypto_service.h"
+#include "claude_usage_service.h"
 #include "market_service.h"
 #include "timetable_service.h"
 #include "../utils/logger.h"
@@ -24,6 +25,7 @@ public:
                PreferenceService* preferenceService,
                WeatherService* weatherService,
                CryptoService* cryptoService,
+               ClaudeUsageService* claudeUsageService,
                MarketService* marketService,
                TimetableService* timetableService,
                class OtaService* otaService);
@@ -40,6 +42,7 @@ private:
     PreferenceService* _preferenceService;
     WeatherService* _weatherService;
     CryptoService* _cryptoService;
+    ClaudeUsageService* _claudeUsageService;
     MarketService* _marketService;
     TimetableService* _timetableService;
     OtaService* _otaService;
@@ -115,6 +118,8 @@ private:
     void handleCryptoConfig();
     void handleCryptoUpdate();
     void handleCryptoRefresh();
+    void handleClaudeUsageConfig();
+    void handleClaudeUsageRefresh();
     void handleMarketConfig();
     void handleMarketUpdate();
     void handleMarketRefresh();

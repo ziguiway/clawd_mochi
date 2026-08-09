@@ -29,6 +29,7 @@ WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiServ
                        PreferenceService* preferenceService,
                        WeatherService* weatherService,
                        CryptoService* cryptoService,
+                       ClaudeUsageService* claudeUsageService,
                        MarketService* marketService,
                        TimetableService* timetableService,
                        OtaService* otaService)
@@ -39,6 +40,7 @@ WebService::WebService(ClaudeCodeService* ccService, WifiConfigService* wifiServ
     , _preferenceService(preferenceService)
     , _weatherService(weatherService)
     , _cryptoService(cryptoService)
+    , _claudeUsageService(claudeUsageService)
     , _marketService(marketService)
     , _timetableService(timetableService)
     , _otaService(otaService)
@@ -158,6 +160,9 @@ void WebService::setupRoutes() {
     _server.on("/crypto/config", HTTP_GET, [this]() { handleCryptoConfig(); });
     _server.on("/crypto/config", HTTP_POST, [this]() { handleCryptoUpdate(); });
     _server.on("/crypto/refresh", HTTP_POST, [this]() { handleCryptoRefresh(); });
+    _server.on("/usage/config", HTTP_GET, [this]() { handleClaudeUsageConfig(); });
+    _server.on("/usage/config", HTTP_POST, [this]() { handleClaudeUsageConfig(); });
+    _server.on("/usage/refresh", HTTP_POST, [this]() { handleClaudeUsageRefresh(); });
     _server.on("/market/config", HTTP_GET, [this]() { handleMarketConfig(); });
     _server.on("/market/config", HTTP_POST, [this]() { handleMarketUpdate(); });
     _server.on("/market/refresh", HTTP_POST, [this]() { handleMarketRefresh(); });
@@ -570,6 +575,10 @@ void WebService::handleCmd() {
         case 'u':
             rememberedView = VIEW_TIMETABLE;
             _displayService->setInteractiveView(VIEW_TIMETABLE);
+            break;
+        case 'q':
+            rememberedView = VIEW_USAGE;
+            _displayService->setInteractiveView(VIEW_USAGE);
             break;
         case 'a': _displayService->animLogoReveal(); break;
     }
@@ -1100,7 +1109,7 @@ void WebService::handlePrefs() {
     if (_server.hasArg("startup")) {
         _preferenceService->setStartupView(
             constrain(_server.arg("startup").toInt(),
-                      VIEW_EYES_NORMAL, VIEW_SALARY));
+                      VIEW_EYES_NORMAL, VIEW_USAGE));
     }
     if (_server.hasArg("brightness")) {
         const uint8_t brightness = constrain(_server.arg("brightness").toInt(), 0, 100);
@@ -1180,7 +1189,8 @@ void WebService::handlePrefs() {
         if (fixedView == VIEW_CLOCK || fixedView == VIEW_POMODORO ||
             fixedView == VIEW_WEATHER ||
             fixedView == VIEW_CRYPTO || fixedView == VIEW_MARKET ||
-            fixedView == VIEW_SALARY || fixedView == VIEW_TIMETABLE) {
+            fixedView == VIEW_SALARY || fixedView == VIEW_TIMETABLE ||
+            fixedView == VIEW_USAGE) {
             _preferenceService->setStartupView(fixedView);
         }
     }
@@ -1438,7 +1448,8 @@ void WebService::handleConfigImport() {
         (startup != VIEW_EYES_NORMAL && startup != VIEW_EYES_SQUISH &&
          startup != VIEW_CLOCK && startup != VIEW_POMODORO &&
          startup != VIEW_WEATHER && startup != VIEW_CRYPTO &&
-         startup != VIEW_MARKET && startup != VIEW_SALARY) ||
+         startup != VIEW_MARKET && startup != VIEW_SALARY &&
+         startup != VIEW_USAGE) ||
         !validBg || theme >= THEME_COUNT || speed < 1 || speed > 3 ||
         !fontStyleFromName(fontStyleName, fontStyle) ||
         brightness > 100 || nightStart > 23 || nightEnd > 23 ||
@@ -1594,6 +1605,41 @@ void WebService::handleCryptoRefresh() {
         return;
     }
     _cryptoService->requestRefresh();
+    _server.send(202, "application/json", "{\"ok\":true}");
+}
+
+void WebService::handleClaudeUsageConfig() {
+    if (!_claudeUsageService) {
+        _server.send(503, "application/json", "{\"error\":\"usage unavailable\"}");
+        return;
+    }
+    if (_server.method() == HTTP_POST) {
+        JsonDocument doc;
+        const DeserializationError error = deserializeJson(doc, _server.arg("plain"));
+        if (error) {
+            _server.send(400, "application/json", "{\"error\":\"invalid json\"}");
+            return;
+        }
+        if (doc["clear"] | false) {
+            _claudeUsageService->clearToken();
+        } else {
+            const String token = doc["token"] | "";
+            if (!_claudeUsageService->setToken(token)) {
+                _server.send(400, "application/json", "{\"error\":\"invalid token\"}");
+                return;
+            }
+        }
+    }
+    _server.sendHeader("Cache-Control", "no-store");
+    _server.send(200, "application/json", _claudeUsageService->getJson());
+}
+
+void WebService::handleClaudeUsageRefresh() {
+    if (!_claudeUsageService) {
+        _server.send(503, "application/json", "{\"error\":\"usage unavailable\"}");
+        return;
+    }
+    _claudeUsageService->requestRefresh();
     _server.send(202, "application/json", "{\"ok\":true}");
 }
 

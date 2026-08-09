@@ -62,6 +62,7 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
                                PreferenceService* preferenceService,
                                WeatherService* weatherService,
                                CryptoService* cryptoService,
+                               ClaudeUsageService* claudeUsageService,
                                MarketService* marketService,
                                HolidayService* holidayService,
                                TimetableService* timetableService,
@@ -71,6 +72,7 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _preferenceService(preferenceService)
     , _weatherService(weatherService)
     , _cryptoService(cryptoService)
+    , _claudeUsageService(claudeUsageService)
     , _marketService(marketService)
     , _holidayService(holidayService)
     , _timetableService(timetableService)
@@ -117,7 +119,7 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _carouselEnabled(false), _carouselSpeedSeconds(12)
     , _carouselOrder{
         VIEW_WEATHER, VIEW_CRYPTO, VIEW_MARKET, VIEW_CLOCK, VIEW_SALARY,
-        VIEW_POMODORO, VIEW_TIMETABLE
+        VIEW_POMODORO, VIEW_TIMETABLE, VIEW_USAGE
     }
     , _carouselViewCount(CAROUSEL_SUPPORTED_VIEW_COUNT)
     , _carouselFixedView(VIEW_WEATHER), _carouselIndex(0)
@@ -135,6 +137,7 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _lastWeatherVersion(0)
     , _lastCryptoVersion(0)
     , _lastMarketVersion(0)
+    , _lastUsageVersion(0)
     , _lastNightDimCheckMs(0), _lastAppliedBrightnessPercent(255)
     , _timeViewDirty(true), _timeViewLayoutDrawn(false)
     , _lastTimeText{0}, _lastSubText{0}, _lastHintText{0}
@@ -936,6 +939,73 @@ void DisplayService::drawMarketView() {
     }
 }
 
+void DisplayService::drawUsageView() {
+    const uint16_t bg = COLOR_ORANGE;
+    const uint16_t fg = _themeForeground;
+    _tft->fillScreen(bg);
+
+    _tft->drawText(12, 14, "CLAUDE USAGE", fg, bg, FONT_SMALL);
+    const char* state = "NO CREDENTIAL";
+    if (_claudeUsageService) {
+        if (_claudeUsageService->isLoading()) state = "LOADING";
+        else if (_claudeUsageService->hasAuthError()) state = "TOKEN ERROR";
+        else if (_claudeUsageService->isValid()) state = _claudeUsageService->getStatus();
+    }
+    const int stateX = CFG_DISPLAY_WIDTH - _tft->getTextWidth(state, FONT_SMALL) - 12;
+    _tft->drawText(stateX, 14, state, fg, bg, FONT_SMALL);
+    _tft->fillRect(12, 31, 216, 2, fg);
+
+    if (!_claudeUsageService || !_claudeUsageService->isValid()) {
+        _tft->drawTextCentered(104, "USAGE UNAVAILABLE", fg, bg, FONT_MEDIUM);
+        _tft->drawTextCentered(134,
+            _claudeUsageService && _claudeUsageService->hasCredential()
+                ? "CHECK CONNECTION" : "OPEN CONTROLLER",
+            fg, bg, FONT_SMALL);
+        _tft->drawTextCentered(154,
+            _claudeUsageService && _claudeUsageService->hasCredential()
+                ? "TO RETRY" : "TO ADD TOKEN",
+            fg, bg, FONT_SMALL);
+        _tft->fillRect(12, 190, 216, 2, fg);
+        _tft->drawText(12, 210, "CLAUDE / QUOTA MONITOR", fg, bg, FONT_SMALL);
+        return;
+    }
+
+    auto drawQuota = [this, fg, bg](int top, const char* label, float used,
+                                    float left, int resetMins) {
+        char value[20];
+        snprintf(value, sizeof(value), "%.0f%% LEFT", left);
+        _tft->drawText(12, top, label, fg, bg, FONT_SMALL);
+        _tft->drawText(12, top + 20, value, fg, bg, FONT_MEDIUM);
+        _tft->drawRect(12, top + 29, 216, 8, fg);
+        const int fill = constrain(static_cast<int>(208.0f * used / 100.0f), 0, 208);
+        if (fill > 0) _tft->fillRect(16, top + 32, fill, 2, fg);
+        char usedText[20];
+        snprintf(usedText, sizeof(usedText), "%.0f%% USED", used);
+        _tft->drawText(12, top + 52, usedText, fg, bg, FONT_SMALL);
+        char resetText[24];
+        if (resetMins < 0) snprintf(resetText, sizeof(resetText), "RESET --");
+        else if (resetMins >= 24 * 60) snprintf(resetText, sizeof(resetText), "RESET %dD %02dH", resetMins / (24 * 60), (resetMins / 60) % 24);
+        else snprintf(resetText, sizeof(resetText), "RESET %02dH %02dM", resetMins / 60, resetMins % 60);
+        const int resetX = CFG_DISPLAY_WIDTH - _tft->getTextWidth(resetText, FONT_SMALL) - 12;
+        _tft->drawText(resetX, top + 52, resetText, fg, bg, FONT_SMALL);
+    };
+
+    drawQuota(43, "5H WINDOW", _claudeUsageService->getSessionUsedPct(),
+              _claudeUsageService->getSessionUsedPct() <= 100.0f
+                  ? 100.0f - _claudeUsageService->getSessionUsedPct() : 0.0f,
+              _claudeUsageService->getSessionResetMins());
+    drawQuota(113, "7D WINDOW", _claudeUsageService->getWeeklyUsedPct(),
+              100.0f - _claudeUsageService->getWeeklyUsedPct(),
+              _claudeUsageService->getWeeklyResetMins());
+    _tft->fillRect(12, 181, 216, 2, fg);
+    _tft->drawText(12, 201, "STATUS", fg, bg, FONT_SMALL);
+    const char* footer = _claudeUsageService->getLastSuccessMs() == 0
+        ? "UPDATED --" : "UPDATED LIVE";
+    const int footerX = CFG_DISPLAY_WIDTH - _tft->getTextWidth(footer, FONT_SMALL) - 12;
+    _tft->drawText(footerX, 201, footer, fg, bg, FONT_SMALL);
+    _tft->drawText(12, 222, "MOCHI / QUOTA MONITOR", fg, bg, FONT_SMALL);
+}
+
 // ── Terminal ───────────────────────────────────────────────────
 void DisplayService::termClear() {
     for (uint8_t i = 0; i < TERM_ROWS; i++) _termLines[i] = "";
@@ -1173,6 +1243,9 @@ void DisplayService::setInteractiveView(uint8_t view) {
         case InteractiveView::MARKET:
             drawMarketView();
             break;
+        case InteractiveView::USAGE:
+            drawUsageView();
+            break;
         case InteractiveView::SALARY_COUNTER:
             showSalaryCounter();
             break;
@@ -1220,6 +1293,7 @@ void DisplayService::redrawCurrentView() {
         case InteractiveView::WEATHER:     drawWeatherView(); break;
         case InteractiveView::CRYPTO:      drawCryptoView(); break;
         case InteractiveView::MARKET:      drawMarketView(); break;
+        case InteractiveView::USAGE:       drawUsageView(); break;
         case InteractiveView::SALARY_COUNTER: drawSalaryCounterView(); break;
         case InteractiveView::TIMETABLE:
             _timetableLayoutDrawn = false;
@@ -2513,6 +2587,7 @@ void DisplayService::applyIdleDefaultView() {
         case VIEW_WEATHER:
         case VIEW_CRYPTO:
         case VIEW_MARKET:
+        case VIEW_USAGE:
             _expressionPreferred = false;
             setInteractiveView(view);
             break;
@@ -2602,6 +2677,7 @@ void DisplayService::update() {
         if (_weatherService) _weatherService->update();
         if (_cryptoService) _cryptoService->update();
         if (_marketService) _marketService->update();
+        if (_claudeUsageService) _claudeUsageService->update();
     }
     // 自动上下班属于时间边界，不应被游戏或网络刷新暂停。
     updateSalarySchedule(now);
@@ -2660,6 +2736,14 @@ void DisplayService::update() {
             if (version != _lastMarketVersion) {
                 _lastMarketVersion = version;
                 drawMarketView();
+            }
+            return;
+        }
+        if (_interactiveView == InteractiveView::USAGE) {
+            const uint32_t version = _claudeUsageService ? _claudeUsageService->getVersion() : 0;
+            if (version != _lastUsageVersion) {
+                _lastUsageVersion = version;
+                drawUsageView();
             }
             return;
         }

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240" role="img" aria-labelledby="title desc">
+  <title id="title">Clawd Mochi Claude usage screen</title>
+  <desc id="desc">A 240 by 240 pixel-style usage display showing remaining five-hour and seven-day quota.</desc>
+  <rect width="240" height="240" fill="#fb6b10"/>
+
+  <g fill="#ffffff" font-family="monospace">
+    <text x="15" y="22" font-size="9" font-weight="700" letter-spacing="1.1">CLAUDE USAGE</text>
+    <text x="196" y="22" font-size="7" fill="#ffffff" text-anchor="end">LIVE</text>
+  </g>
+  <line x1="15" y1="29" x2="225" y2="29" stroke="#ffffff" stroke-width="1"/>
+
+  <g font-family="monospace">
+    <text x="15" y="43" fill="#ffffff" font-size="8" letter-spacing="1">5H WINDOW</text>
+    <text x="15" y="60" fill="#ffffff" font-size="18" font-weight="700">58%</text>
+    <text x="54" y="59" fill="#ffffff" font-size="8" letter-spacing=".8">LEFT</text>
+    <rect x="15" y="67" width="210" height="11" fill="#c94f0c"/>
+    <rect x="15" y="67" width="122" height="11" fill="#ffffff"/>
+    <text x="15" y="89" fill="#ffffff" font-size="8">42% USED</text>
+    <text x="225" y="89" fill="#ffffff" font-size="8" text-anchor="end">RESET 02H 18M</text>
+  
+    <line x1="15" y1="98" x2="225" y2="98" stroke="#ffffff" stroke-width="1"/>
+
+    <text x="15" y="113" fill="#ffffff" font-size="8" letter-spacing="1">7D WINDOW</text>
+    <text x="15" y="130" fill="#ffffff" font-size="18" font-weight="700">32%</text>
+    <text x="54" y="129" fill="#ffffff" font-size="8" letter-spacing=".8">LEFT</text>
+    <rect x="15" y="138" width="210" height="11" fill="#c94f0c"/>
+    <rect x="15" y="138" width="143" height="11" fill="#ffffff"/>
+    <text x="15" y="160" fill="#ffffff" font-size="8">68% USED</text>
+    <text x="225" y="160" fill="#ffffff" font-size="8" text-anchor="end">RESET 3D 04H</text>
+  </g>
+
+  <line x1="15" y1="174" x2="225" y2="174" stroke="#ffffff" stroke-width="1"/>
+  <g font-family="monospace" fill="#ffffff" font-size="7">
+    <text x="15" y="188">STATUS ALLOWED</text>
+    <text x="225" y="188" text-anchor="end">UPDATED 2M AGO</text>
+    <text x="15" y="204">Mochi / quota monitor</text>
+  </g>
+  <g transform="translate(197 198)" fill="none" stroke="#ffffff" stroke-width="1.3">
+    <path d="M0 8h8M4 4v8M11 8h8M15 4v8"/>
+  </g>
+</svg>

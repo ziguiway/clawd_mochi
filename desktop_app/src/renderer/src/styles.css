@@ -178,6 +178,17 @@ button { font-family: inherit; cursor: pointer; }
   border-radius: var(--radius);
   padding: 16px 18px;
 }
+.usage-console { max-width: 760px; }
+.usage-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
+.usage-card { background: var(--bg-raised); border: 1px solid var(--line); border-radius: 7px; padding: 14px; }
+.usage-card .card-title { display: flex; justify-content: space-between; color: var(--text-dim); }
+.usage-card .card-title b { color: var(--orange); font-variant-numeric: tabular-nums; }
+.usage-track { height: 8px; margin: 14px 0 9px; background: var(--line-soft); overflow: hidden; }
+.usage-track span { display: block; height: 100%; background: var(--orange); transition: width .25s ease; }
+.usage-card small { color: var(--text-faint); }
+.usage-field { display: grid; gap: 7px; margin: 14px 0; color: var(--text-dim); }
+.usage-field input { width: 100%; background: var(--bg-raised); border: 1px solid var(--line); border-radius: 6px; color: var(--text); padding: 10px; font: inherit; }
+@media (max-width: 620px) { .usage-grid { grid-template-columns: 1fr; } }
 .card-title {
   font-size: 9px; letter-spacing: 2px; color: var(--text-faint);
   margin-bottom: 12px;

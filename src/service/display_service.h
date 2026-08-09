@@ -13,6 +13,7 @@
 #include "preference_service.h"
 #include "weather_service.h"
 #include "crypto_service.h"
+#include "claude_usage_service.h"
 #include "market_service.h"
 #include "holiday_service.h"
 #include "salary_counter_service.h"
@@ -46,6 +47,7 @@ enum class InteractiveView {
     WEATHER,
     CRYPTO,
     MARKET,
+    USAGE,
     DINO_GAME,
     SOKOBAN_GAME,
     TETRIS_GAME,
@@ -75,6 +77,7 @@ public:
                    PreferenceService* preferenceService,
                    WeatherService* weatherService,
                    CryptoService* cryptoService,
+                   ClaudeUsageService* claudeUsageService,
                    MarketService* marketService,
                    HolidayService* holidayService,
                    TimetableService* timetableService,
@@ -228,6 +231,7 @@ private:
     PreferenceService* _preferenceService;
     WeatherService* _weatherService;
     CryptoService* _cryptoService;
+    ClaudeUsageService* _claudeUsageService;
     MarketService* _marketService;
     HolidayService* _holidayService;
     TimetableService* _timetableService;
@@ -322,6 +326,7 @@ private:
     uint32_t _lastWeatherVersion;
     uint32_t _lastCryptoVersion;
     uint32_t _lastMarketVersion;
+    uint32_t _lastUsageVersion;
     unsigned long _lastNightDimCheckMs;
     uint8_t _lastAppliedBrightnessPercent;
 
@@ -377,6 +382,7 @@ private:
     void drawCryptoView();
     void formatCryptoPrice(float price, char* output, size_t size);
     void drawMarketView();
+    void drawUsageView();
     void drawSalaryCounterView();
     void drawTimetableView();
     void drawTimetableHeader(U8G2_FOR_ADAFRUIT_GFX& text,
