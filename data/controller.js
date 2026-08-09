@@ -72,7 +72,7 @@ document.querySelectorAll('[data-console-view]').forEach(button=>button.addEvent
 setConsoleView('control');
 function mountModuleSettings(){
   const modules=document.querySelector('[data-console-section="modules"]');
-  ['pwrap','ywrap','mwrap','swrap'].forEach(id=>{
+  ['pwrap','ywrap','mwrap','swrap','termPanel','cwrap'].forEach(id=>{
     const node=document.getElementById(id);if(node)modules.appendChild(node);
   });
 }
@@ -162,7 +162,7 @@ async function checkOta(){const b=document.getElementById('otaCheckBtn');b.disab
 async function installOta(){if(!confirm('Install the available update and restart the device?'))return;const b=document.getElementById('otaInstallBtn');b.disabled=true;b.textContent='INSTALLING...';try{const r=await fetch('/ota/install',{method:'POST'});if(!r.ok)throw new Error();toast('device is restarting');}catch(e){toast('OTA install failed',false);loadOta();}}
 async function uploadOta(file){if(!file)return;if(!confirm('Upload '+file.name+' and restart the device?'))return;try{const form=new FormData();form.append('file',file,file.name);const r=await fetch('/ota/upload',{method:'POST',body:form});const j=await r.json();if(!r.ok)throw new Error(j.error||'upload failed');toast('device is restarting');}catch(e){toast(e.message||'OTA upload failed',false);}finally{document.getElementById('otaFirmwareFile').value='';document.getElementById('otaFsFile').value='';}}
 function closeModuleSettings(){
-  ['pwrap','ywrap','mwrap','swrap','uwrap','weatherLocationWrap','termPanel'].forEach(id=>document.getElementById(id)?.classList.remove('open'));
+  ['pwrap','ywrap','mwrap','swrap','uwrap','weatherLocationWrap','termPanel','cwrap'].forEach(id=>document.getElementById(id)?.classList.remove('open'));
   document.getElementById('ySettings')?.classList.remove('open');
   const salaryState=document.getElementById('ySettingsState');
   if(salaryState)salaryState.textContent='OPEN';
