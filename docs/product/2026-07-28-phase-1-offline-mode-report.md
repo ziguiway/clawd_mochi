@@ -47,7 +47,7 @@ Flash: -36 bytes
 ### Web
 
 ```text
-uv run scripts/test_web_ui.py
+uv run scripts/testing/test_web_ui.py
 Result: PASS
 ```
 

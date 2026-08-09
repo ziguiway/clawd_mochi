@@ -13,7 +13,7 @@ const context = {
 };
 context.window = context;
 vm.runInNewContext(
-  fs.readFileSync(new URL('../data/wakeup_import.js', import.meta.url), 'utf8'),
+  fs.readFileSync(new URL('../../data/wakeup_import.js', import.meta.url), 'utf8'),
   context,
 );
 

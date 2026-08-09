@@ -47,13 +47,13 @@ pio device monitor
 pio run --target upload && pio device monitor
 
 # Positive Web UI regression (stable mocked market directory)
-uv run scripts/test_web_ui.py
+uv run scripts/testing/test_web_ui.py
 
 # Positive Web UI regression against the live CoinLore directory
-uv run scripts/test_web_ui.py --live-directory
+uv run scripts/testing/test_web_ui.py --live-directory
 
 # OTA end-to-end suite (builds isolated variants, flashes, tests, restores)
-uv run scripts/ota_test.py \
+uv run scripts/testing/ota_test.py \
   --device-url http://<device-ip>/ \
   --advertise-host <host-ip> \
   --serial-port /dev/cu.usbmodem...
@@ -72,12 +72,12 @@ happy path only.
 
 ## Test organization
 
-- `scripts/web_ui_test/cases/` contains browser-only feature cases and is
-  orchestrated by `scripts/test_web_ui.py`. New feature cases live in their own
+- `scripts/testing/web_ui_test/cases/` contains browser-only feature cases and is
+  orchestrated by `scripts/testing/test_web_ui.py`. New feature cases live in their own
   module (e.g. `cases/cc_stats.py` for the Claude Code session stats panel).
-- `scripts/ota_test/` contains OTA transport, release-server, upload, interrupt,
+- `scripts/testing/ota_test/` contains OTA transport, release-server, upload, interrupt,
   checksum, and rollback cases. It must not be added to `web_ui_test`.
-- `scripts/ota_test.py` is the OTA end-to-end entry point. It requires a real
+- `scripts/testing/ota_test.py` is the OTA end-to-end entry point. It requires a real
   ESP32 connected over USB and a host IP reachable from the device. The runner
   builds and flashes its own isolated baseline before executing any cases.
 - OTA tests build three disposable variants: baseline, valid update, and
@@ -154,7 +154,7 @@ Six arcade games (`dino`, `sokoban`, `tetris`, `snake`, `game_2048`, `breakout`)
 
 ### Claude Code Hook
 
-`scripts/cc_hook.py` is a Python script installed into Claude Code's settings as a hook. It broadcasts session events to all discovered Clawd Mochi devices over UDP port 4210 (LAN-only — the serial path was removed to avoid the ESP32-C3 USB-CDC reset on Windows). `scripts/cc_serial_daemon.py` is an optional Windows daemon that forwards local UDP to serial for users who still want the serial path. Install the hook with `scripts/install_claude_hook.sh` (or `.bat`/`.py`).
+`scripts/hooks/cc_hook.py` is a Python script installed into Claude Code's settings as a hook. It broadcasts session events to all discovered Clawd Mochi devices over UDP port 4210 (LAN-only — the serial path was removed to avoid the ESP32-C3 USB-CDC reset on Windows). `scripts/hooks/cc_serial_daemon.py` is an optional Windows daemon that forwards local UDP to serial for users who still want the serial path. Install the hook with `scripts/hooks/install_claude_hook.sh` (or `.bat`/`.py`).
 
 ## Key Conventions
 
@@ -226,10 +226,10 @@ Firmware uses `ota_4mb.csv` (dual OTA slots: `app0`/`app1` + `otadata`), set via
 
 | Script | Purpose |
 |---|---|
-| `scripts/cc_hook.py` | Claude Code hook — broadcasts status events to discovered devices over UDP 4210; caches devices in `cc_hook_cache.json` (24h TTL) |
-| `scripts/cc_serial_daemon.py` | Optional Windows daemon forwarding local UDP to serial (avoids COM-close hardware reset) |
-| `scripts/install_claude_hook.{py,sh,bat}` | Cross-platform hook installer writing `~/.claude/settings.json` |
-| `scripts/preview_expressions_udp.py` | Sends a status sequence over UDP 4210 to preview expressions |
-| `scripts/test_web_ui.py` | Playwright positive UI regression test for Crypto/Market config flows (mocked + `--live-directory` variants) |
-| `scripts/ota_test.py` | OTA end-to-end runner — builds isolated variants, flashes, runs transport/rollback/upload cases, restores production firmware |
-| `scripts/ota_test/` | OTA case modules (transport, release-server, upload, interrupt, checksum, rollback) consumed by `ota_test.py` |
+| `scripts/hooks/cc_hook.py` | Claude Code hook — broadcasts status events to discovered devices over UDP 4210; caches devices in `cc_hook_cache.json` (24h TTL) |
+| `scripts/hooks/cc_serial_daemon.py` | Optional Windows daemon forwarding local UDP to serial (avoids COM-close hardware reset) |
+| `scripts/hooks/install_claude_hook.{py,sh,bat}` | Cross-platform hook installer writing `~/.claude/settings.json` |
+| `scripts/tools/preview_expressions_udp.py` | Sends a status sequence over UDP 4210 to preview expressions |
+| `scripts/testing/test_web_ui.py` | Playwright positive UI regression test for Crypto/Market config flows (mocked + `--live-directory` variants) |
+| `scripts/testing/ota_test.py` | OTA end-to-end runner — builds isolated variants, flashes, runs transport/rollback/upload cases, restores production firmware |
+| `scripts/testing/ota_test/` | OTA case modules (transport, release-server, upload, interrupt, checksum, rollback) consumed by `ota_test.py` |

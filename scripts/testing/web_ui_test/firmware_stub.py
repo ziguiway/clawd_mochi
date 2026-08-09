@@ -10,7 +10,7 @@ from typing import Any
 
 from .fixtures import INITIAL_ASSETS, INITIAL_MARKET_ASSETS, MARKET_SEARCH_RESULTS
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 CONTROLLER_HTML = ROOT / "data" / "controller.html"
 
 

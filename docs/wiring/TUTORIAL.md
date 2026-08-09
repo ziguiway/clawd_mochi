@@ -66,7 +66,7 @@ Web 控制台里可以：
 装一个 hook，小宠物会实时显示 Claude Code 的工作状态（思考中/写代码中/完成/报错），还会统计今日专注时长：
 
 ```bash
-scripts/install_claude_hook.sh      # macOS/Linux
+scripts/hooks/install_claude_hook.sh      # macOS/Linux
 scripts\install_claude_hook.bat     # Windows
 ```
 

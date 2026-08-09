@@ -19,7 +19,7 @@
 
 ```bash
 MOCHI_WIFI_SSID='...' MOCHI_WIFI_PASSWORD='...' \
-  uv run scripts/test_wifi_recovery.py --serial-port <serial-port>
+  uv run scripts/device/test_wifi_recovery.py --serial-port <serial-port>
 ```
 
 凭据仅从运行环境读取，不会写入脚本、日志或报告。

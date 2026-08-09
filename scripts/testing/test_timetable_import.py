@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """课表导入器的离线正向测试，不访问教务系统或设备。"""
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "data"))
+
 from import_gdufs_timetable import DEFAULT_PERIODS, load_names, parse_block
 
 

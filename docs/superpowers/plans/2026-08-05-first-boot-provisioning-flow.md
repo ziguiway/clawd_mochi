@@ -13,7 +13,7 @@
 - 防闪烁:`updateProvisioning()` 已采用"模式切换整屏重绘 + 动态元素脏检查"模式,新增内容沿用该模式。
 - 每个任务完成后 `pio run` 必须通过;涉及内存的改动需报告改动前后静态 RAM。
 
-**设备验证的现实约束:** 这些是状态机/显示时序改动,没有宿主机单元测试框架。每个任务的验证 = `pio run` 编译 + 串口/UDP 驱动的实体机检查(可用现成的 `scripts/preview_expressions_udp.py` 注入 CC 状态)。最后一个任务是完整的真机走查清单。禁止仅凭编译通过就宣布完成。
+**设备验证的现实约束:** 这些是状态机/显示时序改动,没有宿主机单元测试框架。每个任务的验证 = `pio run` 编译 + 串口/UDP 驱动的实体机检查(可用现成的 `scripts/tools/preview_expressions_udp.py` 注入 CC 状态)。最后一个任务是完整的真机走查清单。禁止仅凭编译通过就宣布完成。
 
 ---
 
@@ -235,7 +235,7 @@ git commit -m "feat(provisioning): AP 接口上的 captive portal 302 重定向�
 
 - [ ] **步骤 2:跑正向 Web UI 回归(mock 版)**
 
-运行: `uv run scripts/test_web_ui.py`
+运行: `uv run scripts/testing/test_web_ui.py`
 预期: PASS(该用例覆盖 market/crypto 流程,但会走同一条 LittleFS 静态资源链路,能发现 JS 语法错误)。
 
 - [ ] **步骤 3:提交**
@@ -290,7 +290,7 @@ git commit -m "feat(wifi-setup): 支持加入隐藏/未列出的网络"
 ### 任务 6:真机端到端走查(强制,不允许仅凭编译通过验收)
 
 **文件:**
-- 无(纯验证);用 `scripts/preview_expressions_udp.py` 注入 CC 状态。
+- 无(纯验证);用 `scripts/tools/preview_expressions_udp.py` 注入 CC 状态。
 
 - [ ] **步骤 1:全新设备路径**
 
@@ -311,7 +311,7 @@ git commit -m "feat(wifi-setup): 支持加入隐藏/未列出的网络"
 
 - [ ] **步骤 3:配网期间收到 CC 状态路径**
 
-在 AP 兜底屏显示期间,注入 WORKING 状态:`uv run scripts/preview_expressions_udp.py`(或单个 UDP 包)。验证配网屏不被拆除(或在一帧内恢复),INFO 面板无闪烁。
+在 AP 兜底屏显示期间,注入 WORKING 状态:`uv run scripts/tools/preview_expressions_udp.py`(或单个 UDP 包)。验证配网屏不被拆除(或在一帧内恢复),INFO 面板无闪烁。
 
 - [ ] **步骤 4:重试打满路径**
 

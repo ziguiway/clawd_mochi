@@ -164,7 +164,7 @@ Web 首屏重排
 
 - 阶段内所有 P0 任务为 `DONE`。
 - `pio run` 通过。
-- `uv run scripts/test_web_ui.py` 通过。
+- `uv run scripts/testing/test_web_ui.py` 通过。
 - `git diff --check` 通过。
 - 阶段规定的实机检查完成。
 - 新行为与 PRD 验收标准一致。
@@ -221,7 +221,7 @@ Web 首屏重排
 - `src/states/*.cpp`
 - `src/service/display_service.*`
 - `src/service/wifi_config_service.*`
-- `scripts/test_web_ui.py`
+- `scripts/testing/test_web_ui.py`
 
 ### 5.5 M0 出口标准
 
@@ -270,7 +270,7 @@ Web 首屏重排
 | `src/states/lan_idle_state.cpp` | 断网不再强制切回配网页面 |
 | `src/service/wifi_config_service.cpp` | 确认后台重试不依赖配网显示状态 |
 | `src/service/display_service.cpp` | 网络状态变化不覆盖当前表情 |
-| `scripts/test_web_ui.py` | 增加离线/失败状态的正向显示断言 |
+| `scripts/testing/test_web_ui.py` | 增加离线/失败状态的正向显示断言 |
 
 ### 6.4 测试用例
 
@@ -449,7 +449,7 @@ Content-Type: application/json
 - `src/service/web_service.cpp`
 - 可新增 `src/service/idle_behavior_service.*`
 - 可新增 `src/view/expression_types.h`
-- `scripts/test_web_ui.py`
+- `scripts/testing/test_web_ui.py`
 
 ### 7.7 M2 出口标准
 
@@ -802,8 +802,8 @@ AUTO / MANUAL 模式
 |---|---|---|
 | 固件构建 | `pio run` | 每个任务完成后 |
 | 干净构建 | `pio run --target clean && pio run` | 每阶段出口 |
-| Mock Web 回归 | `uv run scripts/test_web_ui.py` | 每次 Web 改动 |
-| Live 目录回归 | `uv run scripts/test_web_ui.py --live-directory` | Crypto/Market 改动和 RC |
+| Mock Web 回归 | `uv run scripts/testing/test_web_ui.py` | 每次 Web 改动 |
+| Live 目录回归 | `uv run scripts/testing/test_web_ui.py --live-directory` | Crypto/Market 改动和 RC |
 | Diff 检查 | `git diff --check` | 每日结束和阶段出口 |
 
 ### 12.2 计划新增的自动化覆盖

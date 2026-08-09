@@ -7,7 +7,7 @@
 
 运行前通过环境变量提供测试网络，凭据不会写入脚本或测试报告：
 MOCHI_WIFI_SSID='...' MOCHI_WIFI_PASSWORD='...' \\
-    uv run scripts/test_wifi_recovery.py --serial-port /dev/cu.usbmodem...
+    uv run scripts/device/test_wifi_recovery.py --serial-port /dev/cu.usbmodem...
 """
 
 from __future__ import annotations

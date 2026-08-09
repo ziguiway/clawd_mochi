@@ -773,7 +773,7 @@ def main() -> None:
 | `src/service/web_service.cpp` | Web 服务器 |
 | `data/index.html` | 主页面 |
 | `data/wifi_setup.html` | 配网页面 |
-| `scripts/cc_hook.py` | PC 端 hook 脚本 |
+| `scripts/hooks/cc_hook.py` | PC 端 hook 脚本 |
 
 ---
 

@@ -3,7 +3,7 @@
 # requires-python = ">=3.11"
 # dependencies = []
 # ///
-"""End-to-end OTA test runner; separate from scripts/web_ui_test."""
+"""End-to-end OTA test runner; separate from the browser regression suite."""
 
 from __future__ import annotations
 

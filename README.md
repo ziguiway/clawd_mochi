@@ -161,7 +161,7 @@ The Claude Code hook streams session, prompt, tool, and completion events to all
 Install it from this repo:
 
 ```bash
-scripts/install_claude_hook.sh
+scripts/hooks/install_claude_hook.sh
 ```
 
 On Windows, run the same command from PowerShell:
@@ -173,7 +173,7 @@ scripts\install_claude_hook.bat
 The installer writes a user-wide Claude Code config at `~/.claude/settings.json`, copies `cc_hook.py` into the OS user data directory, and uses Claude Code's exec-form hook config so paths with spaces work on macOS and Windows. To remove it:
 
 ```bash
-scripts/install_claude_hook.sh uninstall
+scripts/hooks/install_claude_hook.sh uninstall
 ```
 
 If `uv` is installed, the installer uses it automatically and writes hook entries like `uv run --script cc_hook.py`. You can force a runner with `--runner uv` or `--runner python`.
@@ -181,7 +181,7 @@ If `uv` is installed, the installer uses it automatically and writes hook entrie
 Claude Code tool hook matchers are exact tool filters. For example, `Bash` only matches the Bash tool, and `Edit|Write` matches either the Edit or Write tool by exact name. If you prefer explicit tool-only hooks, install with:
 
 ```bash
-scripts/install_claude_hook.sh --tool-matchers "Bash;Edit,Write"
+scripts/hooks/install_claude_hook.sh --tool-matchers "Bash;Edit,Write"
 ```
 
 The installer writes `Edit,Write` as `Edit|Write` in Claude Code settings. Clawd Mochi still displays the actual tool from each hook event, so the screen shows `Bash`, `Edit`, or `Write`, not the matcher pattern.

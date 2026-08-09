@@ -9,7 +9,7 @@ Install once:
     uv run --with playwright playwright install chromium
 
 Run:
-    uv run --with playwright python scripts/download_aigei_gifs.py \
+    uv run --with playwright python scripts/data/download_aigei_gifs.py \
       'https://www.aigei.com/set/xiantiaoxiaogoubiaoq_1.html'
 """
 
@@ -38,7 +38,7 @@ except ImportError:  # pragma: no cover - gives a useful error outside Playwrigh
         "缺少 Playwright。请先运行：\n"
         "  uv run --with playwright playwright install chromium\n"
         "然后用下面的命令启动：\n"
-        "  uv run --with playwright python scripts/download_aigei_gifs.py URL",
+        "  uv run --with playwright python scripts/data/download_aigei_gifs.py URL",
         file=sys.stderr,
     )
     raise SystemExit(2)

@@ -56,7 +56,7 @@ Mocked Web UI 正向回归通过，新增覆盖：
 局域网实机回归通过：
 
 ```bash
-uv run scripts/test_web_ui.py \
+uv run scripts/testing/test_web_ui.py \
   --device-url http://<device-ip>/ \
   --serial-port /dev/cu.usbmodem1101
 ```

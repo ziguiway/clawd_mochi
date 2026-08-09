@@ -71,7 +71,7 @@ POST /ota/cancel
 
 ## 2026-08-02 真机验收
 
-测试设备：ESP32-C3，USB 序列号 `14:63:93:6E:9F:B4`。测试入口为 `scripts/ota_test.py`，case 实现在独立的 `scripts/ota_test/` 包内。
+测试设备：ESP32-C3，USB 序列号 `14:63:93:6E:9F:B4`。测试入口为 `scripts/testing/ota_test.py`，case 实现在独立的 `scripts/testing/ota_test/` 包内。
 
 测试运行器采用幂等设计：每次在系统临时目录复制最小 PlatformIO 项目，测试版本、Manifest 地址和启动失败注入只修改临时副本；不向受版本控制的 `platformio.ini` 或生产配置头写入测试环境和主机地址。无论 case 成功或失败，`finally` 路径都会重新烧录生产固件和生产 LittleFS，并删除全部临时项目和构建产物。验收结束时设备必须重新报告生产版本，临时目录必须不存在。
 

@@ -465,7 +465,7 @@ v1.1 提供至少 4 组主题：
 | `src/states/provisioning_state.*` | 取消未配网时强制占屏 |
 | `src/states/lan_idle_state.*` | 将自主表情设为默认体验 |
 | `src/service/web_service.*` | 增加语义化表情 API 和 UI |
-| `scripts/test_web_ui.py` | 增加表情、AUTO 和个性化设置回归 |
+| `scripts/testing/test_web_ui.py` | 增加表情、AUTO 和个性化设置回归 |
 
 ### 9.3 实施原则
 

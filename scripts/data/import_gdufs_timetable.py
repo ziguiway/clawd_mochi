@@ -6,7 +6,7 @@
 
     uv add --dev playwright
     uv run playwright install chromium
-    uv run scripts/import_gdufs_timetable.py \
+    uv run scripts/data/import_gdufs_timetable.py \
       --device http://clawd-mochi.local --term-start 2026-09-07
 """
 
@@ -21,7 +21,7 @@ import urllib.request
 from pathlib import Path
 
 LOGIN_URL = "https://jwxt.gdufs.edu.cn/jsxsd/"
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 NAME_MAP = ROOT / "docs/product/data/gdufs-graduate-cs-course-name-map.json"
 
 # 仅用于把“第 N 节”转换成实际时间。学校调整作息时请通过 --periods 覆盖。

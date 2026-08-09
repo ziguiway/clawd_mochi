@@ -5,9 +5,9 @@
 POST /stream/enter -> TCP 3333 推 JPEG 帧 -> Ctrl+C 退出时 POST /stream/exit。
 
 用法:
-    uv run scripts/desktop_stream_test.py --ip 192.168.1.42
-    uv run scripts/desktop_stream_test.py --ip 192.168.1.42 --fps 8 --quality 50 --mode full
-    uv run scripts/desktop_stream_test.py --ip 192.168.1.42 --mode cursor
+    uv run scripts/device/desktop_stream_test.py --ip 192.168.1.42
+    uv run scripts/device/desktop_stream_test.py --ip 192.168.1.42 --fps 8 --quality 50 --mode full
+    uv run scripts/device/desktop_stream_test.py --ip 192.168.1.42 --mode cursor
 
 依赖: mss, Pillow (uv run --with mss,pillow ...)
 协议: 每帧 = b"ESPF" + uint32 LE 长度 + JPEG 数据 (240x240)。

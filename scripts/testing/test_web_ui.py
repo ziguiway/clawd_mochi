@@ -8,7 +8,7 @@
 # ///
 """Compatibility entry point for the modular Web UI regression suite.
 
-Run with: uv run scripts/test_web_ui.py
+Run with: uv run scripts/testing/test_web_ui.py
 """
 
 from web_ui_test.runner import main

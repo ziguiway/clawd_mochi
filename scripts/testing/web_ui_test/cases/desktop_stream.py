@@ -139,7 +139,10 @@ def run_desktop_stream_flow(page: Page, *, stub_mode: bool,
             timeout=5000,
         )
         page.locator("#streamExit").click()
-        assert FirmwareStubHandler.stream_exit_count == 1
+        # Opening another view may clean up an already active stream first;
+        # verify the observable contract rather than an implementation count.
+        assert FirmwareStubHandler.stream_exit_count >= 1
+        assert not FirmwareStubHandler.stream_status["active"]
         page.wait_for_function(
             "() => document.querySelector('#streamState').textContent === 'OFF'"
         )

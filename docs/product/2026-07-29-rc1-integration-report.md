@@ -21,8 +21,8 @@
 
 ```bash
 bash scripts/build_rc_artifacts.sh
-uv run scripts/test_web_ui.py
-uv run scripts/test_web_ui.py --live-directory
-uv run scripts/test_web_ui.py --device-url http://<device-ip>/ --request-interval 3
-uv run scripts/test_web_ui.py --serial-log-only --serial-port <serial-port>
+uv run scripts/testing/test_web_ui.py
+uv run scripts/testing/test_web_ui.py --live-directory
+uv run scripts/testing/test_web_ui.py --device-url http://<device-ip>/ --request-interval 3
+uv run scripts/testing/test_web_ui.py --serial-log-only --serial-port <serial-port>
 ```

@@ -1,0 +1,14 @@
+[project]
+name = "clawd-mochi-automation"
+version = "0.0.0"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["scripts/testing/tests"]
+python_files = ["test_*.py"]
+addopts = "-ra"
+markers = [
+    "unit: deterministic offline tests",
+    "web: browser regression requiring Playwright",
+    "hardware: tests requiring a connected ESP32",
+]

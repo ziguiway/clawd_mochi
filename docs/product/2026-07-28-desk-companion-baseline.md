@@ -43,7 +43,7 @@ Result: SUCCESS
 命令：
 
 ```bash
-uv run scripts/test_web_ui.py
+uv run scripts/testing/test_web_ui.py
 ```
 
 结果：通过。覆盖 Crypto 搜索与保存、WiFi 错误提示、主题、信息轮播和
@@ -54,7 +54,7 @@ Market 搜索与保存的正向流程。
 命令：
 
 ```bash
-uv run scripts/test_web_ui.py --live-directory
+uv run scripts/testing/test_web_ui.py --live-directory
 ```
 
 结果：通过。实时 CoinLore 资产目录下的同一组正向流程全部通过。

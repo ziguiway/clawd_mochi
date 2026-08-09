@@ -172,7 +172,7 @@ def main() -> int:
 
     if not devices:
         print("No Clawd Mochi device found over UDP.", file=sys.stderr)
-        print("Try: python scripts/preview_expressions_udp.py --host <device-ip>", file=sys.stderr)
+        print("Try: python scripts/tools/preview_expressions_udp.py --host <device-ip>", file=sys.stderr)
         return 2
 
     for ip, mode in devices:
