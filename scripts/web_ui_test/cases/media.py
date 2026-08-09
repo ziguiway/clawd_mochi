@@ -5,7 +5,7 @@ import struct
 from playwright.sync_api import Page
 
 from ..infrastructure import FirmwareStubHandler
-from .common import open_controller
+from .common import open_console_section, open_controller
 
 def make_test_bmp() -> bytes:
     """Create a dependency-free 2x2 24-bit BMP for browser upload tests."""
@@ -40,6 +40,7 @@ def make_test_gif() -> bytes:
 
 def run_media_flow(page: Page, *, stub_mode: bool) -> None:
     open_controller(page)
+    open_console_section(page, "modules")
     page.locator('button[data-v="19"]').click()
     page.locator("#mediaWrap.open").wait_for(state="visible")
     preview = page.locator("#mediaPreview")
@@ -99,4 +100,3 @@ def run_media_flow(page: Page, *, stub_mode: bool) -> None:
         "() => document.querySelector('#mediaState').textContent === 'GIF READY'"
     )
     print("PASS  GIF 经浏览器优化后上传，并在设备端本地解码")
-

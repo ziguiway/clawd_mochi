@@ -3,6 +3,7 @@
 from playwright.sync_api import Page
 
 from ..infrastructure import FirmwareStubHandler
+from .common import open_console_section
 
 def assert_stock_suggestion(
     page: Page, query: str, expected_code: str, expected_name: str
@@ -16,6 +17,7 @@ def assert_stock_suggestion(
     print(f"PASS  股票搜索 {query!r}: {expected_code} {expected_name}")
 
 def run_market_flow(page: Page, *, stub_mode: bool) -> None:
+    open_console_section(page, "modules")
     market_button = page.locator('button[data-v="10"]')
     market_button.click()
     page.locator("#swrap.open").wait_for(state="visible")
@@ -49,4 +51,3 @@ def run_market_flow(page: Page, *, stub_mode: bool) -> None:
             "添加贵州茅台后没有且仅有一次自动保存"
         )
     print("PASS  添加贵州茅台并自动保存")
-

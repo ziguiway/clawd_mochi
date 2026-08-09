@@ -6,10 +6,11 @@ from pathlib import Path
 from playwright.sync_api import Page
 
 from ..infrastructure import FirmwareStubHandler
-from .common import open_controller
+from .common import open_console_section, open_controller
 
 def run_timetable_import_flow(page: Page, *, stub_mode: bool) -> None:
     open_controller(page)
+    open_console_section(page, "modules")
     page.locator('button[data-v="18"]').click()
     page.locator("#uwrap.open").wait_for(state="visible")
     preview = page.locator("#utPreview")
@@ -76,6 +77,7 @@ def run_timetable_import_flow(page: Page, *, stub_mode: bool) -> None:
 
 def run_salary_flow(page: Page) -> None:
     open_controller(page)
+    open_console_section(page, "modules")
     page.locator('button[data-v="17"]').click()
     page.locator("#ywrap.open").wait_for(state="visible")
     preview = page.locator("#ypreview")
@@ -127,8 +129,8 @@ def run_salary_flow(page: Page) -> None:
     assert page.locator("#ypEnd").text_content() == "19:00"
     page.locator("#yAutoInput").select_option("1")
     page.locator("#ySave").click()
-    page.get_by_text("salary settings saved", exact=True).wait_for(
-        state="visible"
+    page.wait_for_function(
+        "() => document.querySelector('#yMonthly').textContent === '15000'"
     )
     assert page.locator("#yMonthly").text_content() == "15000"
     assert FirmwareStubHandler.salary_config["startMinutes"] == 570
@@ -190,4 +192,3 @@ def run_salary_flow(page: Page) -> None:
         "reset",
     ]
     print("PASS  重置今日记录并完成完整状态流")
-

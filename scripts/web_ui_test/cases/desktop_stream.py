@@ -22,7 +22,7 @@ import urllib.request
 from playwright.sync_api import Page
 
 from ..infrastructure import FirmwareStubHandler
-from .common import open_controller
+from .common import open_console_section, open_controller
 
 def jpeg_via_page(page: Page, color: str = "#fb6b10") -> bytes:
     data_url = page.evaluate(
@@ -118,6 +118,7 @@ def run_desktop_stream_flow(page: Page, *, stub_mode: bool,
                             device_url: str | None = None) -> None:
     """controller.html Desktop Stream 面板的 UI/协议流程(两种模式都跑)。"""
     open_controller(page)
+    open_console_section(page, "modules")
     page.locator('button[data-v="21"]').click()
     page.locator("#streamWrap.open").wait_for(state="visible")
     state = page.locator("#streamState")

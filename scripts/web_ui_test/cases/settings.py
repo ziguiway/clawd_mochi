@@ -5,7 +5,7 @@ import json
 from playwright.sync_api import Page
 
 from ..infrastructure import FirmwareStubHandler
-from .common import assert_suggestion, open_controller, result_symbols
+from .common import assert_suggestion, open_console_section, open_controller, result_symbols
 
 def run_positive_flow(page: Page, *, stub_mode: bool) -> None:
     open_controller(page)
@@ -13,6 +13,7 @@ def run_positive_flow(page: Page, *, stub_mode: bool) -> None:
         "未选择 Crypto 时不应显示加密货币设置"
     )
 
+    open_console_section(page, "modules")
     crypto_button = page.locator('button[data-v="9"]')
     crypto_button.click()
     page.locator("#mwrap.open").wait_for(state="visible")
@@ -51,6 +52,7 @@ def run_positive_flow(page: Page, *, stub_mode: bool) -> None:
 
 def run_wifi_status_flow(page: Page) -> None:
     open_controller(page)
+    open_console_section(page, "setup")
     page.evaluate(
         """() => renderWifiStatus({
             connected: true,
@@ -145,6 +147,7 @@ def run_expression_flow(page: Page, *, stub_mode: bool) -> None:
 
 def run_profile_flow(page: Page, *, stub_mode: bool) -> None:
     open_controller(page)
+    open_console_section(page, "setup")
     assert not page.locator("#profileWrap").is_visible()
     page.locator("#profilePanelBtn").click()
     page.locator("#profileWrap").wait_for(state="visible")
@@ -171,6 +174,7 @@ def run_profile_flow(page: Page, *, stub_mode: bool) -> None:
 
 def run_theme_flow(page: Page, *, stub_mode: bool) -> None:
     open_controller(page)
+    open_console_section(page, "control")
     page.wait_for_function("() => document.querySelectorAll('.theme-btn').length === 4")
     current = int(page.evaluate("displayTheme"))
     expected = {
@@ -213,6 +217,8 @@ def run_theme_flow(page: Page, *, stub_mode: bool) -> None:
     print("PASS  切换并持久化 Classic / Dark / Mint / Pink 四主题")
 
 def run_font_flow(page: Page, *, stub_mode: bool) -> None:
+    open_controller(page)
+    open_console_section(page, "control")
     selector = page.locator("#fontSelect")
     assert selector.locator("option").count() == 4, (
         "Font selector should expose four profiles"
@@ -230,6 +236,7 @@ def run_font_flow(page: Page, *, stub_mode: bool) -> None:
 
 def run_config_flow(page: Page, *, stub_mode: bool) -> None:
     open_controller(page)
+    open_console_section(page, "setup")
     exported = page.evaluate(
         """async () => {
             const r = await fetch('/config/export', {cache: 'no-store'});
@@ -287,6 +294,7 @@ def run_config_flow(page: Page, *, stub_mode: bool) -> None:
 
 def run_carousel_flow(page: Page, *, stub_mode: bool) -> None:
     open_controller(page)
+    open_console_section(page, "workspace")
     panel_button = page.locator("#carouselPanelBtn")
     panel_button.click()
     page.locator("#carouselWrap.open").wait_for(state="visible")
@@ -326,15 +334,9 @@ def run_carousel_flow(page: Page, *, stub_mode: bool) -> None:
 
     first_name, second_name = order_names[:2]
     first_handle = page.get_by_role("button", name=f"Drag {first_name}")
-    first_box = first_handle.bounding_box()
-    second_row = page.locator("#carouselOrder .ritem").nth(1).bounding_box()
-    assert first_box is not None and second_row is not None, "未找到轮播拖拽项目"
-    first_handle.hover()
-    page.mouse.move(first_box["x"] + first_box["width"] / 2, first_box["y"] + first_box["height"] / 2)
-    page.mouse.down()
-    page.mouse.move(first_box["x"] + first_box["width"] / 2, second_row["y"] + second_row["height"] * 0.8, steps=8)
-    page.mouse.up()
-    page.wait_for_timeout(150)
+    second_row = page.locator("#carouselOrder .ritem").nth(1)
+    first_handle.drag_to(second_row)
+    page.wait_for_timeout(500)
     assert page.locator("#carouselOrder .rname").first.text_content() == second_name
     print(f"PASS  拖拽调整轮播顺序为 {second_name} 优先")
 
@@ -352,4 +354,3 @@ def run_carousel_flow(page: Page, *, stub_mode: bool) -> None:
         assert FirmwareStubHandler.prefs["carousel"] is False
         assert FirmwareStubHandler.prefs["carouselFixed"] == 10
     print("PASS  关闭轮播并固定显示 Market")
-

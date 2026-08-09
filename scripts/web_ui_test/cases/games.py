@@ -3,10 +3,11 @@
 from playwright.sync_api import Page
 
 from ..infrastructure import FirmwareStubHandler
-from .common import open_controller
+from .common import open_console_section, open_controller
 
 def run_game_arcade_flow(page: Page, *, stub_mode: bool) -> None:
     open_controller(page)
+    open_console_section(page, "modules")
     page.locator("#dinoViewBtn").click()
     page.locator("#arcadeWrap.open").wait_for(state="visible")
     assert page.locator("#arcadeHome .game-card").count() == 6
@@ -159,4 +160,3 @@ def run_game_arcade_flow(page: Page, *, stub_mode: bool) -> None:
         "() => !document.querySelector('#arcadeWrap').classList.contains('open')"
     )
     print("PASS  游戏厅可关闭并返回主控制面板")
-

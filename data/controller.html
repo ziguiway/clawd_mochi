@@ -482,15 +482,8 @@
     <div class="activity-status-main"><strong id="activityCurrent">Normal expression</strong><span><i></i>READY</span></div>
     <div class="activity-metrics"><div><span>DISPLAY</span><strong id="activityDisplay">Normal</strong></div><div><span>BRIGHTNESS</span><strong id="activityBrightness">100%</strong></div><div><span>CLAUDE CODE</span><strong id="activityClaude">ON</strong></div></div>
   </div>
-  <div class="activity-section-head"><span>QUICK VIEWS</span><small>OPEN ON DEVICE</small></div>
-  <div class="activity-quick-grid">
-    <button type="button" onclick="setView(6)"><span>14:28</span><strong>Clock</strong><small>time and date</small></button>
-    <button type="button" onclick="setView(7)"><span>25</span><strong>Pomodoro</strong><small>focus timer</small></button>
-    <button type="button" onclick="setView(17)"><span>CNY +</span><strong>Live Ledger</strong><small>work earnings</small></button>
-    <button type="button" onclick="toggleCarouselPanel()"><span>↻</span><strong>Idle display</strong><small>carousel settings</small></button>
-  </div>
 </div>
-<div class="sec">// idle display</div>
+<div class="sec" id="carouselSectionLabel">// idle display</div>
 <button class="cbtn idle-open" id="carouselPanelBtn" onclick="toggleCarouselPanel()"><span>↻ idle display settings</span><span id="carouselPanelState">open</span></button>
 <div class="rwrap" id="carouselWrap">
   <div class="rhead"><span class="rttl">INFO CAROUSEL</span><button class="cbtn rtoggle" id="carouselToggle" onclick="toggleCarousel()">○ carousel off</button></div>
@@ -644,8 +637,8 @@
   <input id="otaFirmwareFile" type="file" accept=".bin" hidden onchange="uploadOta(this.files[0])">
   <input id="otaFsFile" type="file" accept=".bin" hidden onchange="uploadOta(this.files[0])">
 </div>
-<div class="toast" id="toast"></div>
 </section>
+<div class="toast" id="toast"></div>
 </main>
     </section>
   </div>

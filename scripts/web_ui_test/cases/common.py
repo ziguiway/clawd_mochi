@@ -21,6 +21,12 @@ def open_controller(page: Page) -> None:
     page.goto("/?test=1", wait_until="domcontentloaded")
     page.wait_for_function("() => initialLoadComplete === true")
 
+def open_console_section(page: Page, section: str) -> None:
+    page.locator(f'button[data-console-view="{section}"]').click()
+    page.locator(f'[data-console-section="{section}"].console-view-active').wait_for(
+        state="visible"
+    )
+
 def assert_suggestion(page: Page, query: str, expected: set[str]) -> None:
     search = page.locator("#mSearch")
     search.fill(query)
@@ -32,4 +38,3 @@ def assert_suggestion(page: Page, query: str, expected: set[str]) -> None:
         f"实际结果为 {sorted(actual)}"
     )
     print(f"PASS  联想搜索 {query!r}: {', '.join(sorted(expected))}")
-
