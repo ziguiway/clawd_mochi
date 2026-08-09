@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+PROJECT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 if ! command -v pio >/dev/null 2>&1; then
   echo "错误：找不到 pio，请先安装 PlatformIO 并确保 pio 在 PATH 中。" >&2
