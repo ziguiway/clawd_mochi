@@ -9,6 +9,7 @@ void PreferenceService::init() {
     _animSpeed = constrain(_prefs.getUChar("speed", _animSpeed), 1, 3);
     _startupView = _prefs.getUChar("startup", _startupView);
     if (!isStartupViewAllowed(_startupView)) _startupView = VIEW_EYES_NORMAL;
+    _terminalNotes = _prefs.getString("termnote", "");
     _brightnessPercent = constrain(_prefs.getUChar("bright", _brightnessPercent), 0, 100);
     _claudeStatusEnabled = _prefs.getBool("ccstatus", _claudeStatusEnabled);
     _dinoHighScore = _prefs.getUInt("dinohi", _dinoHighScore);
@@ -167,6 +168,12 @@ void PreferenceService::setStartupView(uint8_t view) {
     if (_startupView == view) return;
     _startupView = view;
     _prefs.putUChar("startup", _startupView);
+}
+
+void PreferenceService::setTerminalNotes(const String& notes) {
+    if (notes.length() > 512) return;
+    _terminalNotes = notes;
+    _prefs.putString("termnote", _terminalNotes);
 }
 
 void PreferenceService::setBrightnessPercent(uint8_t percent) {

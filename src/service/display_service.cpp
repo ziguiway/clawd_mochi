@@ -25,6 +25,7 @@
 
 namespace {
 DisplayService* s_mediaGifOwner = nullptr;
+constexpr const char* CANVAS_STATE_PATH = "/canvas_state.txt";
 
 // 这些页面适合在断电后恢复；终端和画板恢复页面模式，内容仍是临时数据。
 bool isPowerRestoreView(uint8_t view) {
@@ -168,6 +169,7 @@ DisplayService::DisplayService(TftDisplay* tft, ClaudeCodeService* ccService,
     , _lastSalaryAmountX(0), _lastSalaryAmountSize(0)
     , _lastSalaryWorkedX(0), _lastSalaryWorkedSize(0)
     , _termMode(false), _termRow(0), _termCol(0)
+    , _terminalNotesDirty(false), _terminalNotesSaveDueMs(0)
 {
 }
 
@@ -1032,6 +1034,54 @@ void DisplayService::termClear() {
     _termRow = 0; _termCol = 0;
 }
 
+void DisplayService::loadTerminalNotes() {
+    termClear();
+    if (!_preferenceService) return;
+
+    const String payload = _preferenceService->getTerminalNotes();
+    const int headerEnd = payload.indexOf('\n');
+    if (headerEnd <= 0) return;
+    const String header = payload.substring(0, headerEnd);
+    const int separator = header.indexOf(',');
+    if (separator <= 0) return;
+
+    _termRow = constrain(header.substring(0, separator).toInt(), 0, TERM_ROWS - 1);
+    _termCol = constrain(header.substring(separator + 1).toInt(), 0, TERM_COLS);
+    int start = headerEnd + 1;
+    for (uint8_t row = 0; row < TERM_ROWS && start <= payload.length(); row++) {
+        const int lineEnd = payload.indexOf('\n', start);
+        const int end = lineEnd < 0 ? payload.length() : lineEnd;
+        _termLines[row] = payload.substring(start, end);
+        if (_termLines[row].length() > TERM_COLS) _termLines[row].remove(TERM_COLS);
+        if (lineEnd < 0) break;
+        start = lineEnd + 1;
+    }
+    _termCol = min(_termCol, static_cast<uint8_t>(_termLines[_termRow].length()));
+    _terminalNotesDirty = false;
+}
+
+void DisplayService::saveTerminalNotes() {
+    if (!_preferenceService || !_terminalNotesDirty) return;
+    String payload = String(_termRow) + "," + String(_termCol) + "\n";
+    for (uint8_t row = 0; row < TERM_ROWS; row++) {
+        payload += _termLines[row];
+        if (row + 1 < TERM_ROWS) payload += '\n';
+    }
+    _preferenceService->setTerminalNotes(payload);
+    _terminalNotesDirty = false;
+}
+
+void DisplayService::scheduleTerminalNotesSave() {
+    _terminalNotesDirty = true;
+    _terminalNotesSaveDueMs = millis() + 1000UL;
+}
+
+void DisplayService::saveTerminalNotesIfDue(unsigned long now) {
+    if (_terminalNotesDirty && static_cast<long>(now - _terminalNotesSaveDueMs) >= 0) {
+        saveTerminalNotes();
+    }
+}
+
 void DisplayService::termDrawHeader() {
     _tft->fillRect(0, 0, CFG_DISPLAY_WIDTH, TERM_PAD_Y + 1, COLOR_DARKBG);
     _tft->getTft().setTextColor(COLOR_ORANGE);
@@ -1099,32 +1149,40 @@ void DisplayService::termScroll() {
 }
 
 void DisplayService::termAddChar(char c) {
+    bool changed = false;
     if (c == '\n' || c == '\r') {
         const int16_t yy = TERM_PAD_Y + 4 + _termRow * TERM_CHAR_H;
         _tft->fillRect(TERM_PAD_X + PREFIX_PX + _termCol * TERM_CHAR_W,
                        yy + 1, TERM_CHAR_W, TERM_CHAR_H - 1, COLOR_DARKBG);
         _termRow++; _termCol = 0;
-        if (_termRow >= TERM_ROWS) { termScroll(); return; }
-        termDrawLine(_termRow);
+        if (_termRow >= TERM_ROWS) termScroll();
+        else termDrawLine(_termRow);
+        changed = true;
     } else if (c == '\b' || c == 127) {
         if (_termCol > 0) {
             _termCol--;
             _termLines[_termRow].remove(_termLines[_termRow].length() - 1);
             termDrawBackspace();
+            changed = true;
         }
     } else if (c >= 32 && c < 127) {
         if (_termCol >= TERM_COLS) {
             _termRow++; _termCol = 0;
-            if (_termRow >= TERM_ROWS) { termScroll(); return; }
+            if (_termRow >= TERM_ROWS) termScroll();
         }
-        if (_termCol == 0) termDrawPrefix(TERM_PAD_Y + 4 + _termRow * TERM_CHAR_H);
-        _termLines[_termRow] += c;
-        _termCol++;
-        termDrawLastChar();
+        if (_termRow < TERM_ROWS) {
+            if (_termCol == 0) termDrawPrefix(TERM_PAD_Y + 4 + _termRow * TERM_CHAR_H);
+            _termLines[_termRow] += c;
+            _termCol++;
+            termDrawLastChar();
+            changed = true;
+        }
     }
+    if (changed) scheduleTerminalNotesSave();
 }
 
 void DisplayService::exitTerminal() {
+    saveTerminalNotes();
     _termMode = false;
     drawCodeView();
 }
@@ -1238,11 +1296,11 @@ void DisplayService::setInteractiveView(uint8_t view) {
         case InteractiveView::CODE_VIEW:
             drawCodeView();
             _termMode = true;
-            termClear();
+            loadTerminalNotes();
             termFullRedraw();
             break;
         case InteractiveView::DRAW:
-            _tft->fillScreen(_drawBgColor);
+            restoreCanvasState();
             break;
         case InteractiveView::THINKING:
             showExpression(ExpressionId::THINKING);
@@ -1307,7 +1365,7 @@ void DisplayService::redrawCurrentView() {
         case InteractiveView::EYES_NORMAL:
         case InteractiveView::EYES_SQUISH: _eyesView.redraw(); break;
         case InteractiveView::CODE_VIEW:   drawCodeView();   break;
-        case InteractiveView::DRAW:        _tft->fillScreen(_drawBgColor); break;
+        case InteractiveView::DRAW:        restoreCanvasState(); break;
         case InteractiveView::THINKING:
         case InteractiveView::WORKING:
             _eyesView.redraw();
@@ -1890,9 +1948,10 @@ void DisplayService::drawClear(uint16_t bgColor) {
     _interactiveView = InteractiveView::DRAW;
     _termMode = false;
     _tft->fillScreen(bgColor);
+    saveCanvasBackground(bgColor);
 }
 
-void DisplayService::drawStroke(uint16_t penColor, const String& pointsData) {
+void DisplayService::renderDrawStroke(uint16_t penColor, const String& pointsData) {
     _interactiveView = InteractiveView::DRAW;
     struct Pt { int16_t x, y; };
     Pt prev = {-1, -1};
@@ -1916,6 +1975,58 @@ void DisplayService::drawStroke(uint16_t penColor, const String& pointsData) {
         }
         start = semi + 1;
     }
+}
+
+void DisplayService::saveCanvasBackground(uint16_t bgColor) {
+    File file = LittleFS.open(CANVAS_STATE_PATH, "w");
+    if (!file) return;
+    file.print("BG ");
+    file.println(bgColor);
+    file.close();
+}
+
+void DisplayService::saveCanvasStroke(uint16_t penColor, const String& pointsData) {
+    if (pointsData.isEmpty() || pointsData.length() > 2048 ||
+        pointsData.indexOf('\n') >= 0 || pointsData.indexOf('\r') >= 0) return;
+    if (!LittleFS.exists(CANVAS_STATE_PATH)) saveCanvasBackground(_drawBgColor);
+    File file = LittleFS.open(CANVAS_STATE_PATH, "a");
+    if (!file) return;
+    file.print("S ");
+    file.print(penColor);
+    file.print(' ');
+    file.println(pointsData);
+    file.close();
+}
+
+void DisplayService::drawStroke(uint16_t penColor, const String& pointsData) {
+    renderDrawStroke(penColor, pointsData);
+    saveCanvasStroke(penColor, pointsData);
+}
+
+void DisplayService::restoreCanvasState() {
+    uint16_t bgColor = _drawBgColor;
+    File file = LittleFS.open(CANVAS_STATE_PATH, "r");
+    if (file) {
+        const String header = file.readStringUntil('\n');
+        if (header.startsWith("BG ")) {
+            bgColor = static_cast<uint16_t>(header.substring(3).toInt());
+        }
+    }
+    _drawBgColor = bgColor;
+    _animBgColor = bgColor;
+    _tft->fillScreen(bgColor);
+    if (!file) return;
+
+    while (file.available()) {
+        const String line = file.readStringUntil('\n');
+        if (!line.startsWith("S ")) continue;
+        const int separator = line.indexOf(' ', 2);
+        if (separator <= 2) continue;
+        const uint16_t penColor = static_cast<uint16_t>(
+            line.substring(2, separator).toInt());
+        renderDrawStroke(penColor, line.substring(separator + 1));
+    }
+    file.close();
 }
 
 void DisplayService::showClock() {
@@ -2698,6 +2809,7 @@ void DisplayService::reloadIdleDisplayPreferences() {
 // 本方法只负责按当前 _currentMode 渲染。
 void DisplayService::update() {
     unsigned long now = millis();
+    saveTerminalNotesIfDue(now);
     const bool exclusiveDisplayActive = isExclusiveDisplayActive();
     // 游戏/媒体与 TLS 都需要短时内存和 CPU 峰值。独占视图期间
     // 保留现有数据，退出后按原有刷新/重试逻辑继续。

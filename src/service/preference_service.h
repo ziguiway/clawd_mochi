@@ -21,6 +21,9 @@ public:
     uint8_t getStartupView() const { return _startupView; }
     void setStartupView(uint8_t view);
 
+    String getTerminalNotes() const { return _terminalNotes; }
+    void setTerminalNotes(const String& notes);
+
     uint8_t getBrightnessPercent() const { return _brightnessPercent; }
     void setBrightnessPercent(uint8_t percent);
 
@@ -110,6 +113,7 @@ private:
     String _defaultBgHex = "#da1100";
     uint8_t _animSpeed = 1;
     uint8_t _startupView = 0;
+    String _terminalNotes;
     uint8_t _brightnessPercent = 100;
     bool _claudeStatusEnabled = true;
     uint32_t _dinoHighScore = 0;

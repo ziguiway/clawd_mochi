@@ -372,6 +372,8 @@ private:
     String _termLines[TERM_ROWS];
     uint8_t _termRow;
     uint8_t _termCol;
+    bool _terminalNotesDirty;
+    unsigned long _terminalNotesSaveDueMs;
 
     // Drawing helpers
     void drawCodeView();
@@ -385,6 +387,10 @@ private:
     void drawUsageView();
     void drawSalaryCounterView();
     void drawTimetableView();
+    void renderDrawStroke(uint16_t penColor, const String& pointsData);
+    void restoreCanvasState();
+    void saveCanvasStroke(uint16_t penColor, const String& pointsData);
+    void saveCanvasBackground(uint16_t bgColor);
     void drawTimetableHeader(U8G2_FOR_ADAFRUIT_GFX& text,
                              const TimetableSnapshot& snapshot,
                              const char* title);
@@ -427,6 +433,10 @@ private:
     void termDrawBackspace();
     void termFullRedraw();
     void termScroll();
+    void loadTerminalNotes();
+    void saveTerminalNotes();
+    void scheduleTerminalNotesSave();
+    void saveTerminalNotesIfDue(unsigned long now);
 
     int speedMs(int ms);
 };
