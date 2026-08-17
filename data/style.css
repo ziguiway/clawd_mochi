@@ -168,6 +168,10 @@ input:focus{outline:none;border-color:#ff8c00}
     .setup-footer{font-size:.52rem;flex-wrap:wrap}
 }
 
+.setup-option.is-loading{pointer-events:none;cursor:wait;opacity:.78}
+.setup-option.is-loading .option-icon{font-size:0}
+.setup-option.is-loading .option-icon::after{content:"";display:block;width:20px;height:20px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:wifi-spin .8s linear infinite}
+
 /* Console setup direction: shared with the controller's dark device surface. */
 .console-page{background:#111214;color:#eee9e1;font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .console-page::before{display:none}
