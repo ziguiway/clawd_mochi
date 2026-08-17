@@ -489,9 +489,10 @@
   </div>
 </div>
 <div class="sec" id="carouselSectionLabel">// idle display</div>
-<button class="cbtn idle-open" id="carouselPanelBtn" onclick="toggleCarouselPanel()"><span>↻ idle display settings</span><span id="carouselPanelState">open</span></button>
-<div class="rwrap" id="carouselWrap">
-  <div class="rhead"><span class="rttl">INFO CAROUSEL</span><button class="cbtn rtoggle" id="carouselToggle" onclick="toggleCarousel()">○ carousel off</button></div>
+<button class="cbtn idle-open" id="carouselPanelBtn" aria-expanded="true" onclick="toggleCarouselPanel()"><span>↻ idle display settings</span><span id="carouselPanelState">close</span></button>
+<div class="rwrap open" id="carouselWrap">
+  <div class="rhead"><div><span class="rttl">IDLE DISPLAY</span><span class="rsub">What Mochi shows between tasks</span></div><button class="cbtn rtoggle" id="carouselToggle" onclick="toggleCarousel()">○ carousel off</button></div>
+  <div class="rstatus"><span class="rstatus-dot"></span><span id="carouselModeLabel">FIXED PAGE</span><strong id="carouselCurrentLabel">WEATHER</strong></div>
   <div class="rrow"><span class="mlabel">FIXED PAGE</span><select class="rselect" id="carouselFixed" onchange="setCarouselFixed(this.value)"><option value="6">Clock</option><option value="7">Pomodoro</option><option value="8">Weather</option><option value="9">Crypto</option><option value="10">Market</option><option value="17">Live Ledger</option><option value="18">Timetable</option><option value="20">Usage</option></select></div>
   <div class="rrow"><span class="mlabel">INTERVAL</span><input class="rrange" id="carouselSpeed" type="range" min="5" max="60" step="1" oninput="setCarouselSpeed(this.value)"><span class="rtime" id="carouselSpeedV">12s</span></div>
   <div class="mlabel">ROTATION ORDER</div>

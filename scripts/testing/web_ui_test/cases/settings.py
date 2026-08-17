@@ -306,7 +306,8 @@ def run_carousel_flow(page: Page, *, stub_mode: bool) -> None:
     open_controller(page)
     open_console_section(page, "workspace")
     panel_button = page.locator("#carouselPanelBtn")
-    panel_button.click()
+    if not page.locator("#carouselWrap.open").is_visible():
+        panel_button.click()
     page.locator("#carouselWrap.open").wait_for(state="visible")
     assert page.locator("#carouselPanelState").text_content() == "close"
     print("PASS  展开信息轮播设置")

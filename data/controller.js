@@ -82,7 +82,7 @@ let bgPreviewHex='#aa4818',bgPreviewRevision=0,bgPreviewTimer=0,bgPreviewInFligh
 let lastX=0,lastY=0,tt;
 let marketSelected=[],marketDirectory=[],marketLoaded=false,marketSaving=false,marketSaveQueued=false,marketUpdatedAt=null,marketDrag=null;
 let stockSelected=[],stockSaving=false,stockSaveQueued=false,stockUpdatedAt=null,stockDrag=null,stockSearchTimer=null,stockSearchSeq=0;
-let carouselConfig={enabled:false,speed:12,order:[8,9,10,6,17,7,18,20],fixed:8},carouselSpeedTimer=null,carouselPanelOpen=false,carouselDrag=null;
+let carouselConfig={enabled:false,speed:12,order:[8,9,10,6,17,7,18,20],fixed:8},carouselSpeedTimer=null,carouselPanelOpen=true,carouselDrag=null;
 let salaryState=null,salaryConfigured=false,salarySettingsOpen=false,salaryRequestPending=false,lastSalaryStatus=null,salaryMotionBase=0,salaryMotionAt=0;
 let usageState=null,usagePollTimer=null;
 function toast(msg,ok=true){const el=document.getElementById('toast');el.textContent=msg;el.style.borderColor=ok?'#28b878':'#c96a3e';el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),1300);}
@@ -303,6 +303,8 @@ function applyCarouselPrefs(p){
 function renderCarousel(){
   const enabled=carouselConfig.enabled,toggle=document.getElementById('carouselToggle'),fixed=document.getElementById('carouselFixed'),speed=document.getElementById('carouselSpeed');
   toggle.textContent=enabled?'● carousel on':'○ carousel off';toggle.classList.toggle('on',enabled);toggle.classList.toggle('dim',!enabled);
+  document.getElementById('carouselModeLabel').textContent=enabled?'ROTATING PAGES':'FIXED PAGE';
+  document.getElementById('carouselCurrentLabel').textContent=enabled?`${carouselConfig.order.length} PAGES`:carouselName(carouselConfig.fixed).toUpperCase();
   fixed.innerHTML='';carouselPages.forEach(p=>{const o=document.createElement('option');o.value=String(p.id);o.textContent=p.name;fixed.appendChild(o);});fixed.value=String(carouselConfig.fixed);fixed.disabled=enabled;speed.value=String(carouselConfig.speed);speed.disabled=!enabled;document.getElementById('carouselSpeedV').textContent=carouselConfig.speed+'s';
   document.getElementById('carouselHint').textContent=enabled?'Claude Code pauses the carousel, then it resumes from the interrupted page.':'Select the single info page shown while the carousel is off.';
   const out=document.getElementById('carouselOrder');out.innerHTML='';carouselConfig.order.forEach((view,i)=>{
@@ -316,7 +318,7 @@ function renderCarousel(){
   });
   const add=document.getElementById('carouselAdd');if(add){add.innerHTML='';const empty=document.createElement('option');empty.value='';empty.textContent='ADD PAGE...';add.appendChild(empty);carouselPages.forEach(p=>{if(!carouselConfig.order.includes(p.id)){const o=document.createElement('option');o.value=String(p.id);o.textContent=p.name;add.appendChild(o);}});add.value='';}
 }
-function toggleCarouselPanel(){carouselPanelOpen=!carouselPanelOpen;const panel=document.getElementById('carouselWrap'),state=document.getElementById('carouselPanelState');panel.classList.toggle('open',carouselPanelOpen);state.textContent=carouselPanelOpen?'close':'open';}
+function toggleCarouselPanel(){carouselPanelOpen=!carouselPanelOpen;const panel=document.getElementById('carouselWrap'),state=document.getElementById('carouselPanelState'),button=document.getElementById('carouselPanelBtn');panel.classList.toggle('open',carouselPanelOpen);state.textContent=carouselPanelOpen?'close':'open';button.setAttribute('aria-expanded',String(carouselPanelOpen));}
 async function saveCarousel(){
   const q=new URLSearchParams({carousel:carouselConfig.enabled?'1':'0',carouselSpeed:String(carouselConfig.speed),carouselFixed:String(carouselConfig.fixed),carouselOrder:carouselConfig.order.join(',')});
   try{const r=await fetch('/prefs?'+q.toString(),{cache:'no-store'});if(!r.ok)throw new Error();const p=await r.json();if(typeof p.carousel==='boolean')applyCarouselPrefs(p);toast('idle display saved');}
