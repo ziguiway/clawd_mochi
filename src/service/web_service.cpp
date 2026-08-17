@@ -87,8 +87,15 @@ void WebService::setupRoutes() {
     };
     _server.on("/generate_204", HTTP_GET, redirectToOnboarding);
     _server.on("/hotspot-detect.html", HTTP_GET, redirectToOnboarding);
+    _server.on("/mobile/status.php", HTTP_GET, redirectToOnboarding);
+    _server.on("/check_network_status.txt", HTTP_GET, redirectToOnboarding);
     _server.on("/connecttest.txt", HTTP_GET, redirectToOnboarding);
     _server.on("/ncsi.txt", HTTP_GET, redirectToOnboarding);
+    _server.on("/fwlink/", HTTP_GET, redirectToOnboarding);
+    _server.on("/connectivity-check.html", HTTP_GET, redirectToOnboarding);
+    _server.on("/success.txt", HTTP_GET, redirectToOnboarding);
+    _server.on("/portal.html", HTTP_GET, redirectToOnboarding);
+    _server.on("/library/test/success.html", HTTP_GET, redirectToOnboarding);
     _server.on("/wakeup_import.js", HTTP_GET, [this]() {
         handleFile("/wakeup_import.js", "application/javascript");
     });
@@ -537,55 +544,39 @@ void WebService::handleCmd() {
     }
 
     _server.send(200, "application/json", "{\"ok\":1}");
-    uint8_t rememberedView = 0xFF;
     switch (c) {
         case 'w':
-            rememberedView = VIEW_EYES_NORMAL;
             _displayService->setInteractiveView(VIEW_EYES_NORMAL);
             break;
         case 's':
-            rememberedView = VIEW_EYES_SQUISH;
             _displayService->setInteractiveView(VIEW_EYES_SQUISH);
             break;
         case 'd': _displayService->setInteractiveView(VIEW_CODE); break;
         case 'c':
-            rememberedView = VIEW_CLOCK;
             _displayService->setInteractiveView(VIEW_CLOCK);
             break;
         case 'p':
-            rememberedView = VIEW_POMODORO;
             _displayService->setInteractiveView(VIEW_POMODORO);
             break;
         case 'e':
-            rememberedView = VIEW_WEATHER;
             _displayService->setInteractiveView(VIEW_WEATHER);
             break;
         case 'm':
-            rememberedView = VIEW_CRYPTO;
             _displayService->setInteractiveView(VIEW_CRYPTO);
             break;
         case 'k':
-            rememberedView = VIEW_MARKET;
             _displayService->setInteractiveView(VIEW_MARKET);
             break;
         case 'y':
-            rememberedView = VIEW_SALARY;
             _displayService->setInteractiveView(VIEW_SALARY);
             break;
         case 'u':
-            rememberedView = VIEW_TIMETABLE;
             _displayService->setInteractiveView(VIEW_TIMETABLE);
             break;
         case 'q':
-            rememberedView = VIEW_USAGE;
             _displayService->setInteractiveView(VIEW_USAGE);
             break;
         case 'a': _displayService->animLogoReveal(); break;
-    }
-    if (_preferenceService && rememberedView != 0xFF) {
-        // 只记住用户主动选择且适合上电恢复的页面；终端、画板、动画和游戏
-        // 都是临时状态，不能让设备下次启动停在不可交互的中间界面。
-        _preferenceService->setStartupView(rememberedView);
     }
 }
 

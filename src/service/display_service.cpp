@@ -14,7 +14,6 @@
 #include <LittleFS.h>
 #include <AnimatedGIF.h>
 #include <U8g2_for_Adafruit_GFX.h>
-#include <qrcode.h>
 #include <time.h>
 #include <new>
 
@@ -26,6 +25,25 @@
 
 namespace {
 DisplayService* s_mediaGifOwner = nullptr;
+
+// 这些页面没有依赖临时连接或实时交互状态，适合在断电后恢复。
+bool isPowerRestoreView(uint8_t view) {
+    switch (view) {
+        case VIEW_EYES_NORMAL:
+        case VIEW_EYES_SQUISH:
+        case VIEW_CLOCK:
+        case VIEW_POMODORO:
+        case VIEW_WEATHER:
+        case VIEW_CRYPTO:
+        case VIEW_MARKET:
+        case VIEW_SALARY:
+        case VIEW_TIMETABLE:
+        case VIEW_USAGE:
+            return true;
+        default:
+            return false;
+    }
+}
 
 void prepareTimetableText(U8G2_FOR_ADAFRUIT_GFX& text,
                           const uint8_t* font, uint16_t foreground) {
@@ -1196,6 +1214,10 @@ void DisplayService::setInteractiveView(uint8_t view) {
     }
     _currentMode = DisplayMode::INTERACTIVE;
     _interactiveView = static_cast<InteractiveView>(view);
+    if (_preferenceService && isPowerRestoreView(view)) {
+        // 在切页时同步保存，突然断电也能恢复到最近一次稳定页面。
+        _preferenceService->setStartupView(view);
+    }
     if (view != VIEW_EYES_NORMAL && view != VIEW_EYES_SQUISH) {
         _expressionPreferred = false;
     }
@@ -2861,7 +2883,7 @@ void DisplayService::updateProvisioning() {
         if (mode != WifiConfigService::ProvisioningMode::CONNECTED) {
             _tft->getTft().setTextColor(COLOR_WHITE);
             _tft->getTft().setTextSize(2);
-            const char* title = "WiFi Setup";
+            const char* title = "GET ME ONLINE!";
             int16_t titleX = (CFG_DISPLAY_WIDTH - (int)strlen(title) * 12) / 2;
             _tft->getTft().setCursor(titleX, 22);
             _tft->getTft().print(title);
@@ -2872,40 +2894,32 @@ void DisplayService::updateProvisioning() {
             _tft->getTft().setTextSize(1);
             // 重试打满回到配网页时,提示用户重新配置
             const char* subtitle = _wifiService->isRetryExhausted()
-                ? "Too many attempts, connect again"
-                : "Connect to ClaWD-Mochi";
+                ? "Please connect again"
+                : "Use your phone to connect";
             int16_t subX = (CFG_DISPLAY_WIDTH - (int)strlen(subtitle) * 6) / 2;
             _tft->getTft().setCursor(subX, 46);
             _tft->getTft().print(subtitle);
 
-            // 二维码:白底黑码,保证扫码对比度
-            QRCode qrcode;
-            uint8_t qrcodeData[qrcode_getBufferSize(3)];
-            qrcode_initText(&qrcode, qrcodeData, 3, ECC_LOW, "http://192.168.4.1/onboarding");
-            const int16_t scale = 3;
-            const int16_t qrSize = qrcode.size * scale;
-            const int16_t pad = 4;
-            const int16_t boxSize = qrSize + pad * 2;
-            const int16_t qrX = (CFG_DISPLAY_WIDTH - qrSize) / 2;
-            const int16_t boxY = 66;
-            const int16_t qrY = boxY + pad;
-            _tft->fillRect(qrX - pad, boxY, boxSize, boxSize, COLOR_WHITE);
-            for (uint8_t y = 0; y < qrcode.size; y++) {
-                for (uint8_t x2 = 0; x2 < qrcode.size; x2++) {
-                    if (qrcode_getModule(&qrcode, x2, y)) {
-                        _tft->fillRect(qrX + x2 * scale, qrY + y * scale, scale, scale, COLOR_BLACK);
-                    }
-                }
-            }
-
             _tft->getTft().setTextColor(COLOR_WHITE);
             _tft->getTft().setTextSize(1);
-            const char* scan = "Scan QR or open:";
-            const char* url = "192.168.4.1/onboarding";
-            _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - (int)strlen(scan) * 6) / 2, 174);
-            _tft->getTft().print(scan);
-            _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - (int)strlen(url) * 6) / 2, 190);
-            _tft->getTft().print(url);
+            const char* step1 = "CONNECT TO MY WIFI";
+            const char* step2 = "THEN OPEN THIS PAGE";
+            const char* password = "PASSWORD: clawd1234";
+            const char* address = "http://192.168.4.1";
+            _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - (int)strlen(step1) * 6) / 2, 70);
+            _tft->getTft().print(step1);
+            _tft->getTft().setTextSize(2);
+            const char* apSsid = "ClaWD-Mochi";
+            _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - (int)strlen(apSsid) * 12) / 2, 88);
+            _tft->getTft().print(apSsid);
+            _tft->getTft().setTextSize(1);
+            _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - (int)strlen(password) * 6) / 2, 116);
+            _tft->getTft().print(password);
+            _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - (int)strlen(step2) * 6) / 2, 146);
+            _tft->getTft().print(step2);
+            _tft->getTft().setTextSize(2);
+            _tft->getTft().setCursor((CFG_DISPLAY_WIDTH - (int)strlen(address) * 12) / 2, 164);
+            _tft->getTft().print(address);
         } else if (mode == WifiConfigService::ProvisioningMode::CONNECTING) {
             // 副标题 + 目标 SSID(阶段文案与三点动画走动态刷新)
             _tft->getTft().setTextColor(COLOR_WHITE);

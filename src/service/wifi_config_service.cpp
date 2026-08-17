@@ -7,7 +7,7 @@ WifiConfigService* WifiConfigService::_instance = nullptr;
 
 WifiConfigService::WifiConfigService()
     : _configured(false), _connected(false), _connecting(false)
-    , _apStarted(false), _mdnsStarted(false), _connectStartTime(0)
+    , _apStarted(false), _dnsStarted(false), _mdnsStarted(false), _connectStartTime(0)
     , _lastAttemptEndMs(0), _connectedSinceMs(0), _lastPowerAdjustMs(0)
     , _filteredRssi(0), _currentTxPower(WIFI_POWER_19_5dBm)
     , _wifiSleepEnabled(true), _radioProfileInitialized(false)
@@ -98,6 +98,12 @@ void WifiConfigService::setProvisioningMode(ProvisioningMode mode) {
     if (_provMode == mode) return;
     _provMode = mode;
     _provModeStartMs = millis();
+    if (_provMode == ProvisioningMode::AP_FALLBACK ||
+        (_provMode == ProvisioningMode::CONNECTING && !_configured)) {
+        startCaptiveDns();
+    } else {
+        stopCaptiveDns();
+    }
     LOG_INFO("WiFi", "配网状态: %s", getProvisioningMessage());
 }
 
@@ -120,9 +126,33 @@ void WifiConfigService::ensureAccessPoint() {
     _apStarted = WiFi.softAP(CFG_WIFI_AP_SSID, CFG_WIFI_AP_PASSWORD, CFG_WIFI_AP_CHANNEL);
     if (_apStarted) {
         LOG_INFO("WiFi", "AP 模式: %s IP: %s", CFG_WIFI_AP_SSID, WiFi.softAPIP().toString().c_str());
+        if (_provMode == ProvisioningMode::AP_FALLBACK ||
+            (_provMode == ProvisioningMode::CONNECTING && !_configured)) {
+            startCaptiveDns();
+        }
     } else {
         LOG_WARN("WiFi", "AP 启动失败: %s", CFG_WIFI_AP_SSID);
     }
+}
+
+void WifiConfigService::startCaptiveDns() {
+    if (_dnsStarted || !_apStarted) return;
+
+    const IPAddress apIp = WiFi.softAPIP();
+    if (apIp == IPAddress(0, 0, 0, 0)) {
+        LOG_WARN("WiFi", "Captive Portal DNS 启动失败: AP IP 无效");
+        return;
+    }
+    _dnsServer.start(53, "*", apIp);
+    _dnsStarted = true;
+    LOG_INFO("WiFi", "Captive Portal DNS 启动: * -> %s", apIp.toString().c_str());
+}
+
+void WifiConfigService::stopCaptiveDns() {
+    if (!_dnsStarted) return;
+    _dnsServer.stop();
+    _dnsStarted = false;
+    LOG_INFO("WiFi", "Captive Portal DNS 停止");
 }
 
 void WifiConfigService::startMDNS() {
@@ -145,6 +175,7 @@ void WifiConfigService::stopMDNS() {
 
 void WifiConfigService::update() {
     ensureAccessPoint();
+    if (_dnsStarted) _dnsServer.processNextRequest();
 
     if (_connected && WiFi.status() != WL_CONNECTED) {
         _connected = false;

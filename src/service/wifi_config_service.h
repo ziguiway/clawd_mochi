@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
+#include <DNSServer.h>
 #include <WebServer.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
@@ -71,7 +72,9 @@ private:
     bool _connected;
     bool _connecting;
     bool _apStarted;
+    bool _dnsStarted;
     bool _mdnsStarted;
+    DNSServer _dnsServer;
     unsigned long _connectStartTime;
     unsigned long _lastAttemptEndMs; // 上次连接失败/掉线的时间戳,用于渐进重试
     unsigned long _connectedSinceMs;
@@ -108,6 +111,8 @@ private:
     bool persistCredentials(const String& ssid, const String& password);
     bool isValidCredentialInput(const String& ssid, const String& password) const;
     void ensureAccessPoint();
+    void startCaptiveDns();
+    void stopCaptiveDns();
     void startMDNS();
     void stopMDNS();
     unsigned long getReconnectDelayMs() const;
