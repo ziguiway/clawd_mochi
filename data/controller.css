@@ -364,6 +364,7 @@ input[type=range]{flex:1;accent-color:#c96a3e;cursor:pointer;height:20px}
   cursor:pointer}
 .ysettings{display:none;flex-direction:column;gap:9px;padding-top:2px}
 .ysettings.open{display:flex}
+.yguide{padding:9px 10px;background:#211b18;border:1px solid #5a3b2e;border-radius:8px;color:#c8a894;font-size:9px;line-height:1.5}
 .yfield{display:grid;grid-template-columns:95px 1fr;align-items:center;gap:8px}
 .yfield label{color:#8a8278;font-size:9px;letter-spacing:1px}
 .yfield input,.yfield select{width:100%;background:#0e0e11;border:1.5px solid #494249;

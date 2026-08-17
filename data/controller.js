@@ -388,7 +388,7 @@ function applySalaryStatus(j){
 }
 async function loadSalaryConfig(){
   try{const r=await fetch('/salary/config',{cache:'no-store'}),j=await r.json();if(!r.ok)throw new Error(j.error||'config unavailable');
-    document.getElementById('yMonthlyInput').value=j.monthlyCents?Number(j.monthlyCents)/100:15000;
+    document.getElementById('yMonthlyInput').value=j.monthlyCents?Number(j.monthlyCents)/100:'';
     document.getElementById('yDaysInput').value=(Number(j.workDaysX100)||2175)/100;document.getElementById('yHoursInput').value=(Number(j.workMinutesPerDay)||480)/60;
     document.getElementById('yStartInput').value=salaryTime(j.startMinutes??570);
     document.getElementById('yEndInput').value=salaryTime(j.endMinutes??1140);
