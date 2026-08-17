@@ -1437,6 +1437,7 @@ void WebService::handleConfigImport() {
         !expressionIdFromName(expressionName, expression) ||
         (modeName != "auto" && modeName != "manual") ||
         (startup != VIEW_EYES_NORMAL && startup != VIEW_EYES_SQUISH &&
+         startup != VIEW_CODE && startup != VIEW_DRAW &&
          startup != VIEW_CLOCK && startup != VIEW_POMODORO &&
          startup != VIEW_WEATHER && startup != VIEW_CRYPTO &&
          startup != VIEW_MARKET && startup != VIEW_SALARY &&

@@ -26,11 +26,13 @@
 namespace {
 DisplayService* s_mediaGifOwner = nullptr;
 
-// 这些页面没有依赖临时连接或实时交互状态，适合在断电后恢复。
+// 这些页面适合在断电后恢复；终端和画板恢复页面模式，内容仍是临时数据。
 bool isPowerRestoreView(uint8_t view) {
     switch (view) {
         case VIEW_EYES_NORMAL:
         case VIEW_EYES_SQUISH:
+        case VIEW_CODE:
+        case VIEW_DRAW:
         case VIEW_CLOCK:
         case VIEW_POMODORO:
         case VIEW_WEATHER:
@@ -2589,6 +2591,11 @@ void DisplayService::applyIdleDefaultView() {
     switch (view) {
         case VIEW_EYES_SQUISH:
             showExpression(ExpressionId::HAPPY);
+            break;
+        case VIEW_CODE:
+        case VIEW_DRAW:
+            _expressionPreferred = false;
+            setInteractiveView(view);
             break;
         case VIEW_CLOCK:
             _expressionPreferred = false;

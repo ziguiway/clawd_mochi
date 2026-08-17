@@ -391,6 +391,8 @@ bool PreferenceService::isValidHexColor(const String& hex) const {
 bool PreferenceService::isStartupViewAllowed(uint8_t view) const {
     return view == VIEW_EYES_NORMAL ||
            view == VIEW_EYES_SQUISH ||
+           view == VIEW_CODE ||
+           view == VIEW_DRAW ||
            view == VIEW_CLOCK ||
            view == VIEW_POMODORO ||
            view == VIEW_WEATHER ||
